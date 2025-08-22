@@ -1,0 +1,15 @@
+qt_add_executable(gtm
+    main.cpp
+)
+
+target_link_libraries(gtm PRIVATE
+    gtm-ui
+    Qt6::Widgets
+)
+
+set_target_properties(gtm PROPERTIES
+    WIN32_EXECUTABLE ON
+    MACOSX_BUNDLE ON
+)
+
+add_subdirectory(ui)

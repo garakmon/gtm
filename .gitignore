@@ -1,1 +1,4 @@
 ref
+*.DS_Store
+build/
+build_debug/

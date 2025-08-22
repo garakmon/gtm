@@ -1,0 +1,84 @@
+qt_add_library(gtm-ui STATIC
+    mainwindow.ui
+    mainwindow.cpp
+)
+
+target_link_libraries(gtm-ui PRIVATE
+    Qt6::Core
+    Qt6::Widgets
+)
+
+target_include_directories(gtm-ui INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
+qt_add_resources(gtm-ui "gtm-icons"
+    PREFIX "/"
+    FILES
+        icons/album-list.svg
+        icons/check-circle.svg
+        icons/check-square.svg
+        icons/check.svg
+        icons/clipboard-check.svg
+        icons/compress-lines.svg
+        icons/compress.svg
+        icons/control-slider.svg
+        icons/cut.svg
+        icons/de-compress.svg
+        icons/download.svg
+        icons/drag-hand-gesture.svg
+        icons/edit.svg
+        icons/drag.svg
+        icons/filter-alt.svg
+        icons/filter-list-circle.svg
+        icons/filter-list.svg
+        icons/filter.svg
+        icons/floppy-disk-arrow-in.svg
+        icons/forward.svg
+        icons/horizontal-merge.svg
+        icons/horizontal-split.svg
+        icons/import.svg
+        icons/more-horiz-circle.svg
+        icons/music-double-note-plus.svg
+        icons/music-double-note.svg
+        icons/music-note-plus.svg
+        icons/music-note.svg
+        icons/paste-clipboard.svg
+        icons/pause.svg
+        icons/play.svg
+        icons/playlist-plus.svg
+        icons/plus.svg
+        icons/prohibition.svg
+        icons/redo-action.svg
+        icons/redo.svg
+        icons/refresh-double.svg
+        icons/refresh.svg
+        icons/repeat.svg
+        icons/repeat-once.svg
+        icons/restart.svg
+        icons/rewind.svg
+        icons/settings.svg
+        icons/sidebar-collapse.svg
+        icons/sidebar-expand.svg
+        icons/sine-wave.svg
+        icons/skip-next.svg
+        icons/skip-prev.svg
+        icons/sound-high.svg
+        icons/sound-low.svg
+        icons/sound-min.svg
+        icons/sound-off.svg
+        icons/square.svg
+        icons/switch-off.svg
+        icons/switch-on.svg
+        icons/trash.svg
+        icons/undo-action.svg
+        icons/undo.svg
+        icons/vertical-merge.svg
+        icons/vertical-split.svg
+        icons/voice-circle.svg
+        icons/voice.svg
+        icons/warning-circle.svg
+        icons/warning-triangle.svg
+        icons/xmark-circle.svg
+        icons/xmark.svg
+        icons/zoom-in.svg
+        icons/zoom-out.svg
+)
