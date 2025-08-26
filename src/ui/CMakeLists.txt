@@ -1,6 +1,8 @@
 qt_add_library(gtm-ui STATIC
     mainwindow.ui
     mainwindow.cpp
+    pianoroll.cpp
+    graphicspianokeyitem.cpp
 )
 
 target_link_libraries(gtm-ui PRIVATE

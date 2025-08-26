@@ -5,11 +5,13 @@
 #include <QGraphicsScene>
 #include <QFileDialog>
 
+
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-
+class PianoRoll;
 
 class MainWindow : public QMainWindow
 {
@@ -22,7 +24,7 @@ public:
 private:
     Ui::MainWindow *ui;
 
-    QGraphicsScene *scene_score = nullptr;
+    PianoRoll *m_piano_roll = nullptr; // TODO: unique_ptr? maybe break with ownership
 
 private:
     void setupUi();

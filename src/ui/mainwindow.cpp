@@ -6,27 +6,37 @@
 #include <QLoggingCategory>
 #include <QDebug>
 
+#include "pianoroll.h"
+
 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainWindow) {
     ui->setupUi(this);
     this->setupUi();
 
-    // silence bug in my qt version re: mac trackpads
+    // TEMP: silence bug in my qt version re: mac trackpads [fix: update Qt version]
     QLoggingCategory::setFilterRules(QStringLiteral("qt.pointer.dispatch=false"));
 }
 
 MainWindow::~MainWindow() {
-    delete scene_score;
+    // delete m_piano_roll;
     delete ui;
 }
 
 void MainWindow::setupUi() {
 
     // alloc new scenes
-    scene_score = new QGraphicsScene;
+    m_piano_roll = new PianoRoll(this);
+    this->ui->view_piano->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    this->ui->view_piano->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    this->ui->view_piano->setScene(m_piano_roll->scenePiano());
+    // this->ui->view_piano->setSceneRect(m_piano_roll->scenePiano()->itemsBoundingRect());
 
-    drawScoreArea();
+    this->ui->view_piano->centerOn(m_piano_roll->keys()[60]);
+
+    this->ui->view_piano->setBackgroundBrush(QBrush(QColor(209, 230, 229), Qt::SolidPattern));
+
+    // drawScoreArea();
 }
 
 void MainWindow::drawScoreArea() {
@@ -35,12 +45,12 @@ void MainWindow::drawScoreArea() {
 }
 
 void MainWindow::drawScoreAreaGrid() {
-    QGraphicsView *view = this->ui->graphicsView_PianoRoll;
+    QGraphicsView *view = this->ui->view_pianoRoll;
     view->setBackgroundBrush(QBrush(QColor(209, 230, 229), Qt::SolidPattern));
 
     // QPen pen(QColor(150, 150, 150), 0);
 
-    view->setScene(scene_score);
+    //view->setScene(scene_score);
 }
 
 void MainWindow::open(QString path) {

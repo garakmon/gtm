@@ -336,7 +336,7 @@
           <x>0</x>
           <y>0</y>
           <width>642</width>
-          <height>273</height>
+          <height>275</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_2">
@@ -356,12 +356,43 @@
           <x>0</x>
           <y>0</y>
           <width>642</width>
-          <height>273</height>
+          <height>275</height>
          </rect>
         </property>
-        <layout class="QGridLayout" name="gridLayout_3">
-         <item row="0" column="0">
-          <widget class="QGraphicsView" name="graphicsView_PianoRoll"/>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <property name="spacing">
+          <number>1</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QGraphicsView" name="view_piano">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>100</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGraphicsView" name="view_pianoRoll"/>
          </item>
         </layout>
        </widget>
