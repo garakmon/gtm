@@ -7,6 +7,8 @@
 #include <QDebug>
 
 #include "pianoroll.h"
+#include "constants.h"
+#include "colors.h"
 
 
 
@@ -38,13 +40,11 @@ void MainWindow::setupUi() {
     this->ui->view_pianoRoll->setScene(m_piano_roll->sceneRoll());
     this->ui->view_pianoRoll->setSceneRect(m_piano_roll->sceneRoll()->itemsBoundingRect());
 
-    this->ui->view_piano->centerOn(m_piano_roll->keys()[60]);
-    this->ui->view_pianoRoll->centerOn(m_piano_roll->lines()[60]);
+    this->ui->view_piano->centerOn(m_piano_roll->keys()[g_midi_middle_c]);
+    this->ui->view_pianoRoll->centerOn(m_piano_roll->lines()[g_midi_middle_c]);
 
-    this->ui->view_piano->setBackgroundBrush(QBrush(QColor(0x6c9193), Qt::SolidPattern));
-    //this->ui->view_pianoRoll->setBackgroundBrush(QBrush(QColor(0x6c9193), Qt::SolidPattern));
-
-    this->ui->view_pianoRoll->installEventFilter(m_piano_roll);
+    this->ui->view_piano->setBackgroundBrush(QBrush(ui_color_piano_roll_bg, Qt::SolidPattern));
+    this->ui->view_pianoRoll->setBackgroundBrush(QBrush(ui_color_piano_roll_bg, Qt::SolidPattern));
 
     this->ui->view_piano->setVerticalScrollBar(this->ui->vscroll_pianoRoll);
     this->ui->view_pianoRoll->setVerticalScrollBar(this->ui->vscroll_pianoRoll);
@@ -58,12 +58,7 @@ void MainWindow::drawScoreArea() {
 }
 
 void MainWindow::drawScoreAreaGrid() {
-    QGraphicsView *view = this->ui->view_pianoRoll;
-    view->setBackgroundBrush(QBrush(QColor(209, 230, 229), Qt::SolidPattern));
-
-    // QPen pen(QColor(150, 150, 150), 0);
-
-    //view->setScene(scene_score);
+    // 
 }
 
 void MainWindow::open(QString path) {

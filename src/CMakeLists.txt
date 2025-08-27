@@ -4,6 +4,7 @@ qt_add_executable(gtm
 
 target_link_libraries(gtm PRIVATE
     gtm-ui
+    gtm-util
     Qt6::Widgets
 )
 
@@ -13,3 +14,4 @@ set_target_properties(gtm PROPERTIES
 )
 
 add_subdirectory(ui)
+add_subdirectory(util)

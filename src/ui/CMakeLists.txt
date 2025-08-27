@@ -3,9 +3,11 @@ qt_add_library(gtm-ui STATIC
     mainwindow.cpp
     pianoroll.cpp
     graphicspianokeyitem.cpp
+    colors.cpp
 )
 
 target_link_libraries(gtm-ui PRIVATE
+    gtm-util
     Qt6::Core
     Qt6::Widgets
 )

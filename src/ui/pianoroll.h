@@ -34,8 +34,6 @@ public:
     QList<GraphicsPianoKeyItem *> keys() { return this->m_piano_keys; }
     QList<QGraphicsRectItem *> lines() { return this->m_score_lines; }
 
-    bool eventFilter(QObject *watched, QEvent *event);
-
 private:
     void drawPiano();
     void drawScoreArea();

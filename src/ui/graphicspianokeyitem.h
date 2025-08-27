@@ -8,15 +8,6 @@
 
 
 
-// Constants
-const int ui_score_line_height = 10;
-const int ui_piano_key_white_height[g_num_white_per_octave] = {17, 16, 17, 17, 18, 18, 17};
-const int ui_piano_key_black_height = 12;
-const int ui_piano_key_white_width = 98;
-const int ui_piano_key_black_width = 60;
-
-
-
 class GraphicsPianoKeyItem : public QGraphicsItem {
 public:
     GraphicsPianoKeyItem(int note);
