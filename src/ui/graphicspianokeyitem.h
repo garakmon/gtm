@@ -4,6 +4,19 @@
 
 #include <QGraphicsItem>
 
+#include "constants.h"
+
+
+
+// Constants
+const int ui_score_line_height = 10;
+const int ui_piano_key_white_height[g_num_white_per_octave] = {17, 16, 17, 17, 18, 18, 17};
+const int ui_piano_key_black_height = 12;
+const int ui_piano_key_white_width = 98;
+const int ui_piano_key_black_width = 60;
+
+
+
 class GraphicsPianoKeyItem : public QGraphicsItem {
 public:
     GraphicsPianoKeyItem(int note);
@@ -18,8 +31,17 @@ protected:
 
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
-private:
-    int m_note = 60; // C4
+    int count_set_bits(int n) const {
+        int count = 0;
+        while (n > 0) {
+            n &= (n - 1);
+            count++;
+        }
+        return count;
+    }
+
+protected:
+    int m_note = g_midi_middle_c;
     QColor m_color;
 };
 
@@ -27,12 +49,9 @@ private:
 
 class GraphicsPianoKeyItemBlack : public GraphicsPianoKeyItem {
 public:
-    GraphicsPianoKeyItemBlack(int note) : GraphicsPianoKeyItem(note) {
-        this->setColor(Qt::black); // TODO: make more advanced looking with paint() reimplimentation
-    }
-
+    GraphicsPianoKeyItemBlack(int note);
 protected:
-    QSize dimensions() const override { return QSize(60, 15); }; // TODO: constants
+    QSize dimensions() const override { return QSize(ui_piano_key_black_width, ui_piano_key_black_height); };
 };
 
 
@@ -44,7 +63,11 @@ public:
     }
 
 protected:
-    QSize dimensions() const override { return QSize(98, 21); }; // TODO: constants
+    QSize dimensions() const override {
+        int index_in_octave = m_note % g_num_notes_per_octave;
+        int white_index = count_set_bits(g_black_key_mask & ((1 << index_in_octave) - 1));
+        return QSize(ui_piano_key_white_width, ui_piano_key_white_height[white_index]);
+    };
 };
 
 #endif // GRAPHICSPIANOKEYITEM_H

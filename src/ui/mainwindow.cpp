@@ -30,11 +30,21 @@ void MainWindow::setupUi() {
     this->ui->view_piano->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     this->ui->view_piano->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     this->ui->view_piano->setScene(m_piano_roll->scenePiano());
-    // this->ui->view_piano->setSceneRect(m_piano_roll->scenePiano()->itemsBoundingRect());
+    this->ui->view_piano->setSceneRect(m_piano_roll->scenePiano()->itemsBoundingRect());
+    this->ui->view_piano->setRenderHint(QPainter::Antialiasing, false);
+
+    this->ui->view_pianoRoll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    this->ui->view_pianoRoll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    this->ui->view_pianoRoll->setScene(m_piano_roll->sceneRoll());
+    this->ui->view_pianoRoll->setSceneRect(m_piano_roll->sceneRoll()->itemsBoundingRect());
 
     this->ui->view_piano->centerOn(m_piano_roll->keys()[60]);
+    this->ui->view_pianoRoll->centerOn(m_piano_roll->lines()[60]);
 
-    this->ui->view_piano->setBackgroundBrush(QBrush(QColor(209, 230, 229), Qt::SolidPattern));
+    this->ui->view_piano->setBackgroundBrush(QBrush(QColor(0x6c9193), Qt::SolidPattern));
+    //this->ui->view_pianoRoll->setBackgroundBrush(QBrush(QColor(0x6c9193), Qt::SolidPattern));
+
+    this->ui->view_pianoRoll->installEventFilter(m_piano_roll);
 
     // drawScoreArea();
 }

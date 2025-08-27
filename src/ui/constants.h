@@ -6,10 +6,7 @@
 
 
 // MIDI piano
-// const int g_num_notes_piano = 88; // A0 -- C8
-// const int g_num_white_piano = 52;
-// const int g_num_black_piano = 36;
-const int g_num_notes_piano = 128; // C-1 -- 
+const int g_num_notes_piano = 128; // C-1
 const int g_num_white_piano = 75;
 const int g_num_black_piano = 53;
 
