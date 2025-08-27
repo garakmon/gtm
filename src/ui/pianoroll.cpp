@@ -98,7 +98,7 @@ void PianoRoll::drawScoreArea() {
     QColor color_dark = QColor(0x6c9193);
     QColor color_light = QColor(0x99b3b4);
 
-    int starting_y = 10 * g_num_notes_piano;
+    int starting_y = 10 * g_num_notes_piano - 12;
 
     for (int i = 0; i < g_num_notes_piano; i++) {
         QGraphicsRectItem *item;

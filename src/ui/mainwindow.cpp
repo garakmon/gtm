@@ -46,6 +46,9 @@ void MainWindow::setupUi() {
 
     this->ui->view_pianoRoll->installEventFilter(m_piano_roll);
 
+    this->ui->view_piano->setVerticalScrollBar(this->ui->vscroll_pianoRoll);
+    this->ui->view_pianoRoll->setVerticalScrollBar(this->ui->vscroll_pianoRoll);
+
     // drawScoreArea();
 }
 

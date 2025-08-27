@@ -336,7 +336,7 @@
           <x>0</x>
           <y>0</y>
           <width>642</width>
-          <height>291</height>
+          <height>256</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_2">
@@ -359,7 +359,7 @@
           <x>0</x>
           <y>0</y>
           <width>644</width>
-          <height>261</height>
+          <height>296</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_3">
@@ -392,7 +392,7 @@
           <widget class="QGraphicsView" name="view_pianoRoll"/>
          </item>
          <item row="2" column="2">
-          <widget class="QScrollBar" name="horizontalScrollBar">
+          <widget class="QScrollBar" name="hscroll_pianoRoll">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
@@ -418,7 +418,7 @@
           </widget>
          </item>
          <item row="1" column="3">
-          <widget class="QScrollBar" name="verticalScrollBar">
+          <widget class="QScrollBar" name="vscroll_pianoRoll">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
            </property>
