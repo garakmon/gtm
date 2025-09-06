@@ -4,6 +4,9 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QFileDialog>
+#include <memory>
+
+#include "project.h"
 
 
 
@@ -24,13 +27,19 @@ public:
 private:
     Ui::MainWindow *ui;
 
-    PianoRoll *m_piano_roll = nullptr; // TODO: unique_ptr? maybe break with ownership
+    std::unique_ptr<Project> m_project;
+
+    PianoRoll *m_piano_roll = nullptr; // TODO: unique_ptr? maybe break with ownership of qobjects
+    QGraphicsScene *m_scene_tracks = nullptr;
 
 private:
     void setupUi();
+    void loadProject();
+
+    void loadSong();
 
     void drawScoreArea();
-    void drawScoreAreaGrid();
+    void drawTrackList();
 
     QString browse(QString filter, QFileDialog::FileMode mode);
     void open(QString path);

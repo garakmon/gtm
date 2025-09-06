@@ -5,6 +5,8 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsEffect>
 
+#include "util.h"
+
 
 
 GraphicsPianoKeyItem::GraphicsPianoKeyItem(int note) : QGraphicsItem() {
@@ -66,3 +68,15 @@ GraphicsPianoKeyItemBlack::GraphicsPianoKeyItemBlack(int note) : GraphicsPianoKe
     black_key_shadow->setOffset(3, 3);
     this->setGraphicsEffect(black_key_shadow);
 }
+
+QSize GraphicsPianoKeyItemBlack::dimensions() const {
+    return QSize(ui_piano_key_black_width, ui_piano_key_black_height);
+};
+
+
+
+QSize GraphicsPianoKeyItemWhite::dimensions() const {
+    int index_in_octave = m_note % g_num_notes_per_octave;
+    int white_index = countSetBits(g_black_key_mask & ((1 << index_in_octave) - 1));
+    return QSize(ui_piano_key_white_width, ui_piano_key_white_height[white_index]);
+};

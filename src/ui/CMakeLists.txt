@@ -3,11 +3,15 @@ qt_add_library(gtm-ui STATIC
     mainwindow.cpp
     pianoroll.cpp
     graphicspianokeyitem.cpp
+    graphicstrackitem.cpp
     colors.cpp
 )
 
 target_link_libraries(gtm-ui PRIVATE
     gtm-util
+    gtm-sound
+    gtm-app
+    midifile
     Qt6::Core
     Qt6::Widgets
 )

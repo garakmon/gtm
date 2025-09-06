@@ -4,7 +4,7 @@
 
 
 
-bool is_note_white(int note);
-int count_set_bits(int n);
+bool isNoteWhite(int note);
+int countSetBits(int n);
 
 #endif // UTIL_H

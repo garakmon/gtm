@@ -4,6 +4,12 @@
 
 #include <QColor>
 
+#include "constants.h"
+
+
+
+// Track Colors
+extern QColor ui_track_color_array[g_max_num_tracks];
 
 
 // Piano Keys

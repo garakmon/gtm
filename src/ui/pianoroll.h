@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QGraphicsScene>
+#include <memory>
 
 #include "graphicspianokeyitem.h"
 
@@ -20,7 +21,7 @@
 //     void drawBackground(QPainter *painter, const QRectF &rect) override;
 // };
 
-
+class Song;
 
 class PianoRoll : public QObject {
     Q_OBJECT
@@ -34,9 +35,15 @@ public:
     QList<GraphicsPianoKeyItem *> keys() { return this->m_piano_keys; }
     QList<QGraphicsRectItem *> lines() { return this->m_score_lines; }
 
+    void setSong(std::shared_ptr<Song> song) {
+        this->m_active_song = song;
+        drawScoreNotes();
+    }
+
 private:
     void drawPiano();
     void drawScoreArea();
+    void drawScoreNotes();
 
 private:
     // QList<ScoreNoteItem *>
@@ -46,4 +53,6 @@ private:
 
     QList<GraphicsPianoKeyItem *> m_piano_keys;
     QList<QGraphicsRectItem *> m_score_lines;
+
+    std::shared_ptr<Song> m_active_song;
 };

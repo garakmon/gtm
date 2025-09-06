@@ -6,9 +6,10 @@
 #include <QLoggingCategory>
 #include <QDebug>
 
-#include "pianoroll.h"
 #include "constants.h"
 #include "colors.h"
+#include "pianoroll.h"
+#include "graphicstrackitem.h"
 
 
 
@@ -18,6 +19,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 
     // TEMP: silence bug in my qt version re: mac trackpads [fix: update Qt version]
     QLoggingCategory::setFilterRules(QStringLiteral("qt.pointer.dispatch=false"));
+
+    this->m_project = std::make_unique<Project>();
+
+    loadProject();
+    loadSong();
 }
 
 MainWindow::~MainWindow() {
@@ -26,6 +32,11 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::setupUi() {
+    // Piano scroll tabs
+    // this->ui->tab_showMidiEvents->addTab("All");
+    // this->ui->tab_showMidiEvents->addTab("Notes");
+    // this->ui->tab_showMidiEvents->addTab("Events");
+    // this->ui->tab_showMidiEvents->show();
 
     // alloc new scenes
     m_piano_roll = new PianoRoll(this);
@@ -49,16 +60,47 @@ void MainWindow::setupUi() {
     this->ui->view_piano->setVerticalScrollBar(this->ui->vscroll_pianoRoll);
     this->ui->view_pianoRoll->setVerticalScrollBar(this->ui->vscroll_pianoRoll);
 
+    // track scene
+    m_scene_tracks = new QGraphicsScene(this);
+    this->ui->view_tracklist->setScene(this->m_scene_tracks);
+
     // drawScoreArea();
 }
 
-void MainWindow::drawScoreArea() {
-    // score area only redrawn when changes, otherwise translating the area based on measure, (virtual pixels? or scroll down too?)
-    drawScoreAreaGrid();
+void MainWindow::loadProject() {
+    m_project->load();
+
+    //this->ui->listView_songTable->addItems()
 }
 
-void MainWindow::drawScoreAreaGrid() {
+void MainWindow::loadSong() {
+    // load song from song list 
+    drawScoreArea();
+    drawTrackList();
+}
+
+void MainWindow::drawScoreArea() {
+    // TODO: move piano roll stuff to here
+    this->m_piano_roll->setSong(this->m_project->activeSong());
+    // populate graphicsscorenoteitems
+    // pianoroll scene score clear
+    // score area only redrawn when changes, otherwise translating the area based on measure, (virtual pixels? or scroll down too?)
+}
+
+void MainWindow::drawTrackList() {
     // 
+    this->m_scene_tracks->clear();
+
+    std::shared_ptr<Song> song = this->m_project->activeSong();
+
+    int track_num = 0;
+    for (auto track : song->tracks()) {
+        this->m_scene_tracks->addItem(new GraphicsTrackItem(track_num));
+        track_num++;
+    }
+
+    this->ui->view_tracklist->setSceneRect(this->m_scene_tracks->itemsBoundingRect());
+    this->ui->view_tracklist->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 }
 
 void MainWindow::open(QString path) {
