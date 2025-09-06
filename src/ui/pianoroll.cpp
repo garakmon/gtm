@@ -101,6 +101,10 @@ void PianoRoll::drawScoreNotes() {
             }
             else {
                 qDebug() << "event duration:" << mev->getTickDuration();
+                int note = mev->getKeyNumber();
+                int y = isNoteWhite(note) ? white_note_to_y_pos(note) : black_note_to_y_pos(note);
+                
+                this->m_scene_roll.addItem(new QGraphicsRectItem(mev->tick, y, mev->getTickDuration(), ui_piano_key_black_height));
             }
             //duration = mev->getTickDuration();
 
