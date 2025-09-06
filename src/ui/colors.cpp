@@ -3,6 +3,7 @@
 
 
 // Track colors
+// TODO: QPalette for different shades?
 QColor ui_track_color_array[g_max_num_tracks] = {
     QColor(0xe6194B), // red
     QColor(0x3cb44b), // green

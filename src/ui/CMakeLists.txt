@@ -2,8 +2,10 @@ qt_add_library(gtm-ui STATIC
     mainwindow.ui
     mainwindow.cpp
     pianoroll.cpp
+    trackroll.cpp
     graphicspianokeyitem.cpp
     graphicstrackitem.cpp
+    graphicsscorenoteitem.cpp
     colors.cpp
 )
 

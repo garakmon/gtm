@@ -88,18 +88,19 @@ void PianoRoll::drawScoreArea() {
 }
 
 void PianoRoll::drawScoreNotes() {
+    // TODO: how to get trackitems from mainwindow?
     // remove
     this->m_active_song->linkNotePairs();
 
     double duration;
     for (auto track : this->m_active_song->tracks()) {
         for (int i = 0; i < track->size(); i++) {
-            smf::MidiEvent &mev = (*track)[i];
-            if (!mev.isNoteOn()) {
+            smf::MidiEvent *mev = &(*track)[i];
+            if (!mev->isNoteOn()) {
                 continue;
             }
             else {
-                //qDebug() << "event duration:" << mev.getTickDuration();
+                qDebug() << "event duration:" << mev->getTickDuration();
             }
             //duration = mev->getTickDuration();
 

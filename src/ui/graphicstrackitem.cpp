@@ -2,6 +2,7 @@
 
 #include <QPainter>
 
+#include "graphicsscorenoteitem.h"
 #include "constants.h"
 #include "colors.h"
 
@@ -31,5 +32,11 @@ void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
 // Selecting track item highlights all score items of this track
 void GraphicsTrackItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
     //
+}
+
+void GraphicsTrackItem::addItem(GraphicsScoreItem *item) {
+    //
+    this->m_score_items.append(item);
+    item->setColor(this->m_color);
 }
 

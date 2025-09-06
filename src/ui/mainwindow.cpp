@@ -9,6 +9,7 @@
 #include "constants.h"
 #include "colors.h"
 #include "pianoroll.h"
+#include "trackroll.h"
 #include "graphicstrackitem.h"
 
 
@@ -61,8 +62,10 @@ void MainWindow::setupUi() {
     this->ui->view_pianoRoll->setVerticalScrollBar(this->ui->vscroll_pianoRoll);
 
     // track scene
-    m_scene_tracks = new QGraphicsScene(this);
-    this->ui->view_tracklist->setScene(this->m_scene_tracks);
+    m_track_roll = new TrackRoll(this);
+    this->ui->view_tracklist->setScene(this->m_track_roll->sceneRoll());
+    this->ui->view_tracklist->setSceneRect(this->m_track_roll->sceneRoll()->itemsBoundingRect());
+    this->ui->view_tracklist->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 
     // drawScoreArea();
 }
@@ -89,18 +92,7 @@ void MainWindow::drawScoreArea() {
 
 void MainWindow::drawTrackList() {
     // 
-    this->m_scene_tracks->clear();
-
-    std::shared_ptr<Song> song = this->m_project->activeSong();
-
-    int track_num = 0;
-    for (auto track : song->tracks()) {
-        this->m_scene_tracks->addItem(new GraphicsTrackItem(track_num));
-        track_num++;
-    }
-
-    this->ui->view_tracklist->setSceneRect(this->m_scene_tracks->itemsBoundingRect());
-    this->ui->view_tracklist->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    this->m_track_roll->setSong(this->m_project->activeSong());
 }
 
 void MainWindow::open(QString path) {

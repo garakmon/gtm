@@ -15,6 +15,7 @@ namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
 class PianoRoll;
+class TrackRoll;
 
 class MainWindow : public QMainWindow
 {
@@ -30,7 +31,7 @@ private:
     std::unique_ptr<Project> m_project;
 
     PianoRoll *m_piano_roll = nullptr; // TODO: unique_ptr? maybe break with ownership of qobjects
-    QGraphicsScene *m_scene_tracks = nullptr;
+    TrackRoll *m_track_roll = nullptr;
 
 private:
     void setupUi();

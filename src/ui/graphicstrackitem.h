@@ -17,6 +17,8 @@
 
 
 
+class GraphicsScoreItem;
+
 class GraphicsTrackItem : public QGraphicsItem {
     //
 public:
@@ -33,11 +35,15 @@ public:
     QColor color() { return this->m_color; }
     int track() { return this->m_track; }
 
+    void addItem(GraphicsScoreItem *item);
+
     // int numEvents() { return this->m_note_items.size() + this->m_event_items.size(); }
 
 private:
     QColor m_color;
     int m_track;
+
+    QList<GraphicsScoreItem *> m_score_items;
 
     // QVector<GraphicsScoreNoteItem *> m_note_items;
     // QVector<other event items>
