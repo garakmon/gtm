@@ -5,6 +5,8 @@
 
 
 bool isNoteWhite(int note);
-int countSetBits(int n);
+int countSetBits(int num);
+int whiteNoteToY(int note);
+int blackNoteToY(int note);
 
 #endif // UTIL_H

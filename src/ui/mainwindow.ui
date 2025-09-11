@@ -52,7 +52,7 @@
           </sizepolicy>
          </property>
          <property name="title">
-          <string>Sound Settings</string>
+          <string>Note Settings</string>
          </property>
         </widget>
        </item>

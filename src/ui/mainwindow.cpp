@@ -29,43 +29,40 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 
 MainWindow::~MainWindow() {
     // delete m_piano_roll;
+    // delete m_track_roll;
     delete ui;
 }
 
 void MainWindow::setupUi() {
-    // Piano scroll tabs
-    // this->ui->tab_showMidiEvents->addTab("All");
-    // this->ui->tab_showMidiEvents->addTab("Notes");
-    // this->ui->tab_showMidiEvents->addTab("Events");
-    // this->ui->tab_showMidiEvents->show();
-
     // alloc new scenes
-    m_piano_roll = new PianoRoll(this);
-    this->ui->view_piano->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    this->ui->view_piano->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    this->ui->view_piano->setScene(m_piano_roll->scenePiano());
-    this->ui->view_piano->setSceneRect(m_piano_roll->scenePiano()->itemsBoundingRect());
-    this->ui->view_piano->setRenderHint(QPainter::Antialiasing, false);
+    // m_piano_roll = new PianoRoll(this);
+    // this->ui->view_piano->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // this->ui->view_piano->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // this->ui->view_piano->setScene(m_piano_roll->scenePiano());
+    // this->ui->view_piano->setSceneRect(m_piano_roll->scenePiano()->itemsBoundingRect());
+    // this->ui->view_piano->setRenderHint(QPainter::Antialiasing, false);
 
-    this->ui->view_pianoRoll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    this->ui->view_pianoRoll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    this->ui->view_pianoRoll->setScene(m_piano_roll->sceneRoll());
-    this->ui->view_pianoRoll->setSceneRect(m_piano_roll->sceneRoll()->itemsBoundingRect());
+    // this->ui->view_pianoRoll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // this->ui->view_pianoRoll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // this->ui->view_pianoRoll->setScene(m_piano_roll->sceneRoll());
+    // this->ui->view_pianoRoll->setSceneRect(m_piano_roll->sceneRoll()->itemsBoundingRect());
 
-    this->ui->view_piano->centerOn(m_piano_roll->keys()[g_midi_middle_c]);
-    this->ui->view_pianoRoll->centerOn(m_piano_roll->lines()[g_midi_middle_c]);
+    // this->ui->view_piano->centerOn(m_piano_roll->keys()[g_midi_middle_c]);
+    // this->ui->view_pianoRoll->centerOn(m_piano_roll->lines()[g_midi_middle_c]);
 
-    this->ui->view_piano->setBackgroundBrush(QBrush(ui_color_piano_roll_bg, Qt::SolidPattern));
-    this->ui->view_pianoRoll->setBackgroundBrush(QBrush(ui_color_piano_roll_bg, Qt::SolidPattern));
+    // this->ui->view_piano->setBackgroundBrush(QBrush(ui_color_piano_roll_bg, Qt::SolidPattern));
+    // this->ui->view_pianoRoll->setBackgroundBrush(QBrush(ui_color_piano_roll_bg, Qt::SolidPattern));
 
-    this->ui->view_piano->setVerticalScrollBar(this->ui->vscroll_pianoRoll);
-    this->ui->view_pianoRoll->setVerticalScrollBar(this->ui->vscroll_pianoRoll);
+    // this->ui->view_piano->setVerticalScrollBar(this->ui->vscroll_pianoRoll);
+    // this->ui->view_pianoRoll->setVerticalScrollBar(this->ui->vscroll_pianoRoll);
 
-    // track scene
-    m_track_roll = new TrackRoll(this);
-    this->ui->view_tracklist->setScene(this->m_track_roll->sceneRoll());
-    this->ui->view_tracklist->setSceneRect(this->m_track_roll->sceneRoll()->itemsBoundingRect());
-    this->ui->view_tracklist->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    // // track scene
+    // m_track_roll = new TrackRoll(this);
+    // this->ui->view_tracklist->setScene(this->m_track_roll->sceneRoll());
+    // this->ui->view_tracklist->setSceneRect(this->m_track_roll->sceneRoll()->itemsBoundingRect());
+    // this->ui->view_tracklist->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+
+    m_controller = std::make_unique<Controller>(this);
 
     // drawScoreArea();
 }
@@ -78,13 +75,19 @@ void MainWindow::loadProject() {
 
 void MainWindow::loadSong() {
     // load song from song list 
-    drawScoreArea();
-    drawTrackList();
+    if (this->m_controller->loadSong(this->m_project->activeSong())) {
+        this->m_controller->display(this->ui);
+    }
+    else {
+        // Failed to load a song for whatever reason
+    }
+    // drawScoreArea();
+    // drawTrackList();
 }
 
 void MainWindow::drawScoreArea() {
     // TODO: move piano roll stuff to here
-    this->m_piano_roll->setSong(this->m_project->activeSong());
+    //this->m_controller->setSong(this->m_project->activeSong());
     // populate graphicsscorenoteitems
     // pianoroll scene score clear
     // score area only redrawn when changes, otherwise translating the area based on measure, (virtual pixels? or scroll down too?)
@@ -92,7 +95,6 @@ void MainWindow::drawScoreArea() {
 
 void MainWindow::drawTrackList() {
     // 
-    this->m_track_roll->setSong(this->m_project->activeSong());
 }
 
 void MainWindow::open(QString path) {

@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "project.h"
+#include "controller.h"
 
 
 
@@ -17,8 +18,7 @@ QT_END_NAMESPACE
 class PianoRoll;
 class TrackRoll;
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
@@ -29,9 +29,10 @@ private:
     Ui::MainWindow *ui;
 
     std::unique_ptr<Project> m_project;
+    std::unique_ptr<Controller> m_controller;
 
-    PianoRoll *m_piano_roll = nullptr; // TODO: unique_ptr? maybe break with ownership of qobjects
-    TrackRoll *m_track_roll = nullptr;
+    // PianoRoll *m_piano_roll = nullptr; // TODO: unique_ptr? maybe break with ownership of qobjects
+    // TrackRoll *m_track_roll = nullptr;
 
 private:
     void setupUi();

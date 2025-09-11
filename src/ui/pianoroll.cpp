@@ -17,35 +17,17 @@ PianoRoll::PianoRoll(QObject *parent) : QObject(parent) {
     this->drawScoreArea();
 }
 
-int white_note_to_y_pos(int note) {
-    int max_y = ui_score_line_height * g_num_notes_piano;
-
-    int octave = note / g_num_notes_per_octave;
-    int index_in_octave = note % g_num_notes_per_octave;
-
-    int white_index = countSetBits(g_black_key_mask & ((1 << index_in_octave) - 1));
-
-    int pos = max_y - (octave * ui_piano_keys_octave_height + ui_piano_key_white_height_sums[white_index] + ui_piano_key_white_height[white_index]);
-
-    return pos;
-}
-
-int black_note_to_y_pos(int note) {
-    int max_y = ui_score_line_height * g_num_notes_piano;
-    return max_y - ui_score_line_height * (note + 1);
-}
-
 void PianoRoll::drawPiano() {
     for (int i = 0; i < g_num_notes_piano; i++) {
         GraphicsPianoKeyItem *item;
         if (isNoteWhite(i)) {
             item = new GraphicsPianoKeyItemWhite(i);
             item->setZValue(0);
-            item->setPos(0, white_note_to_y_pos(i));
+            item->setPos(0, whiteNoteToY(i));
         } else {
             item = new GraphicsPianoKeyItemBlack(i);
             item->setZValue(1);
-            item->setPos(0, black_note_to_y_pos(i));
+            item->setPos(0, blackNoteToY(i));
         }
         //item->setPos(0, note_to_y_pos(i));
         this->m_piano_keys.append(item);
@@ -102,7 +84,7 @@ void PianoRoll::drawScoreNotes() {
             else {
                 qDebug() << "event duration:" << mev->getTickDuration();
                 int note = mev->getKeyNumber();
-                int y = isNoteWhite(note) ? white_note_to_y_pos(note) : black_note_to_y_pos(note);
+                int y = isNoteWhite(note) ? whiteNoteToY(note) : blackNoteToY(note);
                 
                 this->m_scene_roll.addItem(new QGraphicsRectItem(mev->tick, y, mev->getTickDuration(), ui_piano_key_black_height));
             }
