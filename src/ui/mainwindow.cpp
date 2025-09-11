@@ -81,8 +81,6 @@ void MainWindow::loadSong() {
     else {
         // Failed to load a song for whatever reason
     }
-    // drawScoreArea();
-    // drawTrackList();
 }
 
 void MainWindow::drawScoreArea() {

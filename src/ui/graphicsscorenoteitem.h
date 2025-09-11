@@ -11,39 +11,51 @@ namespace smf {
 class MidiEvent;
 }
 
-class GraphicsScoreItem : public QGraphicsItem {
+class GraphicsMidiEventItem : public QGraphicsItem {
 
 public:
-    GraphicsScoreItem(smf::MidiEvent *event) : QGraphicsItem(nullptr) {
+    GraphicsMidiEventItem(int track, smf::MidiEvent *event) : QGraphicsItem(nullptr) {
+        this->m_track = track;
         this->m_event = event;
     }
 
-    void remove(); // clear object, call removeEmpties()
-    void setColor(QColor color) { this->m_color = color; }
+    virtual ~GraphicsMidiEventItem() {}
+
+    virtual QColor color() { return QColor(); }
+    virtual QSize dimensions() const { return QSize(0, 0); }
+    virtual QPoint updatePosition() { return QPoint(0, 0); }
+
+    //virtual void remove(); // clear object, call removeEmpties()
 
 protected:
-    smf::MidiEvent *m_event;
-    QColor m_color;
+    int m_track = 0;
+    smf::MidiEvent *m_event = nullptr;
 };
 
 
 
-class GraphicsScoreNoteItem : public GraphicsScoreItem {
+class GraphicsScoreNoteItem : public GraphicsMidiEventItem {
 
 public:
-    GraphicsScoreNoteItem();
+    GraphicsScoreNoteItem(int track, smf::MidiEvent *on, smf::MidiEvent *off);
+
+    QRectF boundingRect() const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+    QColor color() override;
+    QSize dimensions() const override;
+    QPoint updatePosition() override; // update & get position
 
 private:
     int m_tick_duration;
-    smf::MidiEvent *m_connected_note;
+    smf::MidiEvent *m_note_off = nullptr;
 };
 
 
 
-class GraphicsMidiEventItem : public GraphicsScoreItem {
+class GraphicsTrackEventItem : public GraphicsMidiEventItem {
 
 public:
-    GraphicsMidiEventItem();
+    GraphicsTrackEventItem();
 
 private:
     int m_event_type;

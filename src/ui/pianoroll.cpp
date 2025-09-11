@@ -4,6 +4,7 @@
 #include <QEvent>
 #include <QWheelEvent>
 
+#include "graphicsscorenoteitem.h"
 #include "song.h"
 #include "constants.h"
 #include "colors.h"
@@ -72,26 +73,16 @@ void PianoRoll::drawScoreArea() {
 void PianoRoll::drawScoreNotes() {
     // TODO: how to get trackitems from mainwindow?
     // remove
-    this->m_active_song->linkNotePairs();
+    
+}
 
-    double duration;
-    for (auto track : this->m_active_song->tracks()) {
-        for (int i = 0; i < track->size(); i++) {
-            smf::MidiEvent *mev = &(*track)[i];
-            if (!mev->isNoteOn()) {
-                continue;
-            }
-            else {
-                qDebug() << "event duration:" << mev->getTickDuration();
-                int note = mev->getKeyNumber();
-                int y = isNoteWhite(note) ? whiteNoteToY(note) : blackNoteToY(note);
-                
-                this->m_scene_roll.addItem(new QGraphicsRectItem(mev->tick, y, mev->getTickDuration(), ui_piano_key_black_height));
-            }
-            //duration = mev->getTickDuration();
-
-            // TODO: base color on mev->track
-            
-        }
-    }
+GraphicsScoreNoteItem *PianoRoll::addNote(int track, smf::MidiEvent *event) {
+    // GraphicsScoreNoteItem(smf::MidiEvent *on, smf::MidiEvent *off);
+    //int note = midi_event->getKeyNumber();
+    //int y = isNoteWhite(note) ? whiteNoteToY(note) : blackNoteToY(note);
+    //this->m_piano_roll->addNote(midi_event);
+    //this->m_piano_roll->addNote(midi_event->tick, y, midi_event->getTickDuration(), ui_piano_key_black_height);
+    GraphicsScoreNoteItem *item = new GraphicsScoreNoteItem(track, event, event->getLinkedEvent());
+    m_scene_roll.addItem(item);
+    return item;
 }

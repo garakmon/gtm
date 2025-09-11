@@ -22,6 +22,8 @@
 // };
 
 class Song;
+class GraphicsScoreNoteItem;
+namespace smf { class MidiEvent; }
 
 class PianoRoll : public QObject {
     Q_OBJECT
@@ -39,6 +41,11 @@ public:
         this->m_active_song = song;
         drawScoreNotes();
     }
+
+    // MidiEvent *
+    GraphicsScoreNoteItem *addNote(int track, smf::MidiEvent *event);
+
+    // void resize(); // resize m_score_lines
 
 private:
     void drawPiano();

@@ -24,6 +24,8 @@ public:
     bool loadSong(std::shared_ptr<Song> song); // TODO: should project::loadSong return shared_ptr<Song>?
     void display(Ui::MainWindow *window); // put onto views
 
+    void readTracks();
+
 private:
     // m_song, items lists?, send item edits to midifile edits
     std::shared_ptr<Song> m_song;

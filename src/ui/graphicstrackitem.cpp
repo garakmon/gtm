@@ -37,6 +37,6 @@ void GraphicsTrackItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 void GraphicsTrackItem::addItem(GraphicsScoreItem *item) {
     //
     this->m_score_items.append(item);
-    item->setColor(this->m_color);
+    //item->setColor(this->m_color);
 }
 

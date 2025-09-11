@@ -50,7 +50,25 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
     this->m_track_roll->setSong(song);
     this->m_piano_roll->setSong(song);
 
-    //this->display();
+    song->linkNotePairs();
+
+    double duration;
+    int track_num = 0;
+    for (auto track : song->tracks()) {
+        // add track
+        for (int i = 0; i < track->size(); i++) {
+            smf::MidiEvent *midi_event = &(*track)[i];
+            if (!midi_event->isNoteOn()) {
+                continue;
+            }
+            else {
+                //qDebug() << "event duration:" << midi_event->getTickDuration();
+                this->m_piano_roll->addNote(track_num, midi_event);
+            }
+            //duration = mev->getTickDuration();            
+        }
+        track_num++;
+    }
 
     return true;
 }

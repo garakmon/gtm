@@ -9,6 +9,7 @@
 
 
 class Song;
+class GraphicsTrackItem;
 
 class TrackRoll : public QObject {
     Q_OBJECT
@@ -22,6 +23,8 @@ public:
         this->m_active_song = song;
         this->drawTracks();
     }
+
+    GraphicsTrackItem *addTrack();
 
 private:
     void drawTracks();
