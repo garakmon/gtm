@@ -3,12 +3,14 @@
 #define CONTROLLER_H
 
 #include <QObject>
+#include <QPointer>
 
 
 
 namespace Ui { class MainWindow; }
 class PianoRoll;
 class TrackRoll;
+class MeasureRoll;
 class Song;
 
 /*
@@ -29,8 +31,9 @@ public:
 private:
     // m_song, items lists?, send item edits to midifile edits
     std::shared_ptr<Song> m_song;
-    PianoRoll *m_piano_roll = nullptr;
-    TrackRoll *m_track_roll = nullptr;
+    QPointer<PianoRoll> m_piano_roll;
+    QPointer<TrackRoll> m_track_roll;
+    QPointer<MeasureRoll> m_measure_roll;
 };
 
 #endif // CONTROLLER_H

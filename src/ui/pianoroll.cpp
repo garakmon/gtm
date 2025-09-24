@@ -40,34 +40,25 @@ void PianoRoll::drawPiano() {
 }
 
 void PianoRoll::drawScoreArea() {
-    // TODO: keep track of grid lines so they can be highlighted upon selection/add new notes etc
-    int starting_y = ui_score_line_height * g_num_notes_piano - ui_piano_key_black_height;
-
     for (int i = 0; i < g_num_notes_piano; i++) {
         QGraphicsRectItem *item;
         // TODO: calculate height of band, for each octave reset
-        // scroll_pianoArea
+        int y = scoreNotePosition(i).y;
+        int height = scoreNotePosition(i).height;
         if (isNoteWhite(i)) {
-            item = new QGraphicsRectItem(0, starting_y, 10000, ui_piano_key_black_height);
+            item = new QGraphicsRectItem(0, y, 10000, height);
             item->setBrush(ui_color_score_line_light);
             item->setPen(ui_color_score_line_dark);
             item->setZValue(-1);
         } else {
-            item = new QGraphicsRectItem(0, starting_y, 10000, ui_piano_key_black_height);
+            item = new QGraphicsRectItem(0, y, 10000, height);
             item->setBrush(ui_color_score_line_dark);
             item->setPen(ui_color_score_line_light);
             item->setZValue(-1);
         }
-        starting_y -= ui_score_line_height;
-        //item->setPos(0, note_to_y_pos(i));
         this->m_score_lines.append(item);
         this->m_scene_roll.addItem(item);
     }
-
-    // QRectF rect = this->m_scene_roll.itemsBoundingRect();
-    // this->m_scene_roll.setSceneRect(rect);
-    //QRectF rect = this->m_scene_piano.itemsBoundingRect();
-    //this->m_scene_roll.setSceneRect(QRectF(0, 0, 1000, rect.height()));
 }
 
 void PianoRoll::drawScoreNotes() {
@@ -77,11 +68,6 @@ void PianoRoll::drawScoreNotes() {
 }
 
 GraphicsScoreNoteItem *PianoRoll::addNote(int track, smf::MidiEvent *event) {
-    // GraphicsScoreNoteItem(smf::MidiEvent *on, smf::MidiEvent *off);
-    //int note = midi_event->getKeyNumber();
-    //int y = isNoteWhite(note) ? whiteNoteToY(note) : blackNoteToY(note);
-    //this->m_piano_roll->addNote(midi_event);
-    //this->m_piano_roll->addNote(midi_event->tick, y, midi_event->getTickDuration(), ui_piano_key_black_height);
     GraphicsScoreNoteItem *item = new GraphicsScoreNoteItem(track, event, event->getLinkedEvent());
     m_scene_roll.addItem(item);
     return item;

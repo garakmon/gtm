@@ -33,3 +33,9 @@ int blackNoteToY(int note) {
     int max_y = ui_score_line_height * g_num_notes_piano;
     return max_y - ui_score_line_height * (note + 1);
 }
+
+NotePos scoreNotePosition(int note) {
+    int max_y = ui_score_line_height * g_num_notes_piano - ui_piano_key_black_height;
+    int y = max_y - (note * ui_score_line_height);
+    return { .y = y, .height = ui_piano_key_black_height };
+}

@@ -30,7 +30,7 @@ QColor GraphicsScoreNoteItem::color() {
 }
 
 QSize GraphicsScoreNoteItem::dimensions() const {
-    return QSize(this->m_event->getTickDuration() * ui_score_note_tick_x_scale, 12);
+    return QSize(this->m_event->getTickDuration() * ui_score_note_tick_x_scale, ui_score_line_height);
 };
 
 QPoint GraphicsScoreNoteItem::updatePosition() {
@@ -39,7 +39,7 @@ QPoint GraphicsScoreNoteItem::updatePosition() {
     // return QSize(ui_piano_key_white_width, ui_piano_key_white_height[white_index]);
     int note = this->m_event->getKeyNumber();
     int x = this->m_event->tick * ui_score_note_tick_x_scale;
-    int y = isNoteWhite(note) ? whiteNoteToY(note) : blackNoteToY(note);
+    int y = scoreNotePosition(note).y + 2; // TODO: why +2 necessary?
 
     QPoint pos(x, y);
     this->setPos(pos);
