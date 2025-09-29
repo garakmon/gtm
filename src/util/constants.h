@@ -36,9 +36,9 @@ const int ui_piano_key_white_width = 98;
 const int ui_piano_key_black_width = 60;
 
 const int ui_track_item_height = 30;
-const int ui_track_item_width = 300;
+const int ui_track_item_width = 98;
 
-const int ui_score_note_tick_x_scale = 2;
+const int ui_tick_x_scale = 2;
 
 
 

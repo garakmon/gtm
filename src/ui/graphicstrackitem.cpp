@@ -18,6 +18,7 @@ GraphicsTrackItem::GraphicsTrackItem(int track, QGraphicsItem *parent) : QGraphi
     }
     this->m_track = track;
     this->m_color = ui_track_color_array[track];
+    this->m_color_light = ui_track_color_array[track].lighter(150);
 }
 
 QRectF GraphicsTrackItem::boundingRect() const {
@@ -27,6 +28,9 @@ QRectF GraphicsTrackItem::boundingRect() const {
 void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
     painter->setBrush(this->m_color);
     painter->drawRoundedRect(this->boundingRect(), 5, 5);
+
+    painter->setBrush(this->m_color_light);
+    painter->drawRoundedRect(5, this->boundingRect().y() + 5, ui_track_item_height - 10, ui_track_item_height - 10, 3, 3);
 }
 
 // Selecting track item highlights all score items of this track

@@ -47,6 +47,11 @@ public:
 
     // void resize(); // resize m_score_lines
 
+    void display() {
+        this->drawScoreArea();
+        this->drawScoreNotes();
+    }
+
 private:
     void drawPiano();
     void drawScoreArea();

@@ -20,6 +20,7 @@ Controller::Controller(QObject *parent) : QObject(parent) {
 }
 
 void Controller::display(Ui::MainWindow *window) {
+    this->m_piano_roll->display();
     //
     window->view_piano->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     window->view_piano->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -38,15 +39,39 @@ void Controller::display(Ui::MainWindow *window) {
     window->view_piano->setBackgroundBrush(QBrush(ui_color_piano_roll_bg, Qt::SolidPattern));
     window->view_pianoRoll->setBackgroundBrush(QBrush(ui_color_piano_roll_bg, Qt::SolidPattern));
 
+    // connect vertical scrolling piano
     window->view_piano->setVerticalScrollBar(window->vscroll_pianoRoll);
     window->view_pianoRoll->setVerticalScrollBar(window->vscroll_pianoRoll);
 
-    // track scene
-    window->view_tracklist->setScene(this->m_track_roll->sceneRoll());
-    window->view_tracklist->setSceneRect(this->m_track_roll->sceneRoll()->itemsBoundingRect());
-    window->view_tracklist->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    // connect vertical scrolling tracks
 
+    // track scene
+    window->view_trackRoll->setScene(m_track_roll->sceneRoll());
+    window->view_trackRoll->setSceneRect(m_track_roll->sceneRoll()->itemsBoundingRect());
+    window->view_trackRoll->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+
+    window->view_trackList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    window->view_trackList->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    window->view_trackList->setScene(m_track_roll->sceneTracks());
+    window->view_trackList->setSceneRect(m_track_roll->sceneTracks()->itemsBoundingRect());
+
+    // measures
+    window->view_measures_tracks->setScene(m_measure_roll->sceneMeasures());
+    window->view_measures_tracks->setSceneRect(m_measure_roll->sceneMeasures()->itemsBoundingRect());
+    window->view_measures_tracks->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    window->view_measures_tracks->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    window->view_measures_tracks->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    window->view_measures->setScene(m_measure_roll->sceneMeasures());
+    window->view_measures->setSceneRect(m_measure_roll->sceneMeasures()->itemsBoundingRect());
+    window->view_measures->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    window->view_measures->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    window->view_measures->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    // connect horizontal scrolling
     window->view_pianoRoll->setHorizontalScrollBar(window->hscroll_pianoRoll);
+    window->view_measures->setHorizontalScrollBar(window->hscroll_pianoRoll);
+    window->view_measures_tracks->setHorizontalScrollBar(window->hscroll_pianoRoll);
     //window->view_tracklist->setHorizontalScrollBar(window->hscroll_pianoRoll);
 }
 
@@ -62,25 +87,31 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
     int track_num = 0;
     for (auto track : song->tracks()) {
         qDebug() << "\n*** TRACK" << track_num << "***\n";
+        bool meta_track = true;
         for (int i = 0; i < track->size(); i++) {
             smf::MidiEvent *midi_event = &(*track)[i];
             if (midi_event->isNote()) {
                 if (midi_event->isNoteOn()) this->m_piano_roll->addNote(track_num, midi_event);
+                meta_track = false;
                 continue;
             }
             else if (midi_event->isMetaMessage()) {
                 qDebug() << "MetaMessage: type" << midi_event->getMetaType();
             }
             else if (midi_event->isController()) {
+                meta_track = false;
                 qDebug() << "Controller:" << midi_event->getControllerNumber() << midi_event->getControllerValue();
             }
             else if (midi_event->isPatchChange()) {
+                meta_track = false;
                 qDebug() << "Patch Change:" << midi_event->getChannel() << midi_event->getP1();
             }
             else if (midi_event->isPressure()) {
+                meta_track = false;
                 qDebug() << "Pressure:" << midi_event->getP1();
             }
             else if (midi_event->isPitchbend()) {
+                meta_track = false;
                 qDebug() << "Pitch Bend:" << midi_event->getP1() << midi_event->getP2();
             }
             else {

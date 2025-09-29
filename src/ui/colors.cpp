@@ -31,3 +31,4 @@ QColor ui_track_color_array[g_max_num_tracks] = {
 QColor ui_color_piano_roll_bg = QColor(0x6c9193);
 QColor ui_color_score_line_dark = QColor(0xbbcccd);
 QColor ui_color_score_line_light = QColor(0xd2ddde);
+QColor ui_color_piano_roll_tick_mark = QColor(0x828e8f);

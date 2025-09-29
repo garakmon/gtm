@@ -40,7 +40,6 @@ private:
 
     void loadSong();
 
-    void drawScoreArea();
     void drawTrackList();
 
     QString browse(QString filter, QFileDialog::FileMode mode);

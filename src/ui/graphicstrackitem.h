@@ -41,6 +41,7 @@ public:
 
 private:
     QColor m_color;
+    QColor m_color_light;
     int m_track;
 
     QList<GraphicsScoreItem *> m_score_items;

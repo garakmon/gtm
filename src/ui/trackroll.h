@@ -18,6 +18,7 @@ public:
     TrackRoll(QObject *parent = nullptr);
 
     QGraphicsScene *sceneRoll() { return &this->m_scene_roll; };
+    QGraphicsScene *sceneTracks() { return &this->m_scene_track_list; }
 
     void setSong(std::shared_ptr<Song> song) {
         this->m_active_song = song;
@@ -32,6 +33,7 @@ private:
 private:
     // vert scrolls the same
     QGraphicsScene m_scene_roll;
+    QGraphicsScene m_scene_track_list;
 
     std::shared_ptr<Song> m_active_song;
 };

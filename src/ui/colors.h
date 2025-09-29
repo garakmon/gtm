@@ -19,5 +19,6 @@ extern QColor ui_track_color_array[g_max_num_tracks];
 extern QColor ui_color_piano_roll_bg;
 extern QColor ui_color_score_line_dark;
 extern QColor ui_color_score_line_light;
+extern QColor ui_color_piano_roll_tick_mark;
 
 #endif // COLORS_H

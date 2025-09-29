@@ -83,14 +83,6 @@ void MainWindow::loadSong() {
     }
 }
 
-void MainWindow::drawScoreArea() {
-    // TODO: move piano roll stuff to here
-    //this->m_controller->setSong(this->m_project->activeSong());
-    // populate graphicsscorenoteitems
-    // pianoroll scene score clear
-    // score area only redrawn when changes, otherwise translating the area based on measure, (virtual pixels? or scroll down too?)
-}
-
 void MainWindow::drawTrackList() {
     // 
 }

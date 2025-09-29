@@ -21,6 +21,9 @@ public:
 
     bool load();
 
+    double durationInSeconds();
+    int durationInTicks();
+
     std::vector<smf::MidiEventList *> tracks() { return this->m_events; }
     // std::vector<smf::MidiEvent *> events() {
     //     std::vector<smf::MidiEvent *> events;
