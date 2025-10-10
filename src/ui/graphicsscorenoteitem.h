@@ -10,6 +10,7 @@
 namespace smf {
 class MidiEvent;
 }
+class PianoRoll;
 
 class GraphicsMidiEventItem : public QGraphicsItem {
 
@@ -37,7 +38,7 @@ protected:
 class GraphicsScoreNoteItem : public GraphicsMidiEventItem {
 
 public:
-    GraphicsScoreNoteItem(int track, smf::MidiEvent *on, smf::MidiEvent *off);
+    GraphicsScoreNoteItem(PianoRoll *piano_roll, int track, smf::MidiEvent *on, smf::MidiEvent *off);
 
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
@@ -45,9 +46,13 @@ public:
     QSize dimensions() const override;
     QPoint updatePosition() override; // update & get position
 
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+
 private:
     int m_tick_duration;
     smf::MidiEvent *m_note_off = nullptr;
+
+    PianoRoll *m_piano_roll = nullptr;
 };
 
 

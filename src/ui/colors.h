@@ -10,6 +10,7 @@
 
 // Track Colors
 extern QColor ui_track_color_array[g_max_num_tracks];
+// TODO: selected color array, deselected / inactive color array
 
 
 // Piano Keys

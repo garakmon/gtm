@@ -11,6 +11,7 @@
 #include "pianoroll.h"
 #include "trackroll.h"
 #include "graphicstrackitem.h"
+#include "previewsoundwindow.h"
 
 
 
@@ -76,7 +77,7 @@ void MainWindow::loadProject() {
 void MainWindow::loadSong() {
     // load song from song list 
     if (this->m_controller->loadSong(this->m_project->activeSong())) {
-        this->m_controller->display(this->ui);
+        this->m_controller->display();
     }
     else {
         // Failed to load a song for whatever reason
@@ -102,5 +103,17 @@ QString MainWindow::browse(QString filter, QFileDialog::FileMode mode) {
 //     QString path = browse("Midi Files (*.mid *.midi *.MID *.MIDI)", QFileDialog::ExistingFile);
 //     open(path);
 // }
+
+void MainWindow::on_action_PreviewSound_triggered() {
+    //
+    if (m_preview_sound_window) {
+        m_preview_sound_window->show();
+    }
+    else {
+        m_preview_sound_window = new PreviewSoundWindow(this);
+        m_preview_sound_window->setAttribute(Qt::WA_DeleteOnClose);
+        m_preview_sound_window->show();
+    }
+}
 
 

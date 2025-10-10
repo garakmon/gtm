@@ -8,6 +8,8 @@ qt_add_library(gtm-ui STATIC
     graphicstrackitem.cpp
     graphicsscorenoteitem.cpp
     colors.cpp
+    previewsoundwindow.ui
+    previewsoundwindow.cpp
 )
 
 target_link_libraries(gtm-ui PRIVATE

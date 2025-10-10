@@ -17,6 +17,7 @@ public:
 
 public:
     void load();
+    void load(QString path);
 
     std::shared_ptr<Song> activeSong() { return this->m_active_song; }
 

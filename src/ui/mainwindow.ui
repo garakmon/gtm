@@ -384,7 +384,7 @@
        <item>
         <widget class="QGroupBox" name="groupBox">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -392,6 +392,110 @@
          <property name="title">
           <string>Event Info</string>
          </property>
+         <layout class="QFormLayout" name="formLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Key</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="spinBox_NoteKey">
+            <property name="focusPolicy">
+             <enum>Qt::TabFocus</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QPushButton" name="pushButton_NotePlay">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>:/icons/play.svg</normaloff>:/icons/play.svg</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Play Sound:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>On Tick</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>On Velocity</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Off Tick</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>Off Velocity</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Channel</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="spinBox_NoteChannel">
+            <property name="focusPolicy">
+             <enum>Qt::TabFocus</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QSpinBox" name="spinBox_NoteOnTick">
+            <property name="focusPolicy">
+             <enum>Qt::TabFocus</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QSpinBox" name="spinBox_NoteOnVelocity">
+            <property name="focusPolicy">
+             <enum>Qt::TabFocus</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QSpinBox" name="spinBox_NoteOffTick">
+            <property name="focusPolicy">
+             <enum>Qt::TabFocus</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QSpinBox" name="spinBox_NoteOffVelocity">
+            <property name="focusPolicy">
+             <enum>Qt::TabFocus</enum>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
       </layout>
@@ -417,7 +521,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>673</width>
+          <width>599</width>
           <height>275</height>
          </rect>
         </property>
@@ -494,7 +598,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>673</width>
+          <width>599</width>
           <height>293</height>
          </rect>
         </property>
@@ -627,6 +731,7 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <addaction name="action_PreviewSound"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -634,6 +739,14 @@
    <addaction name="menuTools_2"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="action_PreviewSound">
+   <property name="text">
+    <string>Preview Sounds</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

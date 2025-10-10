@@ -1,19 +1,24 @@
 #include "graphicsscorenoteitem.h"
 
 #include <QPainter>
+#include <QStyleOptionGraphicsItem>
 
 #include "colors.h"
 #include "constants.h"
 #include "util.h"
 #include "MidiEvent.h"
+#include "pianoroll.h"
 
 
 
-GraphicsScoreNoteItem::GraphicsScoreNoteItem(int track, smf::MidiEvent *on, smf::MidiEvent *off)
+GraphicsScoreNoteItem::GraphicsScoreNoteItem(PianoRoll *piano_roll, int track, smf::MidiEvent *on, smf::MidiEvent *off)
  : GraphicsMidiEventItem(track, on) {
+    this->m_piano_roll = piano_roll;
     // m_event is a note on
     this->m_note_off = off;
     this->updatePosition();
+
+    this->setFlags(QGraphicsItem::ItemIsSelectable /*| QGraphicsItem::ItemIsMovable */);
 }
 
 QRectF GraphicsScoreNoteItem::boundingRect() const {
@@ -21,6 +26,12 @@ QRectF GraphicsScoreNoteItem::boundingRect() const {
 }
 
 void GraphicsScoreNoteItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
+    if (option->state & QStyle::State_Selected) {
+        // highlight when selected
+        static QPen highlighter(Qt::yellow, 3, Qt::SolidLine);
+        highlighter.setColor(this->color().lighter(125));
+        painter->setPen(highlighter);
+    }
     painter->setBrush(this->color());
     painter->drawRoundedRect(this->boundingRect(), 3, 2);
 }
@@ -42,3 +53,24 @@ QPoint GraphicsScoreNoteItem::updatePosition() {
     this->setPos(pos);
     return pos;
 };
+
+QVariant GraphicsScoreNoteItem::itemChange(GraphicsItemChange change, const QVariant &value) {
+    switch(change) {
+    case QGraphicsItem::ItemSelectedHasChanged:
+        if (value.toBool()) {
+            // item has changed to selected
+            qDebug() << "item selected, note:" << this->m_event->getKeyNumber();
+            emit this->m_piano_roll->eventItemSelected(this->m_event);
+        }
+        else {
+            // cleared selection
+        }
+        break;
+    case QGraphicsItem::ItemPositionHasChanged:
+        break;
+    default:
+        break;
+    }
+
+    return QGraphicsItem::itemChange(change, value);
+}

@@ -26,6 +26,8 @@ public:
     bool advance();
     void setTick(int tick) { this->m_current_tick = tick; }
 
+    // QGraphicsItem *marker() { return this->m_marker; } // ensure visible (for scrolling?)
+
 private:
     void drawMeasures();
 

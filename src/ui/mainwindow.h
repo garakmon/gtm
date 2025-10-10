@@ -6,8 +6,8 @@
 #include <QFileDialog>
 #include <memory>
 
-#include "project.h"
-#include "controller.h"
+#include "../app/project.h"
+#include "../app/controller.h"
 
 
 
@@ -17,6 +17,7 @@ QT_END_NAMESPACE
 
 class PianoRoll;
 class TrackRoll;
+class PreviewSoundWindow;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -25,8 +26,11 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+friend class Controller;
 private:
     Ui::MainWindow *ui;
+
+    QPointer<PreviewSoundWindow> m_preview_sound_window;
 
     std::unique_ptr<Project> m_project;
     std::unique_ptr<Controller> m_controller;
@@ -47,5 +51,7 @@ private:
 
 private slots:
     // void on_action_open_triggered();
+    void on_action_PreviewSound_triggered();
 };
+
 #endif // MAINWINDOW_H

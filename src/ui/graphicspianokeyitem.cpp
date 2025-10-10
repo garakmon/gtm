@@ -23,7 +23,7 @@ bool is_note_c(int note) {
 }
 
 void GraphicsPianoKeyItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
-    //
+    // TODO: move paint to subclasses?
     // int width = 20;
     // int height = 5;
     // int x = 0;

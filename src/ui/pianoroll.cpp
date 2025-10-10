@@ -41,6 +41,9 @@ void PianoRoll::drawPiano() {
 }
 
 void PianoRoll::drawScoreArea() {
+    // Clear
+    this->m_score_lines.clear();
+
     // Draw horizontal lines for piano keys
     int final_tick = this->m_active_song->durationInTicks();
     for (int i = 0; i < g_num_notes_piano; i++) {
@@ -81,7 +84,7 @@ void PianoRoll::drawScoreNotes() {
 }
 
 GraphicsScoreNoteItem *PianoRoll::addNote(int track, smf::MidiEvent *event) {
-    GraphicsScoreNoteItem *item = new GraphicsScoreNoteItem(track, event, event->getLinkedEvent());
+    GraphicsScoreNoteItem *item = new GraphicsScoreNoteItem(this, track, event, event->getLinkedEvent());
     m_scene_roll.addItem(item);
     return item;
 }

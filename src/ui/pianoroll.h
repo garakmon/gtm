@@ -52,6 +52,9 @@ public:
         this->drawScoreNotes();
     }
 
+signals:
+    void eventItemSelected(smf::MidiEvent *event);
+
 private:
     void drawPiano();
     void drawScoreArea();
