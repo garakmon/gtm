@@ -17,11 +17,6 @@ QRectF GraphicsPianoKeyItem::boundingRect() const {
     return QRectF(0, 0, this->dimensions().width(), this->dimensions().height());
 }
 
-//! TODO: move to util/
-bool is_note_c(int note) {
-    return !(note % 12);
-}
-
 void GraphicsPianoKeyItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
     // TODO: move paint to subclasses?
     // int width = 20;
@@ -41,8 +36,7 @@ void GraphicsPianoKeyItem::paint(QPainter *painter, const QStyleOptionGraphicsIt
 
     painter->drawRoundedRect(0, 0, key_dimensions.width(), key_dimensions.height(), 1, 2);
 
-    if (is_note_c(this->m_note)) {
-        //
+    if (isNoteC(this->m_note)) {
         QString c_num = QString("C") + QString::number(this->m_note / 12 - 1);
         painter->setPen(Qt::gray);
         int string_size = QFontMetrics(painter->font()).boundingRect(c_num).width();

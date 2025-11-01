@@ -10,6 +10,8 @@ qt_add_library(gtm-ui STATIC
     colors.cpp
     previewsoundwindow.ui
     previewsoundwindow.cpp
+    midikeyspinbox.h
+    midikeyspinbox.cpp
 )
 
 target_link_libraries(gtm-ui PRIVATE
@@ -21,7 +23,9 @@ target_link_libraries(gtm-ui PRIVATE
     Qt6::Widgets
 )
 
-target_include_directories(gtm-ui INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(gtm-ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# CMAKE_CURRENT_SOURCE_DIR
+#target_include_directories(gtm-ui PUBLIC ${CMAKE_SOURCE_DIR}/src/ui)
 
 qt_add_resources(gtm-ui "gtm-icons"
     PREFIX "/"

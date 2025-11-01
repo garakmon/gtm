@@ -132,6 +132,18 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
 }
 
 void Controller::displayEvent(smf::MidiEvent *event) {
-    //
+    // TODO: safety checks (isNote / isNoteOn, etc)
     qDebug() << "Controller::displayEvent";
+    if (!event) {
+        // error
+        return;
+    }
+
+    m_window->spinBox_NoteKey->setValue(event->getKeyNumber());
+    m_window->spinBox_NoteOnTick->setValue(event->tick);
+    m_window->spinBox_NoteOnVelocity->setValue(event->getVelocity());
+    if (event->hasLink()) {
+        m_window->spinBox_NoteOffTick->setValue(event->getLinkedEvent()->tick);
+        m_window->spinBox_NoteOffVelocity->setValue(event->getLinkedEvent()->getVelocity());
+    }
 }

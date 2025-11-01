@@ -39,3 +39,18 @@ NotePos scoreNotePosition(int note) {
     int y = max_y - (note * ui_score_line_height);
     return { .y = y, .height = ui_piano_key_black_height };
 }
+
+bool isNoteC(int note) {
+    return !(note % 12);
+}
+
+// TODO: use flats where appropriate for key signatures
+static QString s_note_strings[g_num_notes_per_octave] = {
+    "C", QString::fromUtf8("C\u266F"), "D", QString::fromUtf8("D\u266F"), "E",
+    "F", QString::fromUtf8("F\u266F"), "G", QString::fromUtf8("G\u266F"), "A", QString::fromUtf8("A\u266F"), "B"
+};
+
+QString noteValueToString(int value) {
+    // TODO: key signatures
+    return s_note_strings[value % g_num_notes_per_octave];
+}

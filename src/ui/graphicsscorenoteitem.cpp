@@ -27,9 +27,8 @@ QRectF GraphicsScoreNoteItem::boundingRect() const {
 
 void GraphicsScoreNoteItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
     if (option->state & QStyle::State_Selected) {
-        // highlight when selected
         static QPen highlighter(Qt::yellow, 3, Qt::SolidLine);
-        highlighter.setColor(this->color().lighter(125));
+        highlighter.setColor(this->color().lighter(200));
         painter->setPen(highlighter);
     }
     painter->setBrush(this->color());

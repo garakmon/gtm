@@ -2,6 +2,8 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <QString>
+
 
 
 struct NotePos {
@@ -10,6 +12,8 @@ struct NotePos {
 };
 
 bool isNoteWhite(int note);
+bool isNoteC(int note);
+QString noteValueToString(int note);
 int countSetBits(int num);
 int whiteNoteToY(int note);
 int blackNoteToY(int note);
