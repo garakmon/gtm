@@ -22,4 +22,7 @@ extern QColor ui_color_score_line_dark;
 extern QColor ui_color_score_line_light;
 extern QColor ui_color_piano_roll_tick_mark;
 
+// Measure Roll
+extern QColor ui_color_measure_timestamps;
+
 #endif // COLORS_H

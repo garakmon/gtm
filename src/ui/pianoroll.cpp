@@ -78,12 +78,10 @@ void PianoRoll::drawScoreArea() {
 }
 
 void PianoRoll::drawScoreNotes() {
-    qDebug() << "draw score notes?";
     // TODO: how to get trackitems from mainwindow?
     // remove
     for (auto [note_tick, note_event] : this->m_active_song->getNotes()) {
         this->addNote(note_tick, note_event);
-        qDebug() << "add notes at" << note_tick;
     }
 }
 

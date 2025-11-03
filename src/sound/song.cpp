@@ -34,6 +34,7 @@ Song::~Song() {
 */
 
 bool Song::load() {
+    this->doTimeAnalysis();
     this->linkNotePairs();
 
     double duration;
@@ -50,7 +51,7 @@ bool Song::load() {
                 }
             }
         }
-        else
+        // else
         for (int i = 0; i < track->size(); i++) {
             smf::MidiEvent *midi_event = &(*track)[i];
             if (midi_event->isNote()) {
