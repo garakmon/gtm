@@ -45,6 +45,8 @@ void Controller::display() {
     m_window->view_pianoRoll->setVerticalScrollBar(m_window->vscroll_pianoRoll);
 
     // connect vertical scrolling tracks
+    m_window->view_trackList->setVerticalScrollBar(m_window->vscroll_trackRoll);
+    m_window->view_trackRoll->setVerticalScrollBar(m_window->vscroll_trackRoll);
 
     // track scene
     m_window->view_trackRoll->setScene(m_track_roll->sceneRoll());
@@ -73,7 +75,8 @@ void Controller::display() {
     m_window->view_pianoRoll->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
     m_window->view_measures->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
     m_window->view_measures_tracks->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
-    //m_window->view_tracklist->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
+    
+    m_window->view_trackRoll->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
     //m_window->hscroll_pianoRoll->setValue(0);
 
     //m_window->view_pianoRoll->centerOn();
@@ -84,50 +87,13 @@ void Controller::display() {
 
 bool Controller::loadSong(std::shared_ptr<Song> song) {
     //
+
+    song->load();
+
     this->m_track_roll->setSong(song);
     this->m_piano_roll->setSong(song);
     this->m_measure_roll->setSong(song);
 
-    song->linkNotePairs();
-
-    double duration;
-    int track_num = 0;
-    for (auto track : song->tracks()) {
-        qDebug() << "\n*** TRACK" << track_num << "***\n";
-        bool meta_track = true;
-        for (int i = 0; i < track->size(); i++) {
-            smf::MidiEvent *midi_event = &(*track)[i];
-            if (midi_event->isNote()) {
-                if (midi_event->isNoteOn()) this->m_piano_roll->addNote(track_num, midi_event);
-                meta_track = false;
-                continue;
-            }
-            else if (midi_event->isMetaMessage()) {
-                qDebug() << "MetaMessage: type" << midi_event->getMetaType();
-            }
-            else if (midi_event->isController()) {
-                meta_track = false;
-                qDebug() << "Controller:" << midi_event->getControllerNumber() << midi_event->getControllerValue();
-            }
-            else if (midi_event->isPatchChange()) {
-                meta_track = false;
-                qDebug() << "Patch Change:" << midi_event->getChannel() << midi_event->getP1();
-            }
-            else if (midi_event->isPressure()) {
-                meta_track = false;
-                qDebug() << "Pressure:" << midi_event->getP1();
-            }
-            else if (midi_event->isPitchbend()) {
-                meta_track = false;
-                qDebug() << "Pitch Bend:" << midi_event->getP1() << midi_event->getP2();
-            }
-            else {
-                qDebug() << "unknown midi message type";
-            }
-        }
-        track_num++;
-    }
-    qDebug() << "load sucess";
     return true;
 }
 

@@ -18,6 +18,8 @@
 
 
 class GraphicsScoreItem;
+namespace smf { class MidiEventList; }
+namespace smf { class MidiEvent; }
 
 class GraphicsTrackItem : public QGraphicsItem {
     //
@@ -48,6 +50,44 @@ private:
 
     // QVector<GraphicsScoreNoteItem *> m_note_items;
     // QVector<other event items>
+};
+
+
+
+///
+/// Meta Items
+///
+class GraphicsTrackMetaEventItem : public QGraphicsItem {
+    //
+public:
+    GraphicsTrackMetaEventItem(smf::MidiEvent *event, GraphicsTrackItem *parent_track);
+
+    QRectF boundingRect() const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+
+private:
+    //
+    GraphicsTrackItem *m_parent_track = nullptr;
+    smf::MidiEvent *m_event = nullptr;
+};
+
+
+
+///
+/// GraphicsTrackRollManager manages all meta events in a track
+///
+class GraphicsTrackRollManager : public QGraphicsItem {
+    //
+public:
+    GraphicsTrackRollManager(smf::MidiEventList *event_list, GraphicsTrackItem *parent_track);
+
+    QRectF boundingRect() const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+
+private:
+    //
+    GraphicsTrackItem *m_parent_track = nullptr;
+    smf::MidiEventList *m_event_list = nullptr;
 };
 
 #endif // GRAPHICSTRACKITEM_H

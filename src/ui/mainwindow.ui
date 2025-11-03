@@ -405,9 +405,6 @@
             <property name="focusPolicy">
              <enum>Qt::TabFocus</enum>
             </property>
-            <property name="maximum">
-             <number>2147483647</number>
-            </property>
            </widget>
           </item>
           <item row="6" column="1">
@@ -468,18 +465,12 @@
             <property name="focusPolicy">
              <enum>Qt::TabFocus</enum>
             </property>
-            <property name="maximum">
-             <number>2147483647</number>
-            </property>
            </widget>
           </item>
           <item row="2" column="1">
            <widget class="QSpinBox" name="spinBox_NoteOnTick">
             <property name="focusPolicy">
              <enum>Qt::TabFocus</enum>
-            </property>
-            <property name="maximum">
-             <number>2147483647</number>
             </property>
            </widget>
           </item>
@@ -488,9 +479,6 @@
             <property name="focusPolicy">
              <enum>Qt::TabFocus</enum>
             </property>
-            <property name="maximum">
-             <number>2147483647</number>
-            </property>
            </widget>
           </item>
           <item row="4" column="1">
@@ -498,18 +486,12 @@
             <property name="focusPolicy">
              <enum>Qt::TabFocus</enum>
             </property>
-            <property name="maximum">
-             <number>2147483647</number>
-            </property>
            </widget>
           </item>
           <item row="5" column="1">
            <widget class="QSpinBox" name="spinBox_NoteOffVelocity">
             <property name="focusPolicy">
              <enum>Qt::TabFocus</enum>
-            </property>
-            <property name="maximum">
-             <number>2147483647</number>
             </property>
            </widget>
           </item>
@@ -539,7 +521,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>569</width>
+          <width>599</width>
           <height>275</height>
          </rect>
         </property>
@@ -560,7 +542,7 @@
           <number>0</number>
          </property>
          <item row="1" column="2">
-          <widget class="QScrollBar" name="verticalScrollBar">
+          <widget class="QScrollBar" name="vscroll_trackRoll">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
            </property>
@@ -616,7 +598,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>569</width>
+          <width>599</width>
           <height>293</height>
          </rect>
         </property>
@@ -770,7 +752,7 @@
   <customwidget>
    <class>MidiKeySpinBox</class>
    <extends>QSpinBox</extends>
-   <header>midikeyspinbox.h</header>
+   <header>midispinboxes.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

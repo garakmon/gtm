@@ -23,6 +23,8 @@ void MeasureRoll::drawMeasures() {
 
     int final_tick = this->m_active_song->durationInTicks();
 
+    int tpqn = this->m_active_song->getTicksPerQuarterNote();
+
     // TODO: bounds checking
     // for (auto event : this->m_active_song->tracks().front()) {
     //     // TODO m_tracks

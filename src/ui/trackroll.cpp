@@ -19,11 +19,14 @@ TrackRoll::TrackRoll(QObject *parent) : QObject(parent) {
 void TrackRoll::drawTracks() {
     // 
     this->m_scene_track_list.clear();
+    this->m_scene_roll.clear();
 
     int track_num = 0;
     for (auto track : this->m_active_song->tracks()) {
         // TODO m_tracks
-        this->m_scene_track_list.addItem(new GraphicsTrackItem(track_num));
+        GraphicsTrackItem *track_item = new GraphicsTrackItem(track_num);
+        this->m_scene_track_list.addItem(track_item);
+        this->m_scene_roll.addItem(new GraphicsTrackRollManager(track, track_item));
         track_num++;
     }
 

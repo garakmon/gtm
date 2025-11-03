@@ -1,6 +1,9 @@
 #include "song.h"
 
 
+#include <QDebug>
+
+
 
 Song::Song() {
     //
@@ -16,8 +19,72 @@ Song::~Song() {
     //
 }
 
+// TIME SIGNATURE CODE
+/*
+    // load meta events from the first track
+    for (int i = 0; i < midifile[0].size(); i++) {
+        if (midifile[0][i].isTimeSignature()) {
+            TimeSigChange change;
+            change.tick = midifile[0][i].tick;
+            change.num = midifile[0][i].getP1();
+            change.den = std::pow(2, midifile[0][i].getP2());
+            timeSigMap.push_back(change);
+        }
+    }
+*/
+
 bool Song::load() {
-    //
+    this->linkNotePairs();
+
+    double duration;
+    int track_num = 0;
+    for (auto track : this->tracks()) {
+        qDebug() << "\n*** TRACK" << track_num << "***\n";
+        bool meta_track = true;
+        // handle the meta track uniquely
+        if (track_num == 0) {
+            for (int i = 0; i < track->size(); i++) {
+                smf::MidiEvent *midi_event = &(*track)[i];
+                if (midi_event->isTimeSignature()) {
+                    this->m_time_signatures[midi_event->tick] = midi_event;
+                }
+            }
+        }
+        else
+        for (int i = 0; i < track->size(); i++) {
+            smf::MidiEvent *midi_event = &(*track)[i];
+            if (midi_event->isNote()) {
+                //if (midi_event->isNoteOn()) this->m_piano_roll->addNote(track_num, midi_event);
+                if (midi_event->isNoteOn()) this->m_notes.append({track_num, midi_event});
+                meta_track = false;
+                continue;
+            }
+            else if (midi_event->isMetaMessage()) {
+                qDebug() << "MetaMessage: type" << midi_event->getMetaType();
+            }
+            else if (midi_event->isController()) {
+                meta_track = false;
+                qDebug() << "Controller:" << midi_event->getControllerNumber() << midi_event->getControllerValue();
+            }
+            else if (midi_event->isPatchChange()) {
+                meta_track = false;
+                qDebug() << "Patch Change:" << midi_event->getChannel() << midi_event->getP1();
+            }
+            else if (midi_event->isPressure()) {
+                meta_track = false;
+                qDebug() << "Pressure:" << midi_event->getP1();
+            }
+            else if (midi_event->isPitchbend()) {
+                meta_track = false;
+                qDebug() << "Pitch Bend:" << midi_event->getP1() << midi_event->getP2();
+            }
+            else {
+                qDebug() << "unknown midi message type";
+            }
+        }
+        track_num++;
+    }
+    qDebug() << "load sucess";
 }
 
 double Song::durationInSeconds() {

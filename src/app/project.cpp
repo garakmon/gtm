@@ -57,5 +57,8 @@ void Project::load() {
         qDebug() << "track size" << t->getSize();
     }
 
+    qDebug() << "OUTPUT FILE:\n==============================";
+    std::cout << midifile;
+
     this->m_active_song = this->m_song_table.values().first();
 }

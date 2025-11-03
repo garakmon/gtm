@@ -27,8 +27,7 @@ QRectF GraphicsScoreNoteItem::boundingRect() const {
 
 void GraphicsScoreNoteItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
     if (option->state & QStyle::State_Selected) {
-        static QPen highlighter(Qt::yellow, 3, Qt::SolidLine);
-        highlighter.setColor(this->color().lighter(200));
+        static QPen highlighter(Qt::white, 3, Qt::SolidLine);
         painter->setPen(highlighter);
     }
     painter->setBrush(this->color());
@@ -46,7 +45,7 @@ QSize GraphicsScoreNoteItem::dimensions() const {
 QPoint GraphicsScoreNoteItem::updatePosition() {
     int note = this->m_event->getKeyNumber();
     int x = this->m_event->tick * ui_tick_x_scale;
-    int y = scoreNotePosition(note).y + 2; // TODO: why +2 necessary?
+    int y = scoreNotePosition(note).y + 2; //! INVESTIGATE: why is +2 necessary?
 
     QPoint pos(x, y);
     this->setPos(pos);

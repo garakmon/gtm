@@ -3,6 +3,7 @@
 #define SONG_H
 
 #include <QList>
+#include <QMap>
 #include <memory>
 
 #include "MidiFile.h"
@@ -24,6 +25,9 @@ public:
     double durationInSeconds();
     int durationInTicks();
 
+    // reference so no copy wasting time
+    QList<QPair<int, smf::MidiEvent *>> &getNotes() { return this->m_notes; }
+
     std::vector<smf::MidiEventList *> tracks() { return this->m_events; }
     // std::vector<smf::MidiEvent *> events() {
     //     std::vector<smf::MidiEvent *> events;
@@ -36,12 +40,14 @@ public:
     // trackList
     // notes()
 
-    // Iterator for tracks in the song, basically wrapping std::vector iterator
+    // Iterator for tracks in the song, basically wrapping std::vector iterator ?
 
 
 private:
     // int m_track_count = 0;
     // smf::MidiFile m_midi_file;
+    QMap<int, smf::MidiEvent *> m_time_signatures;
+    QList<QPair<int, smf::MidiEvent *>> m_notes;
 };
 
 #endif // SONG_H
