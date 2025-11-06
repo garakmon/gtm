@@ -4,6 +4,8 @@
 
 #include <QObject>
 #include <QPointer>
+#include <QTimer>
+#include <QElapsedTimer>
 
 
 
@@ -28,7 +30,12 @@ public:
     bool loadSong(std::shared_ptr<Song> song); // TODO: should project::loadSong return shared_ptr<Song>?
     void display(); // put onto views
 
+    void syncRolls();
+
     void readTracks();
+
+    void play();
+    void stop();
 
 private slots:
     void displayEvent(smf::MidiEvent *event);
@@ -40,6 +47,10 @@ private:
     QPointer<PianoRoll> m_piano_roll;
     QPointer<TrackRoll> m_track_roll;
     QPointer<MeasureRoll> m_measure_roll;
+
+    // playback stuff
+    QTimer m_player_timer;
+    QElapsedTimer m_player_elapsed;
 };
 
 #endif // CONTROLLER_H

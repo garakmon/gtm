@@ -43,6 +43,8 @@ public:
 
     // Iterator for tracks in the song, basically wrapping std::vector iterator ?
 
+    int getTickFromTime(double seconds);
+
 
 private:
     // int m_track_count = 0;

@@ -102,3 +102,42 @@ int Song::durationInTicks() {
     this->splitTracks();
     return end_tick;
 }
+
+int Song::getTickFromTime(double seconds) {
+    if (seconds <= 0.0) return 0;
+
+    smf::MidiEventList &event_list = (*this)[0];
+    int n_events = event_list.size();
+
+    if (n_events == 0) return 0;
+
+    // binary search to find the event closest to our target time
+    int left = 0;
+    int right = n_events - 1;
+    int mid;
+
+    while (left <= right) {
+        mid = left + (right - left) / 2;
+        if (event_list[mid].seconds < seconds) {
+            left = mid + 1;
+        } else if (event_list[mid].seconds > seconds) {
+            right = mid - 1;
+        } else {
+            return event_list[mid].tick;
+        }
+    }
+
+    // with no exact match, right is the index of the event immediately before the target time.
+    if (right < 0) return 0;
+
+    smf::MidiEvent &prev_event = event_list[right];
+
+    // calculate the 'leftover' ticks between the last event and the target time based on the tempo
+    double time_diff = seconds - prev_event.seconds;
+
+    double spt = this->getFileDurationInSeconds() / this->getFileDurationInTicks();
+
+    int extra_ticks = static_cast<int>(time_diff / spt);
+
+    return prev_event.tick + extra_ticks;
+}

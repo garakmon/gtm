@@ -2,6 +2,8 @@
 
 #include <QPainterPath>
 #include <QGraphicsSimpleTextItem>
+#include <QGraphicsLineItem>
+#include <QGraphicsPolygonItem>
 
 #include "colors.h"
 #include "song.h"
@@ -10,6 +12,7 @@
 
 MeasureRoll::MeasureRoll(QObject *parent) : QObject(parent) {
     //
+    createPlaybackGuide();
 }
 
 bool MeasureRoll::advance() {
@@ -140,4 +143,32 @@ void MeasureRoll::drawMeasures() {
 
     this->m_scene_measures.setBackgroundBrush(ui_color_piano_roll_bg);
     this->m_scene_measures.setSceneRect(QRect(0, 0, final_tick * ui_tick_x_scale, ui_measure_roll_height));
+
+    this->createPlaybackGuide();
+}
+
+void MeasureRoll::createPlaybackGuide() {
+    QPolygonF triangle;
+    triangle << QPointF(-5, -5) << QPointF(5, -5) << QPointF(0, 0);
+
+    this->m_playhead_arrow = new QGraphicsPolygonItem(triangle);
+
+    this->m_playhead_arrow->setBrush(QBrush(ui_color_measure_guide));
+    this->m_playhead_arrow->setPen(Qt::NoPen);
+
+    this->m_playhead_arrow->setZValue(100);
+
+    this->m_scene_measures.addItem(this->m_playhead_arrow);
+
+    this->m_playhead_arrow->setPos(0, 30);
+}
+
+void MeasureRoll::updatePlaybackGuide(int tick) {
+    // Calculate X based on your 2px per tick scale
+    int x_pos = tick * ui_tick_x_scale;
+
+    // Move the visuals
+    if (this->m_playhead_arrow) {
+        this->m_playhead_arrow->setPos(x_pos, 30);
+    }
 }

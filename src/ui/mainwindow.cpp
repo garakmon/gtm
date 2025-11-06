@@ -116,4 +116,12 @@ void MainWindow::on_action_PreviewSound_triggered() {
     }
 }
 
+void MainWindow::on_Button_Play_clicked() {
+    this->m_controller->play();
+}
+
+void MainWindow::on_Button_Stop_clicked() {
+    this->m_controller->stop();
+}
+
 

@@ -52,6 +52,8 @@ private:
 private slots:
     // void on_action_open_triggered();
     void on_action_PreviewSound_triggered();
+    void on_Button_Play_clicked();
+    void on_Button_Stop_clicked();
 };
 
 #endif // MAINWINDOW_H

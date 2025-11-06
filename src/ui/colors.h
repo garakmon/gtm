@@ -24,5 +24,6 @@ extern QColor ui_color_piano_roll_tick_mark;
 
 // Measure Roll
 extern QColor ui_color_measure_timestamps;
+extern QColor ui_color_measure_guide;
 
 #endif // COLORS_H

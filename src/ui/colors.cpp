@@ -35,3 +35,4 @@ QColor ui_color_piano_roll_tick_mark = QColor(0x828e8f);
 
 // Measure Roll
 QColor ui_color_measure_timestamps = QColor(0xb4ffd2);
+QColor ui_color_measure_guide = QColor(0xe63946);
