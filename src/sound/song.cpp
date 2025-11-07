@@ -60,7 +60,8 @@ bool Song::load() {
                 meta_track = false;
                 continue;
             }
-            else if (midi_event->isMetaMessage()) {
+            continue;
+            if (midi_event->isMetaMessage()) {
                 qDebug() << "MetaMessage: type" << midi_event->getMetaType();
             }
             else if (midi_event->isController()) {

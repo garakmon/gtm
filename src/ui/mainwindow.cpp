@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     // TEMP: silence bug in my qt version re: mac trackpads [fix: update Qt version]
     QLoggingCategory::setFilterRules(QStringLiteral("qt.pointer.dispatch=false"));
 
-    this->m_project = std::make_unique<Project>();
+    //this->m_project = std::make_unique<Project>();
 
     loadProject();
     loadSong();
@@ -69,18 +69,24 @@ void MainWindow::setupUi() {
 }
 
 void MainWindow::loadProject() {
-    m_project->load();
+    //m_project->load();
+    this->m_controller->loadProject("../../testing/pokeemerald");
 
     //this->ui->listView_songTable->addItems()
 }
 
 void MainWindow::loadSong() {
     // load song from song list 
-    if (this->m_controller->loadSong(this->m_project->activeSong())) {
-        this->m_controller->display();
-    }
-    else {
-        // Failed to load a song for whatever reason
+    // if (this->m_controller->loadSong(this->m_project->activeSong())) {
+    //     this->m_controller->display();
+    // }
+    // else {
+    //     // Failed to load a song for whatever reason
+    // }
+    if (this->m_controller) {
+        if (this->m_controller->loadSong()) {
+            this->m_controller->display();
+        }
     }
 }
 

@@ -7,6 +7,9 @@
 #include <QTimer>
 #include <QElapsedTimer>
 
+#include "project.h"
+#include "projectinterface.h"
+
 
 
 namespace Ui { class MainWindow; }
@@ -27,6 +30,8 @@ public:
     //
     Controller(MainWindow *window = nullptr);
 
+    bool loadProject(const QString &root);
+    bool loadSong();
     bool loadSong(std::shared_ptr<Song> song); // TODO: should project::loadSong return shared_ptr<Song>?
     void display(); // put onto views
 
@@ -41,6 +46,9 @@ private slots:
     void displayEvent(smf::MidiEvent *event);
 
 private:
+    std::unique_ptr<Project> m_project;
+    std::unique_ptr<ProjectInterface> m_interface;
+
     // m_song, items lists?, send item edits to midifile edits
     Ui::MainWindow *m_window = nullptr;
     std::shared_ptr<Song> m_song;

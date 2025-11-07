@@ -32,7 +32,6 @@ private:
 
     QPointer<PreviewSoundWindow> m_preview_sound_window;
 
-    std::unique_ptr<Project> m_project;
     std::unique_ptr<Controller> m_controller;
 
     // PianoRoll *m_piano_roll = nullptr; // TODO: unique_ptr? maybe break with ownership of qobjects

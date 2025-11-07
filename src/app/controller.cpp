@@ -12,6 +12,8 @@
 #include "colors.h"
 #include "song.h"
 #include "MidiEvent.h"
+#include "project.h"
+#include "projectinterface.h"
 
 
 /// controller loads the song, creates the track items, etc.
@@ -119,6 +121,19 @@ void Controller::syncRolls() {
     if (current_tick >= this->m_song->durationInTicks()) {
         this->stop();
     }
+}
+
+bool Controller::loadProject(const QString &root) {
+    if (!this->m_project) {
+        //
+        this->m_project = std::make_unique<Project>();
+        this->m_interface = std::make_unique<ProjectInterface>(this->m_project.get());
+    }
+    this->m_interface->loadProject(root);
+}
+
+bool Controller::loadSong() {
+    return this->loadSong(this->m_project->activeSong());
 }
 
 bool Controller::loadSong(std::shared_ptr<Song> song) {

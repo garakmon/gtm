@@ -1,6 +1,7 @@
 qt_add_library(gtm-app STATIC
     project.cpp
     controller.cpp
+    projectinterface.cpp
 )
 
 target_link_libraries(gtm-app PRIVATE
