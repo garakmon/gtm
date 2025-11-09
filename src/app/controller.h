@@ -18,6 +18,7 @@ class PianoRoll;
 class TrackRoll;
 class MeasureRoll;
 class Song;
+class SongListModel;
 namespace smf { class MidiEvent; }
 
 /*
@@ -33,9 +34,11 @@ public:
     bool loadProject(const QString &root);
     bool loadSong();
     bool loadSong(std::shared_ptr<Song> song); // TODO: should project::loadSong return shared_ptr<Song>?
-    void display(); // put onto views
+    void displayRolls(); // put onto views
+    void displayProject();
 
     void syncRolls();
+    void connectSignals();
 
     void readTracks();
 
@@ -44,6 +47,7 @@ public:
 
 private slots:
     void displayEvent(smf::MidiEvent *event);
+    void songListSongRequested(const QModelIndex &index);
 
 private:
     std::unique_ptr<Project> m_project;
@@ -55,6 +59,7 @@ private:
     QPointer<PianoRoll> m_piano_roll;
     QPointer<TrackRoll> m_track_roll;
     QPointer<MeasureRoll> m_measure_roll;
+    QPointer<SongListModel> m_song_list_model;
 
     // playback stuff
     QTimer m_player_timer;

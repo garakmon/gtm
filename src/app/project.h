@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "song.h"
+#include "soundtypes.h"
 
 
 
@@ -23,13 +24,26 @@ public:
     // direct_sound_data.inc mappings
     void addSampleMapping(const QString &label, const QString &path);
     QString getSamplePath(const QString &label) const;
+    void addInstrumentToGroup(const QString &group, const Instrument &inst);
+    void addTable(const QString &label, const KeysplitTable &table);
+    void addSongEntry(const SongEntry &song);
+    void updateSongData(const QString &title, const QString &voicegroup, int volume, int priority, int reverb);
+
+public:
+    int getNumSongsInTable() { return this->m_song_table_order.size(); }
+    QString getSongTitleAt(int i) { return this->m_song_table_order.at(i); } // !TODO: bounds checking
+    SongEntry &getSongEntryByTitle(const QString &title) { return this->m_song_entries[title]; }
 
 private:
     std::shared_ptr<Song> m_active_song;
 
     // containers populated during load
-    QMap<QString, std::shared_ptr<Song>> m_song_table;
     QMap<QString, QString> m_sample_map;
+    QMap<QString, QVector<Instrument>> m_voicegroups;
+    QMap<QString, KeysplitTable> m_keysplit_tables;
+    QMap<QString, SongEntry> m_song_entries; // song titles and filenames
+    QStringList m_song_table_order; // just titles in order read !TODO: rename? (m_song_titles?)
+    QMap<QString, std::shared_ptr<Song>> m_song_table; // loaded songs
 
     friend class ProjectInterface;
 };

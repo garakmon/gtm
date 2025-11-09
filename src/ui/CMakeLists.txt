@@ -10,8 +10,8 @@ qt_add_library(gtm-ui STATIC
     colors.cpp
     previewsoundwindow.ui
     previewsoundwindow.cpp
-    midispinboxes.h
     midispinboxes.cpp
+    songlistmodel.cpp
 )
 
 target_link_libraries(gtm-ui PRIVATE

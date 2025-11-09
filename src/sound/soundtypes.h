@@ -20,8 +20,8 @@ enum class GbaVoiceType {
 
 struct KeysplitTable {
     QString label;
-    int base_offset = 0;
-    // MIDI note: instrument
+    int offset = 0;
+    // MIDI note: instrument map
     QMap<int, int> note_map;
 };
 
@@ -32,15 +32,33 @@ struct Instrument {
     int type_id = 0;
     int base_key = g_midi_middle_c;
     int pan = 0;
-    QString sample_label; // for instruments with samples in the map
+    QString sample_label; // for instruments with samples in the map,
+                          // or keysplit instrument names
     
     int attack = 0;
     int decay = 0;
-    int sustain = 0;
+    int sustain = 0x0f;
     int release = 0;
 
     int sweep = 0; // square 1 only
     int duty_cycle = 0; // square 1 & 2
+};
+
+
+
+// Limited version of the Song class, used to get basic info on songs
+// without needing to fully load the midi file into memory
+struct SongEntry {
+    QString title;
+    QString voicegroup;
+    QString player;
+    int type = 0x00;
+
+    int volume = 0x7F;
+    int priority = 0x00;
+    int reverb = 0x00;
+
+    QString midifile; // idk if necessary, should always be <title>.mid
 };
 
 #endif // SOUNDTYPES_H

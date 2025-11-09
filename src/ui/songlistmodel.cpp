@@ -1,0 +1,38 @@
+#include "songlistmodel.h"
+
+#include <QColor>
+
+#include "../app/project.h"
+
+
+
+int SongListModel::rowCount(const QModelIndex &parent) const {
+    return this->m_project->getNumSongsInTable();
+}
+
+QVariant SongListModel::data(const QModelIndex &index, int role) const {
+    if (!index.isValid() || index.row() >= this->m_project->getNumSongsInTable()) {
+        return QVariant();
+    }
+
+    const QString &title = this->m_project->getSongTitleAt(index.row());
+    const SongEntry &entry = m_project->getSongEntryByTitle(title);
+
+    if (role == Qt::DisplayRole) {
+        return title;
+    }
+
+    if (role == Qt::UserRole) {
+        return QVariant();
+    }
+
+    if (role == Qt::ForegroundRole) {
+        // files without a rule in midi.cfg cannot be played (at least for now)
+        if (entry.midifile.isEmpty()) {
+            return QColor(0x808080);
+        }
+        return QColor(0xffffff);
+    }
+
+    return QVariant();
+}

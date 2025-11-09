@@ -49,3 +49,33 @@ void Project::addSampleMapping(const QString &label, const QString &path) {
 QString Project::getSamplePath(const QString &label) const {
     return this->m_sample_map.value(label, "");
 }
+
+void Project::addInstrumentToGroup(const QString &group, const Instrument &inst) {
+    this->m_voicegroups[group].append(inst);
+}
+
+void Project::addTable(const QString &label, const KeysplitTable &table) {
+    this->m_keysplit_tables[label] = table;
+}
+
+void Project::addSongEntry(const SongEntry &song) {
+    qDebug() << "add song:" << song.title;
+    this->m_song_table_order.append(song.title);
+    this->m_song_entries[song.title] = song;
+}
+
+// since the song table and make rules are in different places, update sont entries with new data from make rules
+// !TODO: unify into json? obviously that would be ideal unless there is resitance
+void Project::updateSongData(const QString &title, const QString &voicegroup, int volume, int priority, int reverb) {
+    if (this->m_song_entries.contains(title)) {
+        // don't need to worry about extranneous rules, or anything that is not in the song table (right?)
+        SongEntry &song = this->m_song_entries[title];
+
+        song.voicegroup = voicegroup;
+        song.volume = volume;
+        song.priority = priority;
+        song.reverb = reverb;
+
+        song.midifile = title + ".mid";
+    }
+}

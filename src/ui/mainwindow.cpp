@@ -85,7 +85,8 @@ void MainWindow::loadSong() {
     // }
     if (this->m_controller) {
         if (this->m_controller->loadSong()) {
-            this->m_controller->display();
+            // TODO: change this?
+            this->m_controller->displayRolls();
         }
     }
 }

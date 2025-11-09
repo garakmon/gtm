@@ -2,7 +2,6 @@
 
 
 
-
 #include "../ui/ui_mainwindow.h"
 #include "mainwindow.h"
 #include "pianoroll.h"
@@ -14,6 +13,7 @@
 #include "MidiEvent.h"
 #include "project.h"
 #include "projectinterface.h"
+#include "songlistmodel.h"
 
 
 /// controller loads the song, creates the track items, etc.
@@ -27,7 +27,7 @@ Controller::Controller(MainWindow *window) : QObject(window) {
     connect(&this->m_player_timer, &QTimer::timeout, this, &Controller::syncRolls);
 }
 
-void Controller::display() {
+void Controller::displayRolls() {
     this->m_piano_roll->display();
     //
     m_window->view_piano->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -96,6 +96,30 @@ void Controller::display() {
     this->m_window->LCD_Timer->setDigitCount(9);
 }
 
+void Controller::displayProject() {
+    // display the song table list
+    this->m_song_list_model = new SongListModel(this->m_project.get(), this);
+    this->m_window->listView_songTable->setModel(this->m_song_list_model);
+
+    this->connectSignals();
+}
+
+void Controller::connectSignals() {
+    connect(this->m_window->listView_songTable, &QListView::doubleClicked, this, &Controller::songListSongRequested, Qt::UniqueConnection);
+}
+
+void Controller::songListSongRequested(const QModelIndex &index) {
+    QString title = index.data(Qt::DisplayRole).toString();
+
+    SongEntry entry = this->m_project->getSongEntryByTitle(title);
+
+    // std::shared_ptr<Song> song = this->m_project->getSong(title);
+    // !TODO: load unloaded songs here (well, in the project function)
+
+    qDebug() << "Clicked" << title;
+    qDebug() << "voicegroup:" << entry.voicegroup << "player:" << entry.player << "file:" << entry.midifile;
+}
+
 void Controller::syncRolls() {
     if (!this->m_song) {
         qDebug() << "NOO";
@@ -125,11 +149,14 @@ void Controller::syncRolls() {
 
 bool Controller::loadProject(const QString &root) {
     if (!this->m_project) {
-        //
         this->m_project = std::make_unique<Project>();
         this->m_interface = std::make_unique<ProjectInterface>(this->m_project.get());
     }
-    this->m_interface->loadProject(root);
+
+    if (this->m_interface->loadProject(root)) {
+        // display the project values in the ui
+        this->displayProject();
+    }
 }
 
 bool Controller::loadSong() {

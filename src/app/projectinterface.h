@@ -12,7 +12,7 @@ class ProjectInterface {
 public:
     ProjectInterface(Project *project);
 
-    void setRoot(QString root) { this->m_root = root; }
+    void setRoot(const QString &root) { this->m_root = root; }
     QString concatPaths(QString p1, QString p2);
 
     QString readTextFile(const QString &path, QString *error = nullptr);
@@ -22,9 +22,12 @@ public:
     bool loadDirectSoundData();
     bool loadVoiceGroups();
     bool parseVoiceGroup(const QString &path);
-    bool loadKeysplits();
+    bool loadKeysplitTables();
+    bool loadSongs();
 
     void processInstrumentEntry(const QString &group_label, const QString &type, const QStringList &args);
+    void parseKeysplitInstrument(const QString &name);
+    void parseMidiConfig();
 
     // bool saveProject();
     // bool saveVoicegroup(int group_id);
