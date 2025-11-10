@@ -6,6 +6,8 @@
 #include <QDir>
 #include <memory>
 
+#include "MidiFile.h"
+
 class Project;
 
 class ProjectInterface {
@@ -28,6 +30,8 @@ public:
     void processInstrumentEntry(const QString &group_label, const QString &type, const QStringList &args);
     void parseKeysplitInstrument(const QString &name);
     void parseMidiConfig();
+
+    smf::MidiFile loadMidi(const QString &title);
 
     // bool saveProject();
     // bool saveVoicegroup(int group_id);

@@ -410,4 +410,24 @@ void ProjectInterface::parseMidiConfig() {
     }
 }
 
+smf::MidiFile ProjectInterface::loadMidi(const QString &title) {
+    smf::MidiFile midifile;
 
+    QString path = this->concatPaths(this->m_root, "sound/songs/midi/" + title + ".mid");
+
+    QFile f(path);
+    f.open(QIODevice::ReadOnly);
+    std::istringstream is(f.readAll().toStdString());
+
+    midifile.read(is);
+
+    return midifile;
+
+    // add song to song table
+    //m_song_table.insert("mus_title", std::make_shared<Song>(midifile));
+
+    // qDebug() << "OUTPUT FILE:\n==============================";
+    // std::cout << midifile;
+
+    //this->m_active_song = this->m_song_table.values().first();
+}

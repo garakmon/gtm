@@ -19,6 +19,7 @@ public:
     QGraphicsScene *sceneMeasures() { return &this->m_scene_measures; };
 
     void setSong(std::shared_ptr<Song> song) {
+        this->m_scene_measures.clear();
         this->m_active_song = song;
         drawMeasures();
     }

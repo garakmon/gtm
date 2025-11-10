@@ -21,6 +21,9 @@ public:
     QGraphicsScene *sceneTracks() { return &this->m_scene_track_list; }
 
     void setSong(std::shared_ptr<Song> song) {
+        this->m_scene_roll.clear();
+        this->m_scene_track_list.clear();
+
         this->m_active_song = song;
         this->drawTracks();
     }

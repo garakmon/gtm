@@ -23,6 +23,7 @@ bool MeasureRoll::advance() {
 }
 
 void MeasureRoll::drawMeasures() {
+    // !TODO: this crashes when there are no events in the midifile, so do some checking somewhere.
     this->m_scene_measures.clear();
 
     if (!this->m_active_song) {

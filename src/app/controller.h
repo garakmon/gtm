@@ -37,6 +37,8 @@ public:
     void displayRolls(); // put onto views
     void displayProject();
 
+    void setupRolls(); // one time actions
+
     void syncRolls();
     void connectSignals();
 

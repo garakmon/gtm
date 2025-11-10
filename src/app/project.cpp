@@ -19,27 +19,7 @@ Project::~Project() {
 }
 
 void Project::load() {
-    // TODO: temp reading resource file
-    smf::MidiFile midifile;
-
-    QFile f(":/media/mus_title.mid");
-    f.open(QIODevice::ReadOnly);
-    std::istringstream is(f.readAll().toStdString());
-    
-    midifile.read(is);
-
-    // add song to song table
-    m_song_table.insert("mus_title", std::make_shared<Song>(midifile));
-
-    for (auto t : m_song_table["mus_title"]->tracks()) {
-        //
-        qDebug() << "track size" << t->getSize();
-    }
-
-    // qDebug() << "OUTPUT FILE:\n==============================";
-    // std::cout << midifile;
-
-    this->m_active_song = this->m_song_table.values().first();
+    // TODO: what this do?
 }
 
 void Project::addSampleMapping(const QString &label, const QString &path) {
@@ -78,4 +58,25 @@ void Project::updateSongData(const QString &title, const QString &voicegroup, in
 
         song.midifile = title + ".mid";
     }
+}
+
+std::shared_ptr<Song> Project::addSong(const QString &title, smf::MidiFile &midi) {
+    // guaranteed this function is only called when the song is not already in the song_table
+
+    if (!this->m_song_entries.contains(title)) {
+        // dont know how to load this song
+        return nullptr;
+    }
+
+    SongEntry &entry = this->m_song_entries[title];
+
+    // Constructing the song (which inherits MidiFile)
+    //smf::MidiFile midi = this->m_i
+    //qDebug() << "Project::loadSong" << title << entry.midifile;
+    std::shared_ptr<Song> song = std::make_shared<Song>(midi);
+    song->setMetaInfo(entry);
+
+    this->m_song_table.insert(title, song);
+
+    return song;
 }

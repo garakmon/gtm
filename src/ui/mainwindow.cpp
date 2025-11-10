@@ -24,8 +24,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 
     //this->m_project = std::make_unique<Project>();
 
+    // TODO: temp
     loadProject();
-    loadSong();
+    //loadSong();
 }
 
 MainWindow::~MainWindow() {
@@ -70,7 +71,7 @@ void MainWindow::setupUi() {
 
 void MainWindow::loadProject() {
     //m_project->load();
-    this->m_controller->loadProject("../../testing/pokeemerald");
+    this->m_controller->loadProject(QDir::homePath() + "/Documents/projects/pkmn/testing/pokeemerald");
 
     //this->ui->listView_songTable->addItems()
 }
@@ -83,12 +84,12 @@ void MainWindow::loadSong() {
     // else {
     //     // Failed to load a song for whatever reason
     // }
-    if (this->m_controller) {
-        if (this->m_controller->loadSong()) {
-            // TODO: change this?
-            this->m_controller->displayRolls();
-        }
-    }
+    // if (this->m_controller) {
+    //     if (this->m_controller->loadSong()) {
+    //         // TODO: change this?
+    //         this->m_controller->displayRolls();
+    //     }
+    // }
 }
 
 void MainWindow::drawTrackList() {
@@ -99,17 +100,12 @@ void MainWindow::open(QString path) {
     qDebug() << "OPEN";
 }
 
-QString MainWindow::browse(QString filter, QFileDialog::FileMode mode) {
-    QFileDialog browser;
-    browser.setFileMode(mode);
-    QString filepath = browser.getOpenFileName(this, "Select a File", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation), filter);
-    return filepath;
+void MainWindow::on_action_Open_triggered() {
+    QString path = QFileDialog::getExistingDirectory(this, tr("Open Directory"), ".", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    if (!path.isEmpty()) {
+        this->m_controller->loadProject(path);
+    }
 }
-
-// void MainWindow::on_action_open_triggered() {
-//     QString path = browse("Midi Files (*.mid *.midi *.MID *.MIDI)", QFileDialog::ExistingFile);
-//     open(path);
-// }
 
 void MainWindow::on_action_PreviewSound_triggered() {
     //

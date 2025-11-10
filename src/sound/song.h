@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "MidiFile.h"
+#include "soundtypes.h"
 
 
 
@@ -21,6 +22,7 @@ public:
     ~Song();
 
     bool load();
+    void mergeEvents();
 
     double durationInSeconds();
     int durationInTicks();
@@ -28,29 +30,21 @@ public:
     // reference so no copy wasting time
     QList<QPair<int, smf::MidiEvent *>> &getNotes() { return this->m_notes; }
     QMap<int, smf::MidiEvent *> &getTimeSignatures() { return this->m_time_signatures; }
+    QVector<smf::MidiEvent *> &getMergedEvents() { return this->m_merged_events; }
 
     std::vector<smf::MidiEventList *> tracks() { return this->m_events; }
-    // std::vector<smf::MidiEvent *> events() {
-    //     std::vector<smf::MidiEvent *> events;
-    //     for (auto t : this->tracks()) {
-    //         events.append_range(t->data());
-    //     }
-    //     return events;
-    // }
 
-    // trackList
-    // notes()
-
-    // Iterator for tracks in the song, basically wrapping std::vector iterator ?
+    void setMetaInfo(const SongEntry &entry) { this->m_meta_info = entry; }
 
     int getTickFromTime(double seconds);
 
-
 private:
-    // int m_track_count = 0;
-    // smf::MidiFile m_midi_file;
     QMap<int, smf::MidiEvent *> m_time_signatures;
     QList<QPair<int, smf::MidiEvent *>> m_notes;
+
+    QList<smf::MidiEvent *> m_merged_events; // for playback
+
+    SongEntry m_meta_info; // 
 };
 
 #endif // SONG_H

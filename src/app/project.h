@@ -19,7 +19,11 @@ public:
     void load();
     void load(QString path);
 
+    std::shared_ptr<Song> addSong(const QString &title, smf::MidiFile &midi);
+    std::shared_ptr<Song> getSong(const QString &title) { return this->m_song_table.contains(title) ? this->m_song_table[title] : nullptr; }
+
     std::shared_ptr<Song> activeSong() { return this->m_active_song; }
+    void setActiveSong(const QString &title) { this->m_active_song = this->getSong(title); }
 
     // direct_sound_data.inc mappings
     void addSampleMapping(const QString &label, const QString &path);
@@ -33,6 +37,7 @@ public:
     int getNumSongsInTable() { return this->m_song_table_order.size(); }
     QString getSongTitleAt(int i) { return this->m_song_table_order.at(i); } // !TODO: bounds checking
     SongEntry &getSongEntryByTitle(const QString &title) { return this->m_song_entries[title]; }
+    bool songLoaded(const QString &title) { return this->m_song_table.contains(title); }
 
 private:
     std::shared_ptr<Song> m_active_song;

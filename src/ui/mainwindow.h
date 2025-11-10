@@ -45,11 +45,10 @@ private:
 
     void drawTrackList();
 
-    QString browse(QString filter, QFileDialog::FileMode mode);
     void open(QString path);
 
 private slots:
-    // void on_action_open_triggered();
+    void on_action_Open_triggered();
     void on_action_PreviewSound_triggered();
     void on_Button_Play_clicked();
     void on_Button_Stop_clicked();

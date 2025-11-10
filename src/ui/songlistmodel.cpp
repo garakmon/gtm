@@ -28,9 +28,14 @@ QVariant SongListModel::data(const QModelIndex &index, int role) const {
 
     if (role == Qt::ForegroundRole) {
         // files without a rule in midi.cfg cannot be played (at least for now)
+        // !TODO: how do I just fully disable an item?
         if (entry.midifile.isEmpty()) {
             return QColor(0x808080);
         }
+        // else if (this->m_project->getSong().isEmpty()) {
+        //     // empty midi file?
+        //     return QColor(0x009922);
+        // }
         return QColor(0xffffff);
     }
 

@@ -1,6 +1,7 @@
 #include "song.h"
 
 
+#include <algorithm>
 #include <QDebug>
 
 
@@ -86,7 +87,43 @@ bool Song::load() {
         }
         track_num++;
     }
+
+    this->mergeEvents();
     qDebug() << "load sucess";
+}
+
+void Song::mergeEvents() {
+    // !TODO: whenever I get to letting edits happen, this probably needs
+    // to be called whenever a Song is unclean/has been edited in order to play it back
+    this->m_merged_events.clear();
+
+    int track_count = this->getTrackCount();
+
+    int total_events = 0;
+    for (int t = 0; t < track_count; t++) {
+        total_events += this->getEventCount(t);
+    }
+
+    this->m_merged_events.reserve(total_events);
+
+    for (int track_index = 0; track_index < track_count; track_index++) {
+        smf::MidiEventList &event_list = *this->m_events[track_index];
+        int event_count = event_list.size();
+
+        for (int i = 0; i < event_count; ++i) {
+            this->m_merged_events.append(&event_list[i]);
+        }
+    }
+
+    // qsort is deprecated apparently
+    std::sort(this->m_merged_events.begin(), this->m_merged_events.end(),
+        [](smf::MidiEvent *a, smf::MidiEvent *b) {
+            if (a->tick == b->tick) {
+                return a->track < b->track;
+            }
+            return a->tick < b->tick;
+        }
+    );
 }
 
 double Song::durationInSeconds() {

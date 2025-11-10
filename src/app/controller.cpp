@@ -25,73 +25,86 @@ Controller::Controller(MainWindow *window) : QObject(window) {
     m_measure_roll = new MeasureRoll(this);
 
     connect(&this->m_player_timer, &QTimer::timeout, this, &Controller::syncRolls);
+
+    this->setupRolls();
+}
+
+void Controller::setupRolls() {
+    // // scrolling should be synced, and this is accomplished by sharing a scroll bar between views
+    m_window->view_piano->setVerticalScrollBar(m_window->vscroll_pianoRoll);
+    m_window->view_pianoRoll->setVerticalScrollBar(m_window->vscroll_pianoRoll);
+
+    m_window->view_trackList->setVerticalScrollBar(m_window->vscroll_trackRoll);
+    m_window->view_trackRoll->setVerticalScrollBar(m_window->vscroll_trackRoll);
+
+    // Sync horizontal scrolling
+    m_window->view_pianoRoll->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
+    m_window->view_measures->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
+    m_window->view_measures_tracks->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
+    m_window->view_trackRoll->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
+
+    // Configure policies (Only need to do this once)
+    m_window->view_piano->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_window->view_piano->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    m_window->view_pianoRoll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_window->view_pianoRoll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    m_window->view_trackList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_window->view_trackList->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    m_window->view_measures_tracks->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_window->view_measures_tracks->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    m_window->view_measures->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_window->view_measures->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 }
 
 void Controller::displayRolls() {
     this->m_piano_roll->display();
-    //
-    m_window->view_piano->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_window->view_piano->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    // 1. Piano View
     m_window->view_piano->setScene(m_piano_roll->scenePiano());
-    m_window->view_piano->setSceneRect(m_piano_roll->scenePiano()->itemsBoundingRect());
+    QRectF piano_bounds = m_piano_roll->scenePiano()->itemsBoundingRect();
+    m_window->view_piano->setSceneRect(0.0, 0.0, piano_bounds.width(), piano_bounds.height());
+    m_window->view_piano->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     m_window->view_piano->setRenderHint(QPainter::Antialiasing, false);
+    m_window->view_piano->setBackgroundBrush(QBrush(QColor(0x282828), Qt::SolidPattern));
 
-    m_window->view_pianoRoll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_window->view_pianoRoll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // 2. Piano Roll View (Notes) - Stickied to Top/Left
     m_window->view_pianoRoll->setScene(m_piano_roll->sceneRoll());
-    m_window->view_pianoRoll->setSceneRect(m_piano_roll->sceneRoll()->itemsBoundingRect());
+    QRectF roll_bounds = m_piano_roll->sceneRoll()->itemsBoundingRect();
+    m_window->view_pianoRoll->setSceneRect(0.0, 0.0, roll_bounds.width(), roll_bounds.height());
+    m_window->view_pianoRoll->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    m_window->view_pianoRoll->setBackgroundBrush(QBrush(QColor(0x282828), Qt::SolidPattern));
 
-    m_window->view_piano->setBackgroundBrush(QBrush(ui_color_piano_roll_bg, Qt::SolidPattern));
-    m_window->view_pianoRoll->setBackgroundBrush(QBrush(ui_color_piano_roll_bg, Qt::SolidPattern));
-
-    // connect vertical scrolling piano
-    m_window->view_piano->setVerticalScrollBar(m_window->vscroll_pianoRoll);
-    m_window->view_pianoRoll->setVerticalScrollBar(m_window->vscroll_pianoRoll);
-
-    // connect vertical scrolling tracks
-    m_window->view_trackList->setVerticalScrollBar(m_window->vscroll_trackRoll);
-    m_window->view_trackRoll->setVerticalScrollBar(m_window->vscroll_trackRoll);
-
-    // track scene
+    // 3. Track Roll (Sticky Top/Left)
     m_window->view_trackRoll->setScene(m_track_roll->sceneRoll());
-    m_window->view_trackRoll->setSceneRect(m_track_roll->sceneRoll()->itemsBoundingRect());
+    QRectF track_roll_bounds = m_track_roll->sceneRoll()->itemsBoundingRect();
+    m_window->view_trackRoll->setSceneRect(0.0, 0.0, track_roll_bounds.width(), track_roll_bounds.height());
     m_window->view_trackRoll->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 
-    m_window->view_trackList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_window->view_trackList->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // 4. Track List (Sticky Top/Left)
     m_window->view_trackList->setScene(m_track_roll->sceneTracks());
-    m_window->view_trackList->setSceneRect(m_track_roll->sceneTracks()->itemsBoundingRect());
+    QRectF track_list_bounds = m_track_roll->sceneTracks()->itemsBoundingRect();
+    m_window->view_trackList->setSceneRect(0.0, 0.0, track_list_bounds.width(), track_list_bounds.height());
+    m_window->view_trackList->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 
-    // measures
+    // 5. Measures (Sticky Top/Left)
+    QRectF measure_bounds = m_measure_roll->sceneMeasures()->itemsBoundingRect();
+
     m_window->view_measures_tracks->setScene(m_measure_roll->sceneMeasures());
-    //m_window->view_measures_tracks->setSceneRect(m_measure_roll->sceneMeasures()->itemsBoundingRect());
+    m_window->view_measures_tracks->setSceneRect(0.0, 0.0, measure_bounds.width(), measure_bounds.height());
     m_window->view_measures_tracks->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    m_window->view_measures_tracks->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_window->view_measures_tracks->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-    //m_window->view_measures->setFrameShape(QFrame::NoFrame);
-    // Ensure the view is tall enough to hold the 30px scene + zero margins
-    //m_window->view_measures->setFixedHeight(32);
-    //m_window->view_measures->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
     m_window->view_measures->setScene(m_measure_roll->sceneMeasures());
-    //m_window->view_measures->setSceneRect(m_measure_roll->sceneMeasures()->itemsBoundingRect());
+    m_window->view_measures->setSceneRect(0.0, 0.0, measure_bounds.width(), measure_bounds.height());
     m_window->view_measures->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    m_window->view_measures->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_window->view_measures->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    // connect horizontal scrolling
-    m_window->view_pianoRoll->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
-    m_window->view_measures->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
-    m_window->view_measures_tracks->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
-    
-    m_window->view_trackRoll->setHorizontalScrollBar(m_window->hscroll_pianoRoll);
-    //m_window->hscroll_pianoRoll->setValue(0);
-
-    //m_window->view_pianoRoll->centerOn();
-    m_window->view_piano->centerOn(m_piano_roll->keys()[g_midi_middle_c]);
-    //m_window->hscroll_pianoRoll->setValue(m_window->hscroll_pianoRoll->minimum());
-    //m_window->view_pianoRoll->centerOn(m_piano_roll->lines()[g_midi_middle_c]);
+    // Navigation
+    if (!m_piano_roll->keys().isEmpty()) {
+        m_window->view_piano->centerOn(m_piano_roll->keys()[g_midi_middle_c]);
+    }
 
     this->m_window->LCD_Timer->setDigitCount(9);
 }
@@ -118,6 +131,20 @@ void Controller::songListSongRequested(const QModelIndex &index) {
 
     qDebug() << "Clicked" << title;
     qDebug() << "voicegroup:" << entry.voicegroup << "player:" << entry.player << "file:" << entry.midifile;
+
+    //this->m_project->addSong(title);
+
+    if (!this->m_project->songLoaded(title)) {
+        smf::MidiFile midi = this->m_interface->loadMidi(title);
+        this->m_project->addSong(title, midi);
+    }
+
+    //std::shared_ptr<Song> song = this->m_project->getSong(title);
+    this->m_project->setActiveSong(title);
+
+    this->loadSong();
+
+    // steps: load song into project, set it active, call loadSong()
 }
 
 void Controller::syncRolls() {
@@ -173,6 +200,8 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
     this->m_track_roll->setSong(song);
     this->m_piano_roll->setSong(song);
     this->m_measure_roll->setSong(song);
+
+    this->displayRolls();
 
     return true;
 }
