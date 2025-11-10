@@ -4,9 +4,8 @@ qt_add_executable(gtm
 
 target_link_libraries(gtm PRIVATE
     gtm-ui
-    gtm-util
-    gtm-sound
     gtm-app
+    gtm-sound
     midifile
     Qt6::Widgets
     Qt6::Core

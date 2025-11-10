@@ -9,6 +9,7 @@
 
 #include "project.h"
 #include "projectinterface.h"
+#include "player.h"
 
 
 
@@ -66,6 +67,8 @@ private:
     // playback stuff
     QTimer m_player_timer;
     QElapsedTimer m_player_elapsed;
+
+    std::unique_ptr<Player> m_player;
 };
 
 #endif // CONTROLLER_H

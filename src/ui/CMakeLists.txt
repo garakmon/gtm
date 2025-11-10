@@ -14,9 +14,8 @@ qt_add_library(gtm-ui STATIC
     songlistmodel.cpp
 )
 
-target_link_libraries(gtm-ui PRIVATE
+target_link_libraries(gtm-ui PUBLIC
     gtm-util
-    gtm-sound
     gtm-app
     midifile
     Qt6::Core

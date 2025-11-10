@@ -52,13 +52,42 @@ struct SongEntry {
     QString title;
     QString voicegroup;
     QString player;
-    int type = 0x00;
+    int type = 0;
 
     int volume = 0x7F;
-    int priority = 0x00;
-    int reverb = 0x00;
+    int priority = 0;
+    int reverb = 0;
 
     QString midifile; // idk if necessary, should always be <title>.mid
+};
+
+
+
+struct ChannelContext {
+    uint8_t program_id = 0;
+    uint8_t volume = 100;
+    uint8_t expression = 0x7F;
+    uint8_t pan = 0x40;
+    int16_t pitch_bend = 0;
+    uint8_t priority = 0;
+};
+
+
+
+struct SoundChannel {
+    bool is_active = false;
+    uint8_t current_midi_key = 0;
+    ChannelContext *context = nullptr;
+
+    // Rendering State
+    const int16_t *sample_buffer = nullptr;
+    uint32_t sample_length = 0x00;
+    double current_cursor = 0.0;
+    double step_size = 0.0; // calculated frequency ratio
+
+    // ADSR State
+    uint8_t adsr_phase = 0;
+    float envelope_volume = 0.0f;
 };
 
 #endif // SOUNDTYPES_H

@@ -18,11 +18,16 @@
 
 /// controller loads the song, creates the track items, etc.
 Controller::Controller(MainWindow *window) : QObject(window) {
-    m_window = window->ui;
-    m_piano_roll = new PianoRoll(this);
-    connect(m_piano_roll, &PianoRoll::eventItemSelected, this, &Controller::displayEvent);
-    m_track_roll = new TrackRoll(this);
-    m_measure_roll = new MeasureRoll(this);
+    this->m_window = window->ui;
+    this->m_piano_roll = new PianoRoll(this);
+    connect(this->m_piano_roll, &PianoRoll::eventItemSelected, this, &Controller::displayEvent);
+    this->m_track_roll = new TrackRoll(this);
+    this->m_measure_roll = new MeasureRoll(this);
+
+    this->m_player = std::make_unique<Player>();
+    if (!this->m_player->initializeAudio()) {
+        qDebug() << "Failed to initialize audio.";
+    }
 
     connect(&this->m_player_timer, &QTimer::timeout, this, &Controller::syncRolls);
 
@@ -149,7 +154,6 @@ void Controller::songListSongRequested(const QModelIndex &index) {
 
 void Controller::syncRolls() {
     if (!this->m_song) {
-        qDebug() << "NOO";
         return;
     }
     double elapsed_seconds = this->m_player_elapsed.elapsed() / 1000.0;
@@ -227,6 +231,8 @@ void Controller::play() {
     // TODO: take tick as arg to play from specific place?
     this->m_player_elapsed.start();
     this->m_player_timer.start(16); // ~60fps is smooth enough scrolling
+
+    this->m_player->getMixer()->toggleDebugNote(true);
 }
 
 void Controller::stop() {

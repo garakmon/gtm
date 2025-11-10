@@ -11,4 +11,4 @@ release:
 
 debug:
 	qt-cmake -G Ninja -S . -B build_debug -DCMAKE_BUILD_TYPE=Debug
-	cmake --build build_debug
+	cmake --build build_debug --verbose
