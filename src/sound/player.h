@@ -7,8 +7,11 @@ extern "C" {
 }
 
 #include "mixer.h"
+#include "sequencer.h"
 
 
+
+class Song;
 
 class Player {
 public:
@@ -16,9 +19,15 @@ public:
 
     bool initializeAudio();
 
+    void loadSong(Song *song);
+    void play();
+    void stop();
+
     Mixer *getMixer() { return &m_mixer; }
+    Sequencer *getSequencer() { return &m_sequencer; }
 
 private:
+    void audioCallback(float *out_buffer, unsigned long frame_count);
     static int paStaticCallback(const void * input, void * output,
                                 unsigned long frame_count,
                                 const PaStreamCallbackTimeInfo * time_info,
@@ -27,6 +36,7 @@ private:
 
     PaStream *m_audio_stream;
     Mixer m_mixer;
+    Sequencer m_sequencer;
 };
 
 

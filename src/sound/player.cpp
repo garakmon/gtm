@@ -5,7 +5,6 @@
 bool Player::initializeAudio() {
     if (Pa_Initialize() != paNoError) return false;
 
-    // open a default stream to play a noise
     PaError err = Pa_OpenDefaultStream(
         &m_audio_stream,
         0,               // No input
@@ -14,7 +13,7 @@ bool Player::initializeAudio() {
         44100,           // Sample rate
         512,             // Buffer size
         &Player::paStaticCallback,
-        &m_mixer
+        this
     );
 
     if (err != paNoError) return false;
@@ -23,13 +22,36 @@ bool Player::initializeAudio() {
     return true;
 }
 
-int Player::paStaticCallback(const void * input, void * output,
+int Player::paStaticCallback(const void *input, void *output,
                              unsigned long frame_count,
-                             const PaStreamCallbackTimeInfo * time_info,
+                             const PaStreamCallbackTimeInfo *time_info,
                              PaStreamCallbackFlags status_flags,
-                             void * user_data) {
-    Mixer * mixer_ptr = static_cast<Mixer *>(user_data);
-    return mixer_ptr->audioCallback(output, static_cast<uint32_t>(frame_count));
+                             void *user_data) {
+    (void)input;
+    (void)time_info;
+    (void)status_flags;
+
+    Player *player = static_cast<Player *>(user_data);
+    player->audioCallback(static_cast<float *>(output), frame_count);
+    return paContinue;
 }
 
+void Player::audioCallback(float *out_buffer, unsigned long frame_count) {
+    m_sequencer.update(frame_count);
+    m_mixer.processAudio(out_buffer, frame_count);
+}
 
+void Player::loadSong(Song *song) {
+    m_sequencer.setSong(song);
+    m_sequencer.setMixer(&m_mixer);
+    m_sequencer.reset();
+}
+
+void Player::play() {
+    m_sequencer.play();
+}
+
+void Player::stop() {
+    m_sequencer.stop();
+    m_mixer.end();
+}

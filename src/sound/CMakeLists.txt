@@ -2,6 +2,7 @@ qt_add_library(gtm-sound STATIC
     song.cpp
     player.cpp
     mixer.cpp
+    sequencer.cpp
 )
 
 if(APPLE)

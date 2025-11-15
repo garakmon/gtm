@@ -2,27 +2,26 @@
 #ifndef MIXER_H
 #define MIXER_H
 
-
 extern "C" {
     #include "portaudio.h"
 }
 
-#include <algorithm>
+#include "soundtypes.h"
+#include "constants.h"
 
 class Mixer {
 public:
     Mixer() {}
 
-    int audioCallback(void * output_buffer, uint32_t frames_requested);
-
-    void toggleDebugNote(bool play) {
-        this->is_debug_playing = play;
-    }
+    void noteOn(uint8_t channel, uint8_t key, uint8_t velocity);
+    void noteOff(uint8_t channel, uint8_t key);
+    void processAudio(float *out_buffer, unsigned long frame_count);
+    void end();
 
 private:
-    bool m_is_debug_playing = false;
-    int m_phase_counter = 0;
-};
+    Voice m_voices[g_max_voices];
 
+    Voice *allocateVoice(uint8_t key);
+};
 
 #endif // MIXER_H

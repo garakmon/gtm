@@ -2,6 +2,10 @@
 #ifndef SOUNDTYPES_H
 #define SOUNDTYPES_H
 
+#include <cstdint>
+#include <QString>
+#include <QMap>
+
 #include "constants.h"
 
 
@@ -88,6 +92,24 @@ struct SoundChannel {
     // ADSR State
     uint8_t adsr_phase = 0;
     float envelope_volume = 0.0f;
+};
+
+
+
+struct Voice {
+    bool is_active = false;
+    uint8_t midi_key = 0;
+    uint8_t velocity = 0;
+
+    double phase = 0.0;
+    double phase_increment = 0.0;
+
+    float amplitude = 0.0f;
+    bool releasing = false;
+
+    float getNextSample();
+    void noteOn(uint8_t key, uint8_t vel);
+    void noteOff();
 };
 
 #endif // SOUNDTYPES_H

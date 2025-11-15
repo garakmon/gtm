@@ -229,14 +229,17 @@ void Controller::displayEvent(smf::MidiEvent *event) {
 
 void Controller::play() {
     // TODO: take tick as arg to play from specific place?
-    this->m_player_elapsed.start();
-    this->m_player_timer.start(16); // ~60fps is smooth enough scrolling
+    if (m_song) {
+        m_player->loadSong(m_song.get());
+    }
 
-    this->m_player->getMixer()->toggleDebugNote(true);
+    m_player->play();
+
+    m_player_elapsed.start();
+    m_player_timer.start(16); // ~60fps is smooth enough scrolling
 }
 
 void Controller::stop() {
-    //
-    this->m_player_timer.stop();
-    //this->m_player_elapsed.stop();
+    m_player->stop();
+    m_player_timer.stop();
 }

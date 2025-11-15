@@ -6,6 +6,8 @@
 
 // GBA hardware & mixer limits
 const int g_max_num_tracks = 16;
+const int g_max_voices = 16; // polypjony limit
+ const int g_sample_rate = 44100; // Hz
 
 
 
