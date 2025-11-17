@@ -30,8 +30,28 @@ QString Project::getSamplePath(const QString &label) const {
     return this->m_sample_map.value(label, "");
 }
 
+void Project::addSample(const QString &label, const Sample &sample) {
+    m_samples.insert(label, sample);
+}
+
+void Project::addPcmData(const QString &label, const QByteArray &data) {
+    m_pcm_data.insert(label, data);
+}
+
+Sample &Project::getSample(const QString &label) {
+    return m_samples[label];
+}
+
+bool Project::hasSample(const QString &label) const {
+    return m_samples.contains(label);
+}
+
 void Project::addInstrumentToGroup(const QString &group, const Instrument &inst) {
-    this->m_voicegroups[group].append(inst);
+    this->m_voicegroups[group].instruments.append(inst);
+}
+
+void Project::setVoiceGroupOffset(const QString &group, int offset) {
+    this->m_voicegroups[group].offset = offset;
 }
 
 void Project::addTable(const QString &label, const KeysplitTable &table) {

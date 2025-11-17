@@ -45,7 +45,7 @@ void Voice::noteOff() {
 
 Voice *Mixer::allocateVoice(uint8_t key) {
     // !TODO: improve this logic to be gba accurate
-    // should use priority (from SongEntry), then envelope (ASDR)
+    // --should use priority (from SongEntry), then envelope (ASDR)
     // look for an inactive voice
     for (int i = 0; i < g_max_voices; i++) {
         if (!m_voices[i].is_active) {

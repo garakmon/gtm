@@ -2,6 +2,7 @@
 
 #include <QFile>
 #include <QDir>
+#include <QDataStream>
 #include <QTextStream>
 #include <QRegularExpression>
 
@@ -11,6 +12,7 @@
 
 
 const QString ProjectInterface::ProjectPath::direct_sound_data = "sound/direct_sound_data.inc";
+const QString ProjectInterface::ProjectPath::programmable_wave_data = "sound/programmable_wave_data.inc";
 const QString ProjectInterface::ProjectPath::voice_group_index = "sound/voice_groups.inc";
 
 
@@ -30,6 +32,8 @@ bool ProjectInterface::loadProject(const QString &root) {
     this->setRoot(root);
 
     return this->loadDirectSoundData()
+        && this->loadProgrammableWaveData()
+        && this->loadSamples()
         && this->loadVoiceGroups()
         && this->loadKeysplitTables()
         && this->loadSongs();
@@ -74,6 +78,15 @@ QString ProjectInterface::readTextFile(const QString &path, QString *error) {
     return text;
 }
 
+QByteArray ProjectInterface::readBinaryFile(const QString &path, QString *error) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        if (error) *error = file.errorString();
+        return QByteArray();
+    }
+    return file.readAll();
+}
+
 bool ProjectInterface::loadDirectSoundData() {
     QString path = this->concatPaths(this->m_root, ProjectPath::direct_sound_data);
 
@@ -92,6 +105,123 @@ bool ProjectInterface::loadDirectSoundData() {
         this->m_project->addSampleMapping(label, resource_path);
     }
 
+    return true;
+}
+
+bool ProjectInterface::loadProgrammableWaveData() {
+    QString path = this->concatPaths(this->m_root, ProjectPath::programmable_wave_data);
+
+    QString text = this->readTextFile(path);
+    if (text.isEmpty()) {
+        return false;
+    }
+
+    static const QRegularExpression regex_label_path("(?<label>[A-Za-z0-9_]+):{1,2}\\s+\\.incbin\\s+\"(?<path>[^\"]+)\"");
+
+    QRegularExpressionMatchIterator iter = regex_label_path.globalMatch(text);
+
+    if (!iter.hasNext()) return false;
+
+    int loaded = 0;
+    while (iter.hasNext()) {
+        QRegularExpressionMatch match = iter.next();
+        QString label = match.captured("label");
+        QString pcm_path = this->concatPaths(this->m_root, match.captured("path"));
+
+        QByteArray data = this->readBinaryFile(pcm_path);
+        if (data.size() == 0x10) {
+            this->m_project->addPcmData(label, data);
+            loaded++;
+        }
+    }
+
+    qDebug() << "loaded" << loaded << "programmable wave samples";
+    return loaded > 0;
+}
+
+bool ProjectInterface::loadSamples() {
+    // iterate over every sample mapping and load the wav file
+    QMapIterator<QString, QString> iter(m_project->m_sample_map);
+    int loaded = 0;
+
+    while (iter.hasNext()) {
+        iter.next();
+        if (loadWavFile(iter.key(), iter.value())) {
+            loaded++;
+        }
+    }
+
+    qDebug() << "loaded" << loaded << "samples";
+    return loaded > 0;
+}
+
+bool ProjectInterface::loadWavFile(const QString &label, const QString &path) {
+    QString error;
+    QByteArray data = readBinaryFile(path, &error);
+
+    if (data.isEmpty()) {
+        qDebug() << "failed to open wav file:" << path << error;
+        return false;
+    }
+
+    if (data.size() < 44) {
+        qDebug() << "wav file too small:" << path;
+        return false;
+    }
+
+    // verify RIFF header
+    if (data.mid(0, 4) != "RIFF" || data.mid(8, 4) != "WAVE") {
+        qDebug() << "invalid wav header:" << path;
+        return false;
+    }
+
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::LittleEndian);
+
+    Sample sample;
+
+    // parse chunks (skip 12-byte RIFF header)
+    int pos = 12;
+    while (pos + 8 <= data.size()) {
+        QByteArray chunk_id = data.mid(pos, 4);
+
+        stream.device()->seek(pos + 4);
+        uint32_t chunk_size;
+        stream >> chunk_size;
+
+        if (chunk_id == "fmt ") {
+            if (chunk_size >= 16) {
+                stream.device()->seek(pos + 12);
+                stream >> sample.sample_rate;
+            }
+        }
+        else if (chunk_id == "smpl") {
+            if (chunk_size >= 36) {
+                stream.device()->seek(pos + 8 + 28);
+                uint32_t num_loops;
+                stream >> num_loops;
+
+                if (num_loops > 0 && chunk_size >= 60) {
+                    stream.device()->seek(pos + 8 + 36 + 8);
+                    stream >> sample.loop_start >> sample.loop_end;
+                    sample.loops = true;
+                }
+            }
+        }
+        else if (chunk_id == "data") {
+            sample.data = data.mid(pos + 8, chunk_size);
+        }
+
+        pos += 8 + chunk_size;
+        if (chunk_size % 2 == 1) pos++; // padding byte
+    }
+
+    if (sample.data.isEmpty()) {
+        qDebug() << "no data chunk found in wav:" << path;
+        return false;
+    }
+
+    m_project->addSample(label, sample);
     return true;
 }
 
@@ -127,14 +257,20 @@ bool ProjectInterface::parseVoiceGroup(const QString &path) {
         return false;
     }
 
-    // only need to extract label once (first line)
-    QRegularExpression label_regex("voice_group\\s+(?<label>[A-Za-z0-9_]+)");
+    // extract label and optional offset (for drumsets)
+    QRegularExpression label_regex("voice_group\\s+(?<label>[A-Za-z0-9_]+)(?:,\\s*(?<offset>\\d+))?");
     QRegularExpressionMatch label_match = label_regex.match(text);
-    
+
     if (!label_match.hasMatch()) {
         return false;
     }
     QString group_label = label_match.captured("label");
+
+    // set offset if present (drumsets have starting MIDI note)
+    QString offset_str = label_match.captured("offset");
+    if (!offset_str.isEmpty()) {
+        this->m_project->setVoiceGroupOffset(group_label, offset_str.toInt());
+    }
 
     // the rest of the lines are <type macro> <args...>
     // the type macro is prefixed with voice_

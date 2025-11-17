@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "MidiFile.h"
+#include "soundtypes.h"
 
 class Project;
 
@@ -18,10 +19,14 @@ public:
     QString concatPaths(QString p1, QString p2);
 
     QString readTextFile(const QString &path, QString *error = nullptr);
+    QByteArray readBinaryFile(const QString &path, QString *error = nullptr);
 
     bool loadProject(const QString &root);
 
     bool loadDirectSoundData();
+    bool loadProgrammableWaveData();
+    bool loadSamples();
+    bool loadWavFile(const QString &label, const QString &path);
     bool loadVoiceGroups();
     bool parseVoiceGroup(const QString &path);
     bool loadKeysplitTables();
@@ -49,8 +54,10 @@ private:
     QString m_root;
 
 private:
+    // maybe a silly way to define path constants
     struct ProjectPath {
         static const QString direct_sound_data;
+        static const QString programmable_wave_data;
         static const QString voice_group_index;
     };
 };

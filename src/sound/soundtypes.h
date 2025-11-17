@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <QString>
+#include <QByteArray>
 #include <QMap>
 
 #include "constants.h"
@@ -18,6 +19,16 @@ enum class GbaVoiceType {
     Noise            = 0x04,
     Keysplit         = 0x40,
     KeysplitAll      = 0x80,
+};
+
+
+
+struct Sample {
+    QByteArray data;           // 8-bit signed PCM
+    uint32_t sample_rate = 0;
+    uint32_t loop_start = 0;
+    uint32_t loop_end = 0;
+    bool loops = false;
 };
 
 
@@ -38,7 +49,7 @@ struct Instrument {
     int pan = 0;
     QString sample_label; // for instruments with samples in the map,
                           // or keysplit instrument names
-    
+
     int attack = 0;
     int decay = 0;
     int sustain = 0x0f;
@@ -46,6 +57,13 @@ struct Instrument {
 
     int sweep = 0; // square 1 only
     int duty_cycle = 0; // square 1 & 2
+};
+
+
+
+struct VoiceGroup {
+    int offset = 0; // starting MIDI note (for drumsets)
+    QVector<Instrument> instruments;
 };
 
 
