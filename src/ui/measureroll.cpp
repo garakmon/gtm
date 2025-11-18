@@ -1,11 +1,14 @@
 #include "measureroll.h"
 
+#include <QPainter>
 #include <QPainterPath>
 #include <QGraphicsSimpleTextItem>
 #include <QGraphicsLineItem>
 #include <QGraphicsPolygonItem>
 
 #include "colors.h"
+#include "constants.h"
+#include "graphicsmetaeventitem.h"
 #include "song.h"
 
 
@@ -99,8 +102,8 @@ void MeasureRoll::drawMeasures() {
                 bool is_start = (beat_id == 0);
 
                 // Vertical Lines
-                this->m_scene_measures.addLine(x_pos, is_start ? 0 : 10, x_pos, 30, 
-                                               QPen(is_start ? QColor(255, 255, 255, 180) : QColor(255, 255, 255, 60), 
+                this->m_scene_measures.addLine(x_pos, is_start ? 0 : 10, x_pos, ui_measure_roll_height,
+                                               QPen(is_start ? QColor(255, 255, 255, 180) : QColor(255, 255, 255, 60),
                                                1, is_start ? Qt::SolidLine : Qt::DotLine));
 
                 // timestamp
@@ -161,15 +164,37 @@ void MeasureRoll::createPlaybackGuide() {
 
     this->m_scene_measures.addItem(this->m_playhead_arrow);
 
-    this->m_playhead_arrow->setPos(0, 30);
+    this->m_playhead_arrow->setPos(0, ui_measure_info_height);
 }
 
 void MeasureRoll::updatePlaybackGuide(int tick) {
-    // Calculate X based on your 2px per tick scale
     int x_pos = tick * ui_tick_x_scale;
 
-    // Move the visuals
     if (this->m_playhead_arrow) {
-        this->m_playhead_arrow->setPos(x_pos, 30);
+        this->m_playhead_arrow->setPos(x_pos, ui_measure_info_height);
+    }
+}
+
+void MeasureRoll::drawMetaEvents() {
+    if (!m_active_song) return;
+
+    for (auto it = m_active_song->getTimeSignatures().begin(); it != m_active_song->getTimeSignatures().end(); ++it) {
+        auto *item = new GraphicsMetaEventItem(it.value(), GraphicsMetaEventItem::MetaType::TimeSignature);
+        m_scene_measures.addItem(item);
+    }
+
+    for (auto it = m_active_song->getTempoChanges().begin(); it != m_active_song->getTempoChanges().end(); ++it) {
+        auto *item = new GraphicsMetaEventItem(it.value(), GraphicsMetaEventItem::MetaType::Tempo);
+        m_scene_measures.addItem(item);
+    }
+
+    for (auto it = m_active_song->getKeySignatures().begin(); it != m_active_song->getKeySignatures().end(); ++it) {
+        auto *item = new GraphicsMetaEventItem(it.value(), GraphicsMetaEventItem::MetaType::KeySignature);
+        m_scene_measures.addItem(item);
+    }
+
+    for (auto *event : m_active_song->getMarkers()) {
+        auto *item = new GraphicsMetaEventItem(event, GraphicsMetaEventItem::MetaType::Marker);
+        m_scene_measures.addItem(item);
     }
 }

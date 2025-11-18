@@ -22,6 +22,7 @@ public:
     void loadSong(Song *song);
     void play();
     void stop();
+    void seekToTick(int tick);
 
     Mixer *getMixer() { return &m_mixer; }
     Sequencer *getSequencer() { return &m_sequencer; }

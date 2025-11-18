@@ -14,6 +14,7 @@ public:
     void play();
     void stop();
     void reset();
+    void seekToTick(int tick);
 
     void update(unsigned long frames);
 

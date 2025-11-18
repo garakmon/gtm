@@ -4,6 +4,7 @@
 
 #include <QList>
 #include <QMap>
+#include <QSet>
 #include <memory>
 
 #include "MidiFile.h"
@@ -30,9 +31,14 @@ public:
     // reference so no copy wasting time
     QList<QPair<int, smf::MidiEvent *>> &getNotes() { return this->m_notes; }
     QMap<int, smf::MidiEvent *> &getTimeSignatures() { return this->m_time_signatures; }
+    QMap<int, smf::MidiEvent *> &getTempoChanges() { return this->m_tempo_changes; }
+    QMap<int, smf::MidiEvent *> &getKeySignatures() { return this->m_key_signatures; }
+    QList<smf::MidiEvent *> &getMarkers() { return this->m_markers; }
     QList<smf::MidiEvent *> &getMergedEvents() { return this->m_merged_events; }
 
     std::vector<smf::MidiEventList *> tracks() { return this->m_events; }
+    bool isMetaTrack(int track) const { return m_meta_tracks.contains(track); }
+    int getDisplayRow(int track) const { return m_meta_tracks.contains(0) ? track - 1 : track; }
 
     void setMetaInfo(const SongEntry &entry) { this->m_meta_info = entry; }
 
@@ -40,11 +46,15 @@ public:
 
 private:
     QMap<int, smf::MidiEvent *> m_time_signatures;
+    QMap<int, smf::MidiEvent *> m_tempo_changes;
+    QMap<int, smf::MidiEvent *> m_key_signatures;
+    QList<smf::MidiEvent *> m_markers;
     QList<QPair<int, smf::MidiEvent *>> m_notes;
+    QSet<int> m_meta_tracks;
 
     QList<smf::MidiEvent *> m_merged_events; // for playback
 
-    SongEntry m_meta_info; // 
+    SongEntry m_meta_info; 
 };
 
 #endif // SONG_H

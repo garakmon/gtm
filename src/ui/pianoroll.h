@@ -47,7 +47,7 @@ public:
     }
 
     // MidiEvent *
-    GraphicsScoreNoteItem *addNote(int track, smf::MidiEvent *event);
+    GraphicsScoreNoteItem *addNote(int track, int row, smf::MidiEvent *event);
 
     // void resize(); // resize m_score_lines
 

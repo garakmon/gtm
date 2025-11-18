@@ -11,14 +11,13 @@
 
 
 
-GraphicsScoreNoteItem::GraphicsScoreNoteItem(PianoRoll *piano_roll, int track, smf::MidiEvent *on, smf::MidiEvent *off)
- : GraphicsMidiEventItem(track, on) {
+GraphicsScoreNoteItem::GraphicsScoreNoteItem(PianoRoll *piano_roll, int track, int row, smf::MidiEvent *on, smf::MidiEvent *off)
+ : GraphicsMidiEventItem(track, on), m_row(row) {
     this->m_piano_roll = piano_roll;
-    // m_event is a note on
     this->m_note_off = off;
     this->updatePosition();
 
-    this->setFlags(QGraphicsItem::ItemIsSelectable /*| QGraphicsItem::ItemIsMovable */);
+    this->setFlags(QGraphicsItem::ItemIsSelectable);
 }
 
 QRectF GraphicsScoreNoteItem::boundingRect() const {
@@ -35,7 +34,8 @@ void GraphicsScoreNoteItem::paint(QPainter *painter, const QStyleOptionGraphicsI
 }
 
 QColor GraphicsScoreNoteItem::color() {
-    return ui_track_color_array[m_track];
+    int index = m_row < g_max_num_tracks ? m_row : g_max_num_tracks - 1;
+    return ui_track_color_array[index];
 }
 
 QSize GraphicsScoreNoteItem::dimensions() const {

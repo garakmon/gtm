@@ -25,7 +25,7 @@ class GraphicsTrackItem : public QGraphicsItem {
     //
 public:
     //
-    GraphicsTrackItem(int track, QGraphicsItem *parent = nullptr);
+    GraphicsTrackItem(int track, int row, QGraphicsItem *parent = nullptr);
 
 
     QRectF boundingRect() const override;
@@ -36,6 +36,7 @@ public:
 
     QColor color() { return this->m_color; }
     int track() { return this->m_track; }
+    int row() { return this->m_row; }
 
     void addItem(GraphicsScoreItem *item);
 
@@ -45,6 +46,7 @@ private:
     QColor m_color;
     QColor m_color_light;
     int m_track;
+    int m_row;
 
     QList<GraphicsScoreItem *> m_score_items;
 

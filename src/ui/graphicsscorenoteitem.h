@@ -38,7 +38,7 @@ protected:
 class GraphicsScoreNoteItem : public GraphicsMidiEventItem {
 
 public:
-    GraphicsScoreNoteItem(PianoRoll *piano_roll, int track, smf::MidiEvent *on, smf::MidiEvent *off);
+    GraphicsScoreNoteItem(PianoRoll *piano_roll, int track, int row, smf::MidiEvent *on, smf::MidiEvent *off);
 
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
@@ -49,6 +49,7 @@ public:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
 private:
+    int m_row;
     int m_tick_duration;
     smf::MidiEvent *m_note_off = nullptr;
 

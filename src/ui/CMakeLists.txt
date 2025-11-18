@@ -4,6 +4,7 @@ qt_add_library(gtm-ui STATIC
     pianoroll.cpp
     trackroll.cpp
     measureroll.cpp
+    graphicsmetaeventitem.cpp
     graphicspianokeyitem.cpp
     graphicstrackitem.cpp
     graphicsscorenoteitem.cpp

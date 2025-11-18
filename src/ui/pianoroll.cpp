@@ -78,15 +78,14 @@ void PianoRoll::drawScoreArea() {
 }
 
 void PianoRoll::drawScoreNotes() {
-    // TODO: how to get trackitems from mainwindow?
-    // remove
-    for (auto [note_tick, note_event] : this->m_active_song->getNotes()) {
-        this->addNote(note_tick, note_event);
+    for (auto [track, note_event] : this->m_active_song->getNotes()) {
+        int row = this->m_active_song->getDisplayRow(track);
+        this->addNote(track, row, note_event);
     }
 }
 
-GraphicsScoreNoteItem *PianoRoll::addNote(int track, smf::MidiEvent *event) {
-    GraphicsScoreNoteItem *item = new GraphicsScoreNoteItem(this, track, event, event->getLinkedEvent());
+GraphicsScoreNoteItem *PianoRoll::addNote(int track, int row, smf::MidiEvent *event) {
+    GraphicsScoreNoteItem *item = new GraphicsScoreNoteItem(this, track, row, event, event->getLinkedEvent());
     m_scene_roll.addItem(item);
     return item;
 }

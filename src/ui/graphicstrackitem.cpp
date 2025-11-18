@@ -12,22 +12,16 @@
 // const int ui_track_item_height = 30;
 // const int ui_track_item_width = 300;
 
-GraphicsTrackItem::GraphicsTrackItem(int track, QGraphicsItem *parent) : QGraphicsItem(parent) {
-    if (track >= g_max_num_tracks) {
-        // TODO: log error
-        track = g_max_num_tracks - 1;
-    }
-    // if (track == 0) {
-    //     // TODO: instead, check for meta track
-    //     this->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-    // }
+GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent) : QGraphicsItem(parent) {
     this->m_track = track;
-    this->m_color = ui_track_color_array[track];
-    this->m_color_light = ui_track_color_array[track].lighter(150);
+    this->m_row = row;
+    int color_index = row < g_max_num_tracks ? row : g_max_num_tracks - 1;
+    this->m_color = ui_track_color_array[color_index];
+    this->m_color_light = ui_track_color_array[color_index].lighter(150);
 }
 
 QRectF GraphicsTrackItem::boundingRect() const {
-    return QRectF(0, ui_track_item_height * this->m_track, ui_track_item_width, ui_track_item_height);
+    return QRectF(0, ui_track_item_height * this->m_row, ui_track_item_width, ui_track_item_height);
 }
 
 void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
@@ -83,7 +77,7 @@ GraphicsTrackRollManager::GraphicsTrackRollManager(smf::MidiEventList *event_lis
 }
 
 QRectF GraphicsTrackRollManager::boundingRect() const {
-    return QRectF(0, ui_track_item_height * this->m_parent_track->track(), 10000, ui_track_item_height);
+    return QRectF(0, ui_track_item_height * this->m_parent_track->row(), 10000, ui_track_item_height);
 }
 
 void GraphicsTrackRollManager::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {

@@ -6,11 +6,11 @@
 #include <QObject>
 #include <QGraphicsScene>
 
-
 class QGraphicsLineItem;
 class QGraphicsPolygonItem;
 
 class Song;
+
 class MeasureRoll : public QObject {
     Q_OBJECT
 public:
@@ -22,6 +22,7 @@ public:
         this->m_scene_measures.clear();
         this->m_active_song = song;
         drawMeasures();
+        drawMetaEvents();
     }
 
     int tick() { return this->m_current_tick; }
@@ -36,6 +37,7 @@ public:
 
 private:
     void drawMeasures();
+    void drawMetaEvents();
 
 private:
     QGraphicsScene m_scene_measures;

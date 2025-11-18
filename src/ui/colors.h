@@ -26,4 +26,9 @@ extern QColor ui_color_piano_roll_tick_mark;
 extern QColor ui_color_measure_timestamps;
 extern QColor ui_color_measure_guide;
 
+extern QColor ui_meta_event_timesignature;
+extern QColor ui_meta_event_tempo;
+extern QColor ui_meta_event_keysignature;
+extern QColor ui_meta_event_marker;
+
 #endif // COLORS_H

@@ -2,6 +2,7 @@
 
 #include <QMouseEvent>
 #include <QWheelEvent>
+#include <QFrame>
 #include <QGraphicsView>
 #include <QScrollBar>
 
@@ -63,9 +64,11 @@ void Controller::setupRolls() {
 
     m_window->view_measures_tracks->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_window->view_measures_tracks->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_window->view_measures_tracks->setFrameShape(QFrame::NoFrame);
 
     m_window->view_measures->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_window->view_measures->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_window->view_measures->setFrameShape(QFrame::NoFrame);
 
     m_window->view_measures->viewport()->installEventFilter(this);
     m_window->view_pianoRoll->viewport()->installEventFilter(this);
@@ -109,11 +112,11 @@ void Controller::displayRolls() {
     QRectF measure_bounds = m_measure_roll->sceneMeasures()->itemsBoundingRect();
 
     m_window->view_measures_tracks->setScene(m_measure_roll->sceneMeasures());
-    m_window->view_measures_tracks->setSceneRect(0.0, 0.0, measure_bounds.width(), measure_bounds.height());
+    m_window->view_measures_tracks->setSceneRect(0.0, 0.0, measure_bounds.width(), ui_measure_roll_height);
     m_window->view_measures_tracks->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 
     m_window->view_measures->setScene(m_measure_roll->sceneMeasures());
-    m_window->view_measures->setSceneRect(0.0, 0.0, measure_bounds.width(), measure_bounds.height());
+    m_window->view_measures->setSceneRect(0.0, 0.0, measure_bounds.width(), ui_measure_info_height);
     m_window->view_measures->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 
     // Navigation
@@ -254,6 +257,8 @@ void Controller::play() {
     }
 
     m_playback_start_tick = m_measure_roll->tick();
+    m_player->seekToTick(m_playback_start_tick);
+
     m_autoscroll_enabled = true;
     m_player->play();
 
@@ -275,12 +280,8 @@ void Controller::seekToTick(int tick) {
 
     if (was_playing) {
         m_playback_start_tick = tick;
+        m_player->seekToTick(tick);
         m_player_elapsed.restart();
-    } else {
-        int playhead_x = tick * ui_tick_x_scale;
-        int viewport_width = m_window->view_measures->viewport()->width();
-        int scroll_value = playhead_x - viewport_width / 4;
-        m_window->hscroll_pianoRoll->setValue(scroll_value);
     }
 }
 

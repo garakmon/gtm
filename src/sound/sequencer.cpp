@@ -28,6 +28,29 @@ void Sequencer::reset() {
     m_is_playing = false;
 }
 
+void Sequencer::seekToTick(int tick) {
+    if (!m_song) {
+        m_current_time = 0.0;
+        m_event_index = 0;
+        return;
+    }
+
+    m_current_time = m_song->getTimeInSeconds(tick);
+
+    auto &events = m_song->getMergedEvents();
+
+    int lo = 0, hi = events.size();
+    while (lo < hi) {
+        int mid = (lo + hi) / 2;
+        if (events[mid]->seconds < m_current_time) {
+            lo = mid + 1;
+        } else {
+            hi = mid;
+        }
+    }
+    m_event_index = lo;
+}
+
 void Sequencer::update(unsigned long frames) {
     if (!m_is_playing || !m_song || !m_mixer) return;
 

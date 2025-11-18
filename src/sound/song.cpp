@@ -38,58 +38,47 @@ bool Song::load() {
     this->doTimeAnalysis();
     this->linkNotePairs();
 
-    double duration;
+    m_meta_tracks.clear();
+    m_time_signatures.clear();
+    m_tempo_changes.clear();
+    m_key_signatures.clear();
+    m_markers.clear();
+    m_notes.clear();
+
     int track_num = 0;
     for (auto track : this->tracks()) {
-        qDebug() << "\n*** TRACK" << track_num << "***\n";
-        bool meta_track = true;
-        // handle the meta track uniquely
-        if (track_num == 0) {
-            for (int i = 0; i < track->size(); i++) {
-                smf::MidiEvent *midi_event = &(*track)[i];
-                if (midi_event->isTimeSignature()) {
-                    this->m_time_signatures[midi_event->tick] = midi_event;
-                }
-            }
-        }
-        // else
+        bool has_notes = false;
+
         for (int i = 0; i < track->size(); i++) {
             smf::MidiEvent *midi_event = &(*track)[i];
-            if (midi_event->isNote()) {
-                //if (midi_event->isNoteOn()) this->m_piano_roll->addNote(track_num, midi_event);
-                if (midi_event->isNoteOn()) this->m_notes.append({track_num, midi_event});
-                meta_track = false;
-                continue;
+
+            if (midi_event->isTimeSignature()) {
+                m_time_signatures[midi_event->tick] = midi_event;
             }
-            continue;
-            if (midi_event->isMetaMessage()) {
-                qDebug() << "MetaMessage: type" << midi_event->getMetaType();
+            else if (midi_event->isTempo()) {
+                m_tempo_changes[midi_event->tick] = midi_event;
             }
-            else if (midi_event->isController()) {
-                meta_track = false;
-                qDebug() << "Controller:" << midi_event->getControllerNumber() << midi_event->getControllerValue();
+            else if (midi_event->isKeySignature()) {
+                m_key_signatures[midi_event->tick] = midi_event;
             }
-            else if (midi_event->isPatchChange()) {
-                meta_track = false;
-                qDebug() << "Patch Change:" << midi_event->getChannel() << midi_event->getP1();
+            else if (midi_event->isMarkerText() || midi_event->isText()) {
+                m_markers.append(midi_event);
             }
-            else if (midi_event->isPressure()) {
-                meta_track = false;
-                qDebug() << "Pressure:" << midi_event->getP1();
-            }
-            else if (midi_event->isPitchbend()) {
-                meta_track = false;
-                qDebug() << "Pitch Bend:" << midi_event->getP1() << midi_event->getP2();
-            }
-            else {
-                qDebug() << "unknown midi message type";
+            else if (midi_event->isNoteOn()) {
+                m_notes.append({track_num, midi_event});
+                has_notes = true;
             }
         }
+
+        if (!has_notes) {
+            m_meta_tracks.insert(track_num);
+        }
+
         track_num++;
     }
 
     this->mergeEvents();
-    qDebug() << "load sucess";
+    return true;
 }
 
 void Song::mergeEvents() {

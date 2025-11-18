@@ -55,3 +55,8 @@ void Player::stop() {
     m_sequencer.stop();
     m_mixer.end();
 }
+
+void Player::seekToTick(int tick) {
+    m_mixer.end();
+    m_sequencer.seekToTick(tick);
+}
