@@ -47,6 +47,10 @@ public:
 
     void play();
     void stop();
+    void seekToTick(int tick);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private slots:
     void displayEvent(smf::MidiEvent *event);
@@ -67,6 +71,11 @@ private:
     // playback stuff
     QTimer m_player_timer;
     QElapsedTimer m_player_elapsed;
+    int m_playback_start_tick = 0;
+
+    // scroll state
+    QTimer m_scroll_debounce;
+    bool m_autoscroll_enabled = true;
 
     std::unique_ptr<Player> m_player;
 };

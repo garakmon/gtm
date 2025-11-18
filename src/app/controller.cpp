@@ -1,6 +1,9 @@
 #include "controller.h"
 
-
+#include <QMouseEvent>
+#include <QWheelEvent>
+#include <QGraphicsView>
+#include <QScrollBar>
 
 #include "../ui/ui_mainwindow.h"
 #include "mainwindow.h"
@@ -63,6 +66,13 @@ void Controller::setupRolls() {
 
     m_window->view_measures->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_window->view_measures->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    m_window->view_measures->viewport()->installEventFilter(this);
+    m_window->view_pianoRoll->viewport()->installEventFilter(this);
+    m_window->view_trackRoll->viewport()->installEventFilter(this);
+
+    m_scroll_debounce.setSingleShot(true);
+    m_scroll_debounce.setInterval(400);
 }
 
 void Controller::displayRolls() {
@@ -157,21 +167,32 @@ void Controller::syncRolls() {
         return;
     }
     double elapsed_seconds = this->m_player_elapsed.elapsed() / 1000.0;
+    double start_seconds = this->m_song->getTimeInSeconds(this->m_playback_start_tick);
+    double total_seconds = start_seconds + elapsed_seconds;
 
     QTime display_time(0, 0);
-    display_time = display_time.addMSecs(this->m_player_elapsed.elapsed());
+    display_time = display_time.addMSecs(static_cast<int>(total_seconds * 1000));
     QString time_text = display_time.toString("mm:ss.zzz");
     this->m_window->LCD_Timer->display(time_text);
 
-    int current_tick = this->m_song->getTickFromTime(elapsed_seconds);
+    int current_tick = this->m_song->getTickFromTime(total_seconds);
 
     this->m_measure_roll->updatePlaybackGuide(current_tick);
-    // this->m_piano_roll->updatePlaybackGuide(current_tick);
-    // this->m_track_roll->updatePlaybackGuide(current_tick);
+    this->m_measure_roll->setTick(current_tick);
 
-    int offset = this->m_window->view_measures->viewport()->width() / 4;
-    int scroll_value = static_cast<int>(current_tick * ui_tick_x_scale - offset);
-    this->m_window->hscroll_pianoRoll->setValue(scroll_value);
+    int playhead_x = current_tick * ui_tick_x_scale;
+    int viewport_left = this->m_window->hscroll_pianoRoll->value();
+    int viewport_width = this->m_window->view_measures->viewport()->width();
+    int activation_point = viewport_left + viewport_width / 4;
+
+    if (!m_autoscroll_enabled && !m_scroll_debounce.isActive() && playhead_x >= activation_point) {
+        m_autoscroll_enabled = true;
+    }
+
+    if (m_autoscroll_enabled) {
+        int scroll_value = playhead_x - viewport_width / 4;
+        this->m_window->hscroll_pianoRoll->setValue(scroll_value);
+    }
 
     if (current_tick >= this->m_song->durationInTicks()) {
         this->stop();
@@ -228,18 +249,65 @@ void Controller::displayEvent(smf::MidiEvent *event) {
 }
 
 void Controller::play() {
-    // TODO: take tick as arg to play from specific place?
     if (m_song) {
         m_player->loadSong(m_song.get());
     }
 
+    m_playback_start_tick = m_measure_roll->tick();
+    m_autoscroll_enabled = true;
     m_player->play();
 
     m_player_elapsed.start();
-    m_player_timer.start(16); // ~60fps is smooth enough scrolling
+    m_player_timer.start(16);
 }
 
 void Controller::stop() {
     m_player->stop();
     m_player_timer.stop();
+}
+
+void Controller::seekToTick(int tick) {
+    bool was_playing = m_player_timer.isActive();
+
+    m_measure_roll->setTick(tick);
+    m_measure_roll->updatePlaybackGuide(tick);
+    m_autoscroll_enabled = true;
+
+    if (was_playing) {
+        m_playback_start_tick = tick;
+        m_player_elapsed.restart();
+    } else {
+        int playhead_x = tick * ui_tick_x_scale;
+        int viewport_width = m_window->view_measures->viewport()->width();
+        int scroll_value = playhead_x - viewport_width / 4;
+        m_window->hscroll_pianoRoll->setValue(scroll_value);
+    }
+}
+
+bool Controller::eventFilter(QObject *watched, QEvent *event) {
+    if (event->type() == QEvent::Wheel) {
+        QWheelEvent *wheel = static_cast<QWheelEvent *>(event);
+        if (wheel->angleDelta().x() != 0) {
+            m_autoscroll_enabled = false;
+            m_scroll_debounce.start();
+        }
+    }
+
+    if (watched == m_window->view_measures->viewport() && event->type() == QEvent::MouseButtonPress) {
+        QMouseEvent *mouse_event = static_cast<QMouseEvent *>(event);
+
+        if (mouse_event->button() == Qt::LeftButton && m_song) {
+            QPointF scene_pos = m_window->view_measures->mapToScene(mouse_event->pos());
+
+            int tick = static_cast<int>(scene_pos.x() / ui_tick_x_scale);
+            int tpqn = m_song->getTicksPerQuarterNote();
+            int snapped_tick = qRound(static_cast<double>(tick) / tpqn) * tpqn;
+            snapped_tick = qBound(0, snapped_tick, m_song->durationInTicks());
+
+            seekToTick(snapped_tick);
+            return true;
+        }
+    }
+
+    return QObject::eventFilter(watched, event);
 }
