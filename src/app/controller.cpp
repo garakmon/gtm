@@ -169,16 +169,14 @@ void Controller::syncRolls() {
     if (!this->m_song) {
         return;
     }
-    double elapsed_seconds = this->m_player_elapsed.elapsed() / 1000.0;
-    double start_seconds = this->m_song->getTimeInSeconds(this->m_playback_start_tick);
-    double total_seconds = start_seconds + elapsed_seconds;
+    double current_seconds = m_player->getSequencer()->getCurrentTime();
 
     QTime display_time(0, 0);
-    display_time = display_time.addMSecs(static_cast<int>(total_seconds * 1000));
+    display_time = display_time.addMSecs(static_cast<int>(current_seconds * 1000));
     QString time_text = display_time.toString("mm:ss.zzz");
     this->m_window->LCD_Timer->display(time_text);
 
-    int current_tick = this->m_song->getTickFromTime(total_seconds);
+    int current_tick = this->m_song->getTickFromTime(current_seconds);
 
     this->m_measure_roll->updatePlaybackGuide(current_tick);
     this->m_measure_roll->setTick(current_tick);
@@ -219,7 +217,7 @@ bool Controller::loadSong() {
 }
 
 bool Controller::loadSong(std::shared_ptr<Song> song) {
-    //
+    this->stop();
 
     song->load();
 

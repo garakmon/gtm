@@ -28,9 +28,10 @@ private:
     bool m_is_playing = false;
     double m_current_time = 0.0;
     int m_event_index = 0;
+    int m_loop_begin_index = -1;
 
     void processEventsUpTo(double time);
-    void dispatchEvent(smf::MidiEvent *event);
+    bool dispatchEvent(smf::MidiEvent *event);
 };
 
 #endif // SEQUENCER_H

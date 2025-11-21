@@ -25,6 +25,7 @@ void Sequencer::stop() {
 void Sequencer::reset() {
     m_current_time = 0.0;
     m_event_index = 0;
+    m_loop_begin_index = -1;
     m_is_playing = false;
 }
 
@@ -32,6 +33,7 @@ void Sequencer::seekToTick(int tick) {
     if (!m_song) {
         m_current_time = 0.0;
         m_event_index = 0;
+        m_loop_begin_index = -1;
         return;
     }
 
@@ -49,6 +51,15 @@ void Sequencer::seekToTick(int tick) {
         }
     }
     m_event_index = lo;
+
+    m_loop_begin_index = -1;
+    for (int i = 0; i < m_event_index; ++i) {
+        if (events[i]->isText() || events[i]->isMarkerText()) {
+            if (events[i]->getMetaContent() == "[") {
+                m_loop_begin_index = i;
+            }
+        }
+    }
 }
 
 void Sequencer::update(unsigned long frames) {
@@ -68,16 +79,31 @@ void Sequencer::processEventsUpTo(double time) {
 
         if (event->seconds > time) break;
 
-        dispatchEvent(event);
+        if (dispatchEvent(event)) {
+            break;
+        }
         m_event_index++;
     }
 }
 
-void Sequencer::dispatchEvent(smf::MidiEvent *event) {
+bool Sequencer::dispatchEvent(smf::MidiEvent *event) {
     if (event->isNoteOn()) {
         m_mixer->noteOn(event->getChannel(), event->getKeyNumber(), event->getVelocity());
     }
     else if (event->isNoteOff()) {
         m_mixer->noteOff(event->getChannel(), event->getKeyNumber());
     }
+    else if (event->isText() || event->isMarkerText()) {
+        std::string text = event->getMetaContent();
+        if (text == "[") {
+            m_loop_begin_index = m_event_index;
+        }
+        else if (text == "]" && m_loop_begin_index >= 0) {
+            m_event_index = m_loop_begin_index;
+            m_current_time = m_song->getMergedEvents()[m_loop_begin_index]->seconds;
+            m_mixer->end();
+            return true;
+        }
+    }
+    return false;
 }
