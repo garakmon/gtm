@@ -45,6 +45,9 @@ public:
 
     bool hasSample(const QString &label) const;
 
+    const QMap<QString, Sample> &getSamples() const { return m_samples; }
+    const VoiceGroup *getVoiceGroup(const QString &name) const;
+
 private:
     std::shared_ptr<Song> m_active_song;
 

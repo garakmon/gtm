@@ -30,6 +30,8 @@ private:
     int m_event_index = 0;
     int m_loop_begin_index = -1;
 
+    uint8_t m_channel_program[g_num_midi_channels] = {0};
+
     void processEventsUpTo(double time);
     bool dispatchEvent(smf::MidiEvent *event);
 };

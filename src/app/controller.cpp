@@ -229,6 +229,11 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
 
     this->displayRolls();
 
+    // reset playhead to start
+    this->m_measure_roll->setTick(0);
+    this->m_measure_roll->updatePlaybackGuide(0);
+    this->m_window->LCD_Timer->display("00:00.000");
+
     return true;
 }
 
@@ -250,9 +255,15 @@ void Controller::displayEvent(smf::MidiEvent *event) {
 }
 
 void Controller::play() {
-    if (m_song) {
-        m_player->loadSong(m_song.get());
+    const VoiceGroup *voicegroup = nullptr;
+    const QMap<QString, Sample> *samples = nullptr;
+
+    if (m_song && m_project) {
+        voicegroup = m_project->getVoiceGroup(m_song->getMetaInfo().voicegroup);
+        samples = &m_project->getSamples();
     }
+
+    m_player->loadSong(m_song.get(), voicegroup, samples);
 
     m_playback_start_tick = m_measure_roll->tick();
     m_player->seekToTick(m_playback_start_tick);

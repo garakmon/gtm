@@ -9,8 +9,6 @@ extern "C" {
 #include "mixer.h"
 #include "sequencer.h"
 
-
-
 class Song;
 
 class Player {
@@ -19,7 +17,7 @@ public:
 
     bool initializeAudio();
 
-    void loadSong(Song *song);
+    void loadSong(Song *song, const VoiceGroup *vg, const QMap<QString, Sample> *samples);
     void play();
     void stop();
     void seekToTick(int tick);

@@ -274,7 +274,7 @@ bool ProjectInterface::parseVoiceGroup(const QString &path) {
 
     // the rest of the lines are <type macro> <args...>
     // the type macro is prefixed with voice_
-    QRegularExpression line_regex("(?<type>voice_[A-Za-z0-9_]+)\\s+(?<args>[^v]+)");
+    QRegularExpression line_regex("^\\s*(?<type>voice_[A-Za-z0-9_]+)\\s+(?<args>[^\\n]+)", QRegularExpression::MultilineOption);
     QRegularExpressionMatchIterator iter = line_regex.globalMatch(text);
 
     while (iter.hasNext()) {
@@ -517,14 +517,17 @@ void ProjectInterface::parseMidiConfig() {
         QString title = title_match.captured("title");
 
         // hopefully correct default values (!TODO: investigate further)
-        QString voicegroup = "voicegroup_dummy";
+        QString voicegroup = "dummy";
         int volume = 0x7F;
         int priority = 0;
         int reverb = 0;
 
         QRegularExpressionMatch group_match = re_voicegroup.match(line);
         if (group_match.hasMatch()) {
-            voicegroup = "voicegroup" + group_match.captured("voicegroup");
+            voicegroup = group_match.captured("voicegroup");
+            if (voicegroup.startsWith("_")) {
+                voicegroup = voicegroup.mid(1);
+            }
         }
 
         QRegularExpressionMatch volume_match = re_volume.match(line);

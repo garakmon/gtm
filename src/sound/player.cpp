@@ -41,7 +41,8 @@ void Player::audioCallback(float *out_buffer, unsigned long frame_count) {
     m_mixer.processAudio(out_buffer, frame_count);
 }
 
-void Player::loadSong(Song *song) {
+void Player::loadSong(Song *song, const VoiceGroup *vg, const QMap<QString, Sample> *samples) {
+    m_mixer.setInstrumentData(vg, samples);
     m_sequencer.setSong(song);
     m_sequencer.setMixer(&m_mixer);
     m_sequencer.reset();

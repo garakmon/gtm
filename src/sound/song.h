@@ -41,6 +41,7 @@ public:
     int getDisplayRow(int track) const { return m_meta_tracks.contains(0) ? track - 1 : track; }
 
     void setMetaInfo(const SongEntry &entry) { this->m_meta_info = entry; }
+    const SongEntry& getMetaInfo() const { return this->m_meta_info; }
 
     int getTickFromTime(double seconds);
 

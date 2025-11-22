@@ -27,6 +27,9 @@ void Sequencer::reset() {
     m_event_index = 0;
     m_loop_begin_index = -1;
     m_is_playing = false;
+    for (int i = 0; i < g_num_midi_channels; ++i) {
+        m_channel_program[i] = 0;
+    }
 }
 
 void Sequencer::seekToTick(int tick) {
@@ -53,11 +56,18 @@ void Sequencer::seekToTick(int tick) {
     m_event_index = lo;
 
     m_loop_begin_index = -1;
+    for (int i = 0; i < g_num_midi_channels; ++i) {
+        m_channel_program[i] = 0;
+    }
     for (int i = 0; i < m_event_index; ++i) {
         if (events[i]->isText() || events[i]->isMarkerText()) {
             if (events[i]->getMetaContent() == "[") {
                 m_loop_begin_index = i;
             }
+        }
+        else if (events[i]->isPatchChange()) {
+            uint8_t ch = events[i]->getChannel();
+            m_channel_program[ch] = events[i]->getP1();
         }
     }
 }
@@ -87,11 +97,17 @@ void Sequencer::processEventsUpTo(double time) {
 }
 
 bool Sequencer::dispatchEvent(smf::MidiEvent *event) {
+    uint8_t channel = event->getChannel();
+
     if (event->isNoteOn()) {
-        m_mixer->noteOn(event->getChannel(), event->getKeyNumber(), event->getVelocity());
+        uint8_t program = m_channel_program[channel];
+        m_mixer->noteOn(channel, event->getKeyNumber(), event->getVelocity(), program);
     }
     else if (event->isNoteOff()) {
-        m_mixer->noteOff(event->getChannel(), event->getKeyNumber());
+        m_mixer->noteOff(channel, event->getKeyNumber());
+    }
+    else if (event->isPatchChange()) {
+        m_channel_program[channel] = event->getP1();
     }
     else if (event->isText() || event->isMarkerText()) {
         std::string text = event->getMetaContent();

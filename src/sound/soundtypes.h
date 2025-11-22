@@ -116,17 +116,26 @@ struct SoundChannel {
 
 struct Voice {
     bool is_active = false;
+    uint8_t channel = 0;
     uint8_t midi_key = 0;
     uint8_t velocity = 0;
-
-    double phase = 0.0;
-    double phase_increment = 0.0;
-
-    float amplitude = 0.0f;
     bool releasing = false;
 
+    // Sample playback (DirectSound)
+    const int8_t *sample_data = nullptr;
+    uint32_t sample_length = 0;
+    uint32_t loop_start = 0;
+    uint32_t loop_end = 0;
+    bool loops = false;
+    double position = 0.0;
+    double pitch_ratio = 1.0;
+
+    // Envelope
+    float amplitude = 0.0f;
+    float release_rate = 0.01f;
+
     float getNextSample();
-    void noteOn(uint8_t key, uint8_t vel);
+    void noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Sample *sample, int base_key);
     void noteOff();
 };
 

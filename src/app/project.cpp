@@ -46,6 +46,11 @@ bool Project::hasSample(const QString &label) const {
     return m_samples.contains(label);
 }
 
+const VoiceGroup *Project::getVoiceGroup(const QString &name) const {
+    auto it = m_voicegroups.find(name);
+    return it != m_voicegroups.end() ? &it.value() : nullptr;
+}
+
 void Project::addInstrumentToGroup(const QString &group, const Instrument &inst) {
     this->m_voicegroups[group].instruments.append(inst);
 }
