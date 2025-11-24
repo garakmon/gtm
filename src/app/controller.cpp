@@ -256,14 +256,18 @@ void Controller::displayEvent(smf::MidiEvent *event) {
 
 void Controller::play() {
     const VoiceGroup *voicegroup = nullptr;
+    const QMap<QString, VoiceGroup> *all_voicegroups = nullptr;
     const QMap<QString, Sample> *samples = nullptr;
+    const QMap<QString, QByteArray> *pcm_data = nullptr;
 
     if (m_song && m_project) {
         voicegroup = m_project->getVoiceGroup(m_song->getMetaInfo().voicegroup);
+        all_voicegroups = &m_project->getVoiceGroups();
         samples = &m_project->getSamples();
+        pcm_data = &m_project->getPcmData();
     }
 
-    m_player->loadSong(m_song.get(), voicegroup, samples);
+    m_player->loadSong(m_song.get(), voicegroup, all_voicegroups, samples, pcm_data);
 
     m_playback_start_tick = m_measure_roll->tick();
     m_player->seekToTick(m_playback_start_tick);

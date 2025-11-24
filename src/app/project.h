@@ -46,6 +46,8 @@ public:
     bool hasSample(const QString &label) const;
 
     const QMap<QString, Sample> &getSamples() const { return m_samples; }
+    const QMap<QString, QByteArray> &getPcmData() const { return m_pcm_data; }
+    const QMap<QString, VoiceGroup> &getVoiceGroups() const { return m_voicegroups; }
     const VoiceGroup *getVoiceGroup(const QString &name) const;
 
 private:

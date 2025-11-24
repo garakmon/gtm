@@ -109,6 +109,27 @@ bool Sequencer::dispatchEvent(smf::MidiEvent *event) {
     else if (event->isPatchChange()) {
         m_channel_program[channel] = event->getP1();
     }
+    else if (event->isController()) {
+        uint8_t cc = event->getP1();
+        uint8_t value = event->getP2();
+
+        switch (cc) {
+        case 7:   // Channel volume
+            m_mixer->setChannelVolume(channel, value);
+            break;
+        case 10:  // Pan
+            m_mixer->setChannelPan(channel, value);
+            break;
+        case 11:  // Expression
+            m_mixer->setChannelExpression(channel, value);
+            break;
+        }
+    }
+    else if (event->isPitchbend()) {
+        // Pitch bend is 14-bit: combine P1 (LSB) and P2 (MSB)
+        int bend = (event->getP2() << 7) | event->getP1();
+        m_mixer->setChannelPitchBend(channel, bend);
+    }
     else if (event->isText() || event->isMarkerText()) {
         std::string text = event->getMetaContent();
         if (text == "[") {

@@ -121,6 +121,9 @@ struct Voice {
     uint8_t velocity = 0;
     bool releasing = false;
 
+    // Voice type (from GbaVoiceType enum)
+    uint8_t voice_type = 0;
+
     // Sample playback (DirectSound)
     const int8_t *sample_data = nullptr;
     uint32_t sample_length = 0;
@@ -130,13 +133,33 @@ struct Voice {
     double position = 0.0;
     double pitch_ratio = 1.0;
 
-    // Envelope
-    float amplitude = 0.0f;
-    float release_rate = 0.01f;
+    // Square wave / Programmable wave synthesis
+    uint8_t duty_cycle = 2;  // 0=12.5%, 1=25%, 2=50%, 3=75%
+    double phase = 0.0;
+    double phase_inc = 0.0;  // phase increment per sample
 
-    float getNextSample();
-    void noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Sample *sample, int base_key);
+    // Programmable wave (16 4-bit samples stored in 32 bytes)
+    const uint8_t *wave_data = nullptr;
+
+    // Noise generation (LFSR)
+    uint16_t lfsr = 0x7FFF;
+    int noise_counter = 0;
+    int noise_period = 1;
+
+    // ADSR Envelope
+    enum EnvPhase { ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE };
+    EnvPhase env_phase = ENV_ATTACK;
+    float envelope = 0.0f;       // current envelope level (0.0 - 1.0)
+    float attack_rate = 0.0f;    // per-sample increment during attack
+    float decay_rate = 0.0f;     // per-sample decrement during decay
+    float sustain_level = 1.0f;  // level to hold during sustain (0.0 - 1.0)
+    float release_rate = 0.0f;   // per-sample decrement during release
+
+    float getNextSample(float pitch_bend_multiplier = 1.0f);
+    void noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
+                const Sample *sample, const uint8_t *wave);
     void noteOff();
+    void updateEnvelope();
 };
 
 #endif // SOUNDTYPES_H
