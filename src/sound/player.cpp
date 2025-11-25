@@ -2,6 +2,15 @@
 
 
 
+Player::~Player() {
+    if (m_audio_stream) {
+        Pa_StopStream(m_audio_stream);
+        Pa_CloseStream(m_audio_stream);
+        m_audio_stream = nullptr;
+    }
+    Pa_Terminate();
+}
+
 bool Player::initializeAudio() {
     if (Pa_Initialize() != paNoError) return false;
 
@@ -44,8 +53,9 @@ void Player::audioCallback(float *out_buffer, unsigned long frame_count) {
 void Player::loadSong(Song *song, const VoiceGroup *vg,
                       const QMap<QString, VoiceGroup> *all_vg,
                       const QMap<QString, Sample> *samples,
-                      const QMap<QString, QByteArray> *pcm_data) {
-    m_mixer.setInstrumentData(vg, all_vg, samples, pcm_data);
+                      const QMap<QString, QByteArray> *pcm_data,
+                      const QMap<QString, KeysplitTable> *keysplit_tables) {
+    m_mixer.setInstrumentData(vg, all_vg, samples, pcm_data, keysplit_tables);
     m_sequencer.setSong(song);
     m_sequencer.setMixer(&m_mixer);
     m_sequencer.reset();

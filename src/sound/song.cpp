@@ -45,6 +45,9 @@ bool Song::load() {
     m_markers.clear();
     m_notes.clear();
 
+    // Extract initial state from track headers before merging
+    this->extractInitialState();
+
     int track_num = 0;
     for (auto track : this->tracks()) {
         bool has_notes = false;
@@ -167,4 +170,60 @@ int Song::getTickFromTime(double seconds) {
     int extra_ticks = static_cast<int>(time_diff / spt);
 
     return prev_event.tick + extra_ticks;
+}
+
+void Song::extractInitialState() {
+    // Initialize defaults
+    for (int i = 0; i < 16; i++) {
+        m_initial_programs[i] = 0;
+        m_initial_channel_states[i] = InitialChannelState();
+    }
+
+    // Track which values we've found per channel
+    bool found_program[16] = {false};
+    bool found_volume[16] = {false};
+    bool found_pan[16] = {false};
+    bool found_expression[16] = {false};
+    bool found_pitch_bend[16] = {false};
+
+    // For each track, extract initial state from events at tick 0
+    // These are the "setup" events before the music starts
+    for (auto *track : this->m_events) {
+        for (int i = 0; i < track->size(); i++) {
+            smf::MidiEvent &event = (*track)[i];
+
+            // Only consider events at tick 0 as initial state
+            if (event.tick > 0) break;
+
+            uint8_t ch = event.getChannel();
+            if (ch >= 16) continue;
+
+            if (event.isPatchChange() && !found_program[ch]) {
+                m_initial_programs[ch] = event.getP1();
+                found_program[ch] = true;
+            }
+            else if (event.isController()) {
+                uint8_t cc = event.getP1();
+                uint8_t value = event.getP2();
+
+                if (cc == 7 && !found_volume[ch]) {
+                    m_initial_channel_states[ch].volume = value;
+                    found_volume[ch] = true;
+                }
+                else if (cc == 10 && !found_pan[ch]) {
+                    m_initial_channel_states[ch].pan = value;
+                    found_pan[ch] = true;
+                }
+                else if (cc == 11 && !found_expression[ch]) {
+                    m_initial_channel_states[ch].expression = value;
+                    found_expression[ch] = true;
+                }
+            }
+            else if (event.isPitchbend() && !found_pitch_bend[ch]) {
+                int bend = (event.getP2() << 7) | event.getP1();
+                m_initial_channel_states[ch].pitch_bend = static_cast<int16_t>(bend - 8192);
+                found_pitch_bend[ch] = true;
+            }
+        }
+    }
 }

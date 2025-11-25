@@ -55,6 +55,7 @@ protected:
 private slots:
     void displayEvent(smf::MidiEvent *event);
     void songListSongRequested(const QModelIndex &index);
+    void onTrackMuteToggled(int channel, bool muted);
 
 private:
     std::unique_ptr<Project> m_project;

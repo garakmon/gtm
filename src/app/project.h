@@ -48,6 +48,7 @@ public:
     const QMap<QString, Sample> &getSamples() const { return m_samples; }
     const QMap<QString, QByteArray> &getPcmData() const { return m_pcm_data; }
     const QMap<QString, VoiceGroup> &getVoiceGroups() const { return m_voicegroups; }
+    const QMap<QString, KeysplitTable> &getKeysplitTables() const { return m_keysplit_tables; }
     const VoiceGroup *getVoiceGroup(const QString &name) const;
 
 private:

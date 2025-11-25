@@ -13,7 +13,7 @@
 //   pan
 //   
 
-#include <QGraphicsItem>
+#include <QGraphicsObject>
 
 
 
@@ -21,37 +21,43 @@ class GraphicsScoreItem;
 namespace smf { class MidiEventList; }
 namespace smf { class MidiEvent; }
 
-class GraphicsTrackItem : public QGraphicsItem {
-    //
-public:
-    //
-    GraphicsTrackItem(int track, int row, QGraphicsItem *parent = nullptr);
+class GraphicsTrackItem : public QGraphicsObject {
+    Q_OBJECT
 
+public:
+    GraphicsTrackItem(int track, int row, QGraphicsItem *parent = nullptr);
 
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
-    // Selecting track item highlights all score items of this track
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
     QColor color() { return this->m_color; }
     int track() { return this->m_track; }
     int row() { return this->m_row; }
+    bool isMuted() const { return m_muted; }
 
     void addItem(GraphicsScoreItem *item);
 
-    // int numEvents() { return this->m_note_items.size() + this->m_event_items.size(); }
+    // Update the current playing instrument info for display
+    void setPlayingInfo(const QString &instrument, const QString &voiceType);
+    void clearPlayingInfo();
+
+signals:
+    void muteToggled(int channel, bool muted);
 
 private:
     QColor m_color;
     QColor m_color_light;
     int m_track;
     int m_row;
+    bool m_muted = false;
 
     QList<GraphicsScoreItem *> m_score_items;
 
-    // QVector<GraphicsScoreNoteItem *> m_note_items;
-    // QVector<other event items>
+    // Current playback info display
+    QString m_playing_instrument;
+    QString m_playing_voice_type;
 };
 
 
@@ -68,9 +74,9 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
 private:
-    //
     GraphicsTrackItem *m_parent_track = nullptr;
     smf::MidiEvent *m_event = nullptr;
+    QString m_label;
 };
 
 
@@ -87,9 +93,9 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
 private:
-    //
     GraphicsTrackItem *m_parent_track = nullptr;
     smf::MidiEventList *m_event_list = nullptr;
+    int m_width = 0;
 };
 
 #endif // GRAPHICSTRACKITEM_H

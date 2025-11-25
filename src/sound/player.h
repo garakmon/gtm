@@ -14,13 +14,15 @@ class Song;
 class Player {
 public:
     Player() : m_audio_stream(nullptr) {}
+    ~Player();
 
     bool initializeAudio();
 
     void loadSong(Song *song, const VoiceGroup *vg,
                   const QMap<QString, VoiceGroup> *all_vg,
                   const QMap<QString, Sample> *samples,
-                  const QMap<QString, QByteArray> *pcm_data);
+                  const QMap<QString, QByteArray> *pcm_data,
+                  const QMap<QString, KeysplitTable> *keysplit_tables);
     void play();
     void stop();
     void seekToTick(int tick);

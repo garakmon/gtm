@@ -26,6 +26,7 @@ Controller::Controller(MainWindow *window) : QObject(window) {
     this->m_piano_roll = new PianoRoll(this);
     connect(this->m_piano_roll, &PianoRoll::eventItemSelected, this, &Controller::displayEvent);
     this->m_track_roll = new TrackRoll(this);
+    connect(this->m_track_roll, &TrackRoll::trackMuteToggled, this, &Controller::onTrackMuteToggled);
     this->m_measure_roll = new MeasureRoll(this);
 
     this->m_player = std::make_unique<Player>();
@@ -181,6 +182,15 @@ void Controller::syncRolls() {
     this->m_measure_roll->updatePlaybackGuide(current_tick);
     this->m_measure_roll->setTick(current_tick);
 
+    // Update track items with current instrument info
+    Mixer *mixer = m_player->getMixer();
+    for (int ch = 0; ch < g_num_midi_channels; ch++) {
+        auto info = mixer->getChannelPlayInfo(ch);
+        if (info.active) {
+            m_track_roll->setTrackPlayingInfo(ch, info.instrument_name, info.voice_type);
+        }
+    }
+
     int playhead_x = current_tick * ui_tick_x_scale;
     int viewport_left = this->m_window->hscroll_pianoRoll->value();
     int viewport_width = this->m_window->view_measures->viewport()->width();
@@ -259,15 +269,17 @@ void Controller::play() {
     const QMap<QString, VoiceGroup> *all_voicegroups = nullptr;
     const QMap<QString, Sample> *samples = nullptr;
     const QMap<QString, QByteArray> *pcm_data = nullptr;
+    const QMap<QString, KeysplitTable> *keysplit_tables = nullptr;
 
     if (m_song && m_project) {
         voicegroup = m_project->getVoiceGroup(m_song->getMetaInfo().voicegroup);
         all_voicegroups = &m_project->getVoiceGroups();
         samples = &m_project->getSamples();
         pcm_data = &m_project->getPcmData();
+        keysplit_tables = &m_project->getKeysplitTables();
     }
 
-    m_player->loadSong(m_song.get(), voicegroup, all_voicegroups, samples, pcm_data);
+    m_player->loadSong(m_song.get(), voicegroup, all_voicegroups, samples, pcm_data, keysplit_tables);
 
     m_playback_start_tick = m_measure_roll->tick();
     m_player->seekToTick(m_playback_start_tick);
@@ -282,6 +294,11 @@ void Controller::play() {
 void Controller::stop() {
     m_player->stop();
     m_player_timer.stop();
+    m_track_roll->clearAllPlayingInfo();
+}
+
+void Controller::onTrackMuteToggled(int channel, bool muted) {
+    m_player->getMixer()->setChannelMute(channel, muted);
 }
 
 void Controller::seekToTick(int tick) {

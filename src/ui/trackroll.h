@@ -4,6 +4,7 @@
 
 #include <QObject>
 #include <QGraphicsScene>
+#include <QMap>
 #include <memory>
 
 
@@ -23,12 +24,20 @@ public:
     void setSong(std::shared_ptr<Song> song) {
         this->m_scene_roll.clear();
         this->m_scene_track_list.clear();
+        this->m_track_items.clear();
 
         this->m_active_song = song;
         this->drawTracks();
     }
 
     GraphicsTrackItem *addTrack();
+
+    // Update track display with current instrument info (called during playback)
+    void setTrackPlayingInfo(int channel, const QString &instrument, const QString &voiceType);
+    void clearAllPlayingInfo();
+
+signals:
+    void trackMuteToggled(int channel, bool muted);
 
 private:
     void drawTracks();
@@ -39,6 +48,9 @@ private:
     QGraphicsScene m_scene_track_list;
 
     std::shared_ptr<Song> m_active_song;
+
+    // Map channel to track item for playback info display
+    QMap<int, GraphicsTrackItem *> m_track_items;
 };
 
 

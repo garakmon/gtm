@@ -2,11 +2,26 @@
 #include "mixer.h"
 
 #include <cmath>
+#include <QDebug>
 
 
 
 // Duty cycle thresholds for square waves (12.5%, 25%, 50%, 75%)
 static const double duty_thresholds[4] = {0.125, 0.25, 0.5, 0.75};
+
+// Helper to get voice type name from type_id
+static QString voiceTypeName(int type_id) {
+    switch (type_id) {
+    case 0x00: case 0x08: case 0x10: return "DS";      // DirectSound
+    case 0x01: case 0x09: return "SQ1";                 // Square1
+    case 0x02: case 0x0A: return "SQ2";                 // Square2
+    case 0x03: case 0x0B: return "WAV";                 // ProgrammableWave
+    case 0x04: case 0x0C: return "NOI";                 // Noise
+    case 0x40: return "KEY";                            // Keysplit
+    case 0x80: return "KA";                             // KeysplitAll
+    default: return QString("?%1").arg(type_id, 2, 16);
+    }
+}
 
 float Voice::getNextSample(float pitch_bend_multiplier) {
     if (!is_active) return 0.0f;
@@ -18,21 +33,25 @@ float Voice::getNextSample(float pitch_bend_multiplier) {
     case 0x08:  // DirectSound (no resample)
     case 0x10:  // DirectSound (alt)
         if (sample_data && sample_length > 0) {
-            int idx = static_cast<int>(position);
-
-            if (idx >= static_cast<int>(sample_length) - 1) {
-                if (loops && loop_end > loop_start) {
-                    position = loop_start + std::fmod(position - loop_end, loop_end - loop_start);
-                    idx = static_cast<int>(position);
-                } else {
-                    is_active = false;
-                    return 0.0f;
-                }
+            // Handle looping - check against loop_end, not sample_length
+            if (loops && loop_end > loop_start && position >= loop_end) {
+                position = loop_start + std::fmod(position - loop_start, loop_end - loop_start);
             }
 
-            float frac = position - idx;
+            int idx = static_cast<int>(position);
+
+            // Check for end of non-looping sample
+            if (idx >= static_cast<int>(sample_length)) {
+                is_active = false;
+                return 0.0f;
+            }
+
+            // Linear interpolation with bounds check
             float s0 = sample_data[idx] / 128.0f;
-            float s1 = sample_data[idx + 1] / 128.0f;
+            float s1 = (idx + 1 < static_cast<int>(sample_length))
+                ? sample_data[idx + 1] / 128.0f
+                : s0;  // Use same sample at boundary
+            float frac = position - idx;
             sample = s0 + (s1 - s0) * frac;
 
             position += pitch_ratio * pitch_bend_multiplier;
@@ -159,27 +178,28 @@ void Voice::noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
     }
 
     // Set up ADSR envelope from instrument parameters
-    // GBA values: attack/decay/release 0-255 (higher = slower), sustain 0-15
-    int attack = inst ? inst->attack : 0;
+    // GBA m4a: attack/decay 0-255 (higher = faster), sustain 0-255, release 0-255 (higher = slower)
+    int attack = inst ? inst->attack : 255;
     int decay = inst ? inst->decay : 0;
-    int sustain = inst ? inst->sustain : 15;
+    int sustain = inst ? inst->sustain : 255;
     int release = inst ? inst->release : 0;
 
-    // Convert to per-sample rates
-    // Scale factor tuned for reasonable envelope times at 44100 Hz
-    constexpr float rate_scale = 1.0f / 256.0f;
+    // Convert to per-sample rates at 44100 Hz
+    // Attack/Decay: higher value = faster rate
+    // Release: higher value = slower rate (0 = instant)
+    constexpr float base_rate = 1.0f / 256.0f;
 
-    // Attack: 0 = instant, 255 = ~1.5 seconds
-    attack_rate = (attack == 0) ? 1.0f : rate_scale / (attack + 1);
+    // Attack: 255 = instant, 0 = very slow
+    attack_rate = (attack >= 255) ? 1.0f : base_rate * (attack + 1) / 64.0f;
 
-    // Decay: 0 = instant, 255 = ~1.5 seconds
-    decay_rate = (decay == 0) ? 1.0f : rate_scale / (decay + 1);
+    // Decay: 255 = instant, 0 = very slow
+    decay_rate = (decay >= 255) ? 1.0f : base_rate * (decay + 1) / 64.0f;
 
-    // Sustain: 0 = silent, 15 = full volume
-    sustain_level = sustain / 15.0f;
+    // Sustain: 0-255 scaled to 0.0-1.0
+    sustain_level = sustain / 255.0f;
 
-    // Release: 0 = instant, 255 = ~1.5 seconds
-    release_rate = (release == 0) ? 1.0f : rate_scale / (release + 1);
+    // Release: 0 = instant, 255 = very slow
+    release_rate = (release == 0) ? 1.0f : base_rate / ((release / 4.0f) + 1);
 
     // Start envelope at attack phase
     env_phase = ENV_ATTACK;
@@ -228,11 +248,13 @@ void Voice::updateEnvelope() {
 
 void Mixer::setInstrumentData(const VoiceGroup *vg, const QMap<QString, VoiceGroup> *all_vg,
                               const QMap<QString, Sample> *samples,
-                              const QMap<QString, QByteArray> *pcm_data) {
+                              const QMap<QString, QByteArray> *pcm_data,
+                              const QMap<QString, KeysplitTable> *keysplit_tables) {
     m_voicegroup = vg;
     m_all_voicegroups = all_vg;
     m_samples = samples;
     m_pcm_data = pcm_data;
+    m_keysplit_tables = keysplit_tables;
 
     // Reset channel state to defaults
     for (int i = 0; i < g_num_midi_channels; i++) {
@@ -247,21 +269,71 @@ const Instrument *Mixer::resolveInstrument(const Instrument *inst, uint8_t key,
                                            const VoiceGroup **out_vg) const {
     if (!inst || !m_all_voicegroups) return inst;
 
-    // Handle keysplit instruments (drums, multi-sampled instruments)
-    if (inst->type_id == 0x40 || inst->type_id == 0x80) {
+    // Handle voice_keysplit (0x40) - uses keysplit table to map MIDI key to instrument index
+    if (inst->type_id == 0x40) {
         // sample_label contains the name of the referenced voicegroup
-        auto it = m_all_voicegroups->find(inst->sample_label);
-        if (it != m_all_voicegroups->end()) {
-            const VoiceGroup &drum_vg = it.value();
-            int drum_index = key - drum_vg.offset;
+        auto vg_it = m_all_voicegroups->find(inst->sample_label);
+        if (vg_it == m_all_voicegroups->end()) {
+            qDebug() << "resolveInstrument: keysplit voicegroup not found:" << inst->sample_label;
+            return nullptr;
+        }
 
-            if (drum_index >= 0 && drum_index < drum_vg.instruments.size()) {
-                if (out_vg) *out_vg = &drum_vg;
-                // Recursively resolve in case of nested keysplits
-                return resolveInstrument(&drum_vg.instruments[drum_index], key, out_vg);
+        // Look up the keysplit table to map MIDI key to instrument index
+        int inst_index = 0;
+        if (m_keysplit_tables && !inst->keysplit_table.isEmpty()) {
+            auto table_it = m_keysplit_tables->find(inst->keysplit_table);
+            if (table_it != m_keysplit_tables->end()) {
+                const KeysplitTable &table = table_it.value();
+                auto note_it = table.note_map.find(key);
+                if (note_it != table.note_map.end()) {
+                    inst_index = note_it.value();
+                } else {
+                    // Find the highest key <= requested key in the table
+                    for (auto it = table.note_map.begin(); it != table.note_map.end(); ++it) {
+                        if (it.key() <= key) {
+                            inst_index = it.value();
+                        }
+                    }
+                }
+            } else {
+                qDebug() << "resolveInstrument: keysplit table not found:" << inst->keysplit_table;
             }
         }
-        return nullptr;  // couldn't resolve
+
+        const VoiceGroup &split_vg = vg_it.value();
+        if (inst_index < 0 || inst_index >= split_vg.instruments.size()) {
+            qDebug() << "resolveInstrument: key" << key << "inst_index" << inst_index
+                     << "out of range for" << inst->sample_label
+                     << "(size:" << split_vg.instruments.size() << ")";
+            return nullptr;
+        }
+
+        if (out_vg) *out_vg = &split_vg;
+        // Recursively resolve in case of nested keysplits
+        return resolveInstrument(&split_vg.instruments[inst_index], key, out_vg);
+    }
+
+    // Handle voice_keysplit_all (0x80) - uses direct offset (drumsets)
+    if (inst->type_id == 0x80) {
+        // sample_label contains the name of the referenced voicegroup
+        auto it = m_all_voicegroups->find(inst->sample_label);
+        if (it == m_all_voicegroups->end()) {
+            qDebug() << "resolveInstrument: keysplit_all voicegroup not found:" << inst->sample_label;
+            return nullptr;
+        }
+
+        const VoiceGroup &drum_vg = it.value();
+        int drum_index = key - drum_vg.offset;
+
+        if (drum_index < 0 || drum_index >= drum_vg.instruments.size()) {
+            qDebug() << "resolveInstrument: key" << key << "out of range for" << inst->sample_label
+                     << "(offset:" << drum_vg.offset << "size:" << drum_vg.instruments.size() << ")";
+            return nullptr;
+        }
+
+        if (out_vg) *out_vg = &drum_vg;
+        // Recursively resolve in case of nested keysplits
+        return resolveInstrument(&drum_vg.instruments[drum_index], key, out_vg);
     }
 
     return inst;
@@ -291,30 +363,60 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
     const Sample *sample = nullptr;
     const uint8_t *wave_data = nullptr;
 
-    if (m_voicegroup && program < m_voicegroup->instruments.size()) {
-        inst = &m_voicegroup->instruments[program];
+    if (!m_voicegroup) {
+        qDebug() << "noteOn: ch" << channel << "prog" << program << "- no voicegroup set";
+        return;
+    }
 
-        // Resolve keysplit/drumset instruments to actual instrument
-        const VoiceGroup *resolved_vg = nullptr;
-        inst = resolveInstrument(inst, key, &resolved_vg);
+    if (program >= m_voicegroup->instruments.size()) {
+        qDebug() << "noteOn: ch" << channel << "prog" << program
+                 << "- program out of range (voicegroup has" << m_voicegroup->instruments.size() << "instruments)";
+        return;
+    }
 
-        if (!inst) return;  // couldn't resolve instrument
+    inst = &m_voicegroup->instruments[program];
 
-        // Look up sample for DirectSound instruments
-        if (m_samples && !inst->sample_label.isEmpty()) {
-            auto it = m_samples->find(inst->sample_label);
-            if (it != m_samples->end()) {
-                sample = &it.value();
-            }
+    // Resolve keysplit/drumset instruments to actual instrument
+    const VoiceGroup *resolved_vg = nullptr;
+    inst = resolveInstrument(inst, key, &resolved_vg);
+
+    if (!inst) {
+        qDebug() << "noteOn: ch" << channel << "prog" << program << "key" << key
+                 << "- failed to resolve keysplit (type_id:"
+                 << m_voicegroup->instruments[program].type_id << ")";
+        return;
+    }
+
+    // Look up sample/wave data based on voice type
+    uint8_t type = inst->type_id;
+    bool is_directsound = (type == 0x00 || type == 0x08 || type == 0x10);
+    bool is_wave = (type == 0x03 || type == 0x0B);
+
+    if (is_directsound && m_samples && !inst->sample_label.isEmpty()) {
+        auto it = m_samples->find(inst->sample_label);
+        if (it != m_samples->end()) {
+            sample = &it.value();
+        } else {
+            qDebug() << "noteOn: ch" << channel << "prog" << program
+                     << "- DirectSound sample not found:" << inst->sample_label;
         }
+    }
 
-        // Look up wave data for ProgrammableWave instruments
-        if (m_pcm_data && !inst->sample_label.isEmpty()) {
-            auto it = m_pcm_data->find(inst->sample_label);
-            if (it != m_pcm_data->end()) {
-                wave_data = reinterpret_cast<const uint8_t *>(it.value().constData());
-            }
+    if (is_wave && m_pcm_data && !inst->sample_label.isEmpty()) {
+        auto it = m_pcm_data->find(inst->sample_label);
+        if (it != m_pcm_data->end()) {
+            wave_data = reinterpret_cast<const uint8_t *>(it.value().constData());
+        } else {
+            qDebug() << "noteOn: ch" << channel << "prog" << program
+                     << "- ProgrammableWave data not found:" << inst->sample_label;
         }
+    }
+
+    // Store info for UI display
+    if (channel < g_num_midi_channels) {
+        m_channel_play_info[channel].active = true;
+        m_channel_play_info[channel].instrument_name = inst->sample_label;
+        m_channel_play_info[channel].voice_type = voiceTypeName(inst->type_id);
     }
 
     Voice *voice = allocateVoice(key);
@@ -356,6 +458,12 @@ void Mixer::setChannelPitchBend(uint8_t channel, int value) {
     }
 }
 
+void Mixer::setChannelMute(uint8_t channel, bool muted) {
+    if (channel < g_num_midi_channels) {
+        m_channels[channel].muted = muted;
+    }
+}
+
 void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
     constexpr float master_volume = 0.25f;  // !TODO: use the slider
 
@@ -365,6 +473,12 @@ void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
         for (int v = 0; v < g_max_voices; v++) {
             if (m_voices[v].is_active) {
                 uint8_t ch = m_voices[v].channel;
+
+                // Skip muted channels (but still advance the voice state)
+                if (m_channels[ch].muted) {
+                    m_voices[v].getNextSample(1.0f);  // advance state without output
+                    continue;
+                }
 
                 // Calculate pitch bend multiplier (±2 semitones range)
                 // pitch_bend is -8192 to +8191, map to ±2 semitones
@@ -398,4 +512,18 @@ void Mixer::end() {
         m_voices[i].is_active = false;
         m_voices[i].releasing = false;
     }
+
+    // Clear play info
+    for (int i = 0; i < g_num_midi_channels; i++) {
+        m_channel_play_info[i].active = false;
+        m_channel_play_info[i].instrument_name.clear();
+        m_channel_play_info[i].voice_type.clear();
+    }
+}
+
+Mixer::ChannelPlayInfo Mixer::getChannelPlayInfo(uint8_t channel) const {
+    if (channel < g_num_midi_channels) {
+        return m_channel_play_info[channel];
+    }
+    return ChannelPlayInfo();
 }

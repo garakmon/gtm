@@ -48,7 +48,8 @@ struct Instrument {
     int base_key = g_midi_middle_c;
     int pan = 0;
     QString sample_label; // for instruments with samples in the map,
-                          // or keysplit instrument names
+                          // or keysplit voicegroup names
+    QString keysplit_table; // for voice_keysplit: the keysplit table name
 
     int attack = 0;
     int decay = 0;
@@ -92,6 +93,7 @@ struct ChannelContext {
     uint8_t pan = 0x40;
     int16_t pitch_bend = 0;
     uint8_t priority = 0;
+    bool muted = false;
 };
 
 

@@ -45,7 +45,19 @@ public:
 
     int getTickFromTime(double seconds);
 
+    // Initial state per channel, extracted from track headers before merging
+    const uint8_t *getInitialPrograms() const { return m_initial_programs; }
+
+    struct InitialChannelState {
+        uint8_t volume = 100;      // CC7
+        uint8_t pan = 64;          // CC10 (center)
+        uint8_t expression = 127;  // CC11
+        int16_t pitch_bend = 0;    // center = 0 (raw value 8192)
+    };
+    const InitialChannelState *getInitialChannelStates() const { return m_initial_channel_states; }
+
 private:
+    void extractInitialState();
     QMap<int, smf::MidiEvent *> m_time_signatures;
     QMap<int, smf::MidiEvent *> m_tempo_changes;
     QMap<int, smf::MidiEvent *> m_key_signatures;
@@ -55,7 +67,11 @@ private:
 
     QList<smf::MidiEvent *> m_merged_events; // for playback
 
-    SongEntry m_meta_info; 
+    SongEntry m_meta_info;
+
+    // Initial state per channel (extracted from track headers)
+    uint8_t m_initial_programs[16] = {0};
+    InitialChannelState m_initial_channel_states[16];
 };
 
 #endif // SONG_H

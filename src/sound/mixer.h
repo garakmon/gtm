@@ -16,15 +16,25 @@ public:
 
     void setInstrumentData(const VoiceGroup *vg, const QMap<QString, VoiceGroup> *all_vg,
                            const QMap<QString, Sample> *samples,
-                           const QMap<QString, QByteArray> *pcm_data);
+                           const QMap<QString, QByteArray> *pcm_data,
+                           const QMap<QString, KeysplitTable> *keysplit_tables);
     void noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t program);
     void noteOff(uint8_t channel, uint8_t key);
     void setChannelVolume(uint8_t channel, uint8_t value);
     void setChannelPan(uint8_t channel, uint8_t value);
     void setChannelExpression(uint8_t channel, uint8_t value);
     void setChannelPitchBend(uint8_t channel, int value);
+    void setChannelMute(uint8_t channel, bool muted);
     void processAudio(float *out_buffer, unsigned long frame_count);
     void end();
+
+    // Get current instrument info for a channel (for UI display)
+    struct ChannelPlayInfo {
+        bool active = false;
+        QString instrument_name;
+        QString voice_type;
+    };
+    ChannelPlayInfo getChannelPlayInfo(uint8_t channel) const;
 
 private:
     Voice m_voices[g_max_voices];
@@ -34,6 +44,10 @@ private:
     const QMap<QString, VoiceGroup> *m_all_voicegroups = nullptr;
     const QMap<QString, Sample> *m_samples = nullptr;
     const QMap<QString, QByteArray> *m_pcm_data = nullptr;
+    const QMap<QString, KeysplitTable> *m_keysplit_tables = nullptr;
+
+    // Track current instrument per channel for UI display
+    ChannelPlayInfo m_channel_play_info[g_num_midi_channels];
 
     // Resolve keysplit instruments to their actual underlying instrument
     const Instrument *resolveInstrument(const Instrument *inst, uint8_t key,

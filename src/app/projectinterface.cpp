@@ -92,10 +92,14 @@ bool ProjectInterface::loadDirectSoundData() {
 
     QString text = this->readTextFile(path);
 
-    static const QRegularExpression regex_label_path("(?<label>[A-Za-z0-9_]+):{1,2}\\s+\\.incbin\\s+\"(?<path>[A-Za-z0-9_./\\\\ ]+)\"");
+    // Match label followed by .incbin, allowing for comments and newlines between them
+    // Handles both: "Label:: .incbin" (same line) and "Label:: @comment\n\t.incbin" (next line)
+    // [\s\S]*? matches any character including newlines, non-greedily
+    static const QRegularExpression regex_label_path(
+        "(?<label>[A-Za-z0-9_]+):{1,2}[\\s\\S]*?\\.incbin\\s+\"(?<path>[A-Za-z0-9_./\\\\ ]+)\"");
 
     QRegularExpressionMatchIterator iter = regex_label_path.globalMatch(text);
-    
+
     if (!iter.hasNext()) return false; // no matches is an unsuccessful load
 
     while (iter.hasNext()) {
@@ -209,7 +213,13 @@ bool ProjectInterface::loadWavFile(const QString &label, const QString &path) {
             }
         }
         else if (chunk_id == "data") {
-            sample.data = data.mid(pos + 8, chunk_size);
+            // WAV 8-bit PCM is unsigned (0-255, 128=silence)
+            // Convert to signed (-128 to 127, 0=silence) for playback
+            QByteArray raw = data.mid(pos + 8, chunk_size);
+            sample.data.resize(raw.size());
+            for (int i = 0; i < raw.size(); i++) {
+                sample.data[i] = static_cast<char>(static_cast<uint8_t>(raw[i]) - 128);
+            }
         }
 
         pos += 8 + chunk_size;
@@ -254,23 +264,34 @@ bool ProjectInterface::loadVoiceGroups() {
 bool ProjectInterface::parseVoiceGroup(const QString &path) {
     QString text = this->readTextFile(this->concatPaths(this->m_root, path));
     if (text.isEmpty()) {
+        qDebug() << "parseVoiceGroup: empty file:" << path;
         return false;
     }
 
-    // extract label and optional offset (for drumsets)
-    QRegularExpression label_regex("voice_group\\s+(?<label>[A-Za-z0-9_]+)(?:,\\s*(?<offset>\\d+))?");
+    // extract label - support both formats:
+    // 1. "voicegroupXXX::" (assembly label with double colon)
+    // 2. "voice_group <label>[, <offset>]" (macro format with optional offset for drumsets)
+    QRegularExpression label_regex("(?:(?:^|\\n)\\s*(?<label>voicegroup\\d+)::)|(?:voice_group\\s+(?<label2>[A-Za-z0-9_]+)(?:,\\s*(?<offset>\\d+))?)");
     QRegularExpressionMatch label_match = label_regex.match(text);
 
     if (!label_match.hasMatch()) {
+        qDebug() << "parseVoiceGroup: no voicegroup label in:" << path;
         return false;
     }
+
     QString group_label = label_match.captured("label");
+    if (group_label.isEmpty()) {
+        group_label = label_match.captured("label2");
+    }
 
     // set offset if present (drumsets have starting MIDI note)
     QString offset_str = label_match.captured("offset");
     if (!offset_str.isEmpty()) {
         this->m_project->setVoiceGroupOffset(group_label, offset_str.toInt());
     }
+
+    qDebug() << "parseVoiceGroup: loaded" << group_label << "from" << path
+             << (offset_str.isEmpty() ? "" : QString(" (offset: %1)").arg(offset_str));
 
     // the rest of the lines are <type macro> <args...>
     // the type macro is prefixed with voice_
@@ -326,11 +347,29 @@ void ProjectInterface::processInstrumentEntry(const QString &group_label, const 
         inst.release      = args.at(7).toInt();
     }
 
-    // voice_programmable_wave base_midi_key:req, pan:req, wave_samples_pointer:req, attack:req, decay:req, sustain:req, release:req
-    else if (type.startsWith("voice_programmable_wave") && args.size() >= 7) {
+    // voice_square_2 base_midi_key:req, pan:req, duty_cycle:req, attack:req, decay:req, sustain:req, release:req
+    // Note: Square2 has no sweep parameter unlike Square1
+    else if (type.startsWith("voice_square_2") && args.size() >= 7) {
+        if (type.endsWith("alt")) inst.type_id = 0x0A;
+        else inst.type_id = 0x02;
+
         inst.base_key     = args.at(0).toInt();
         inst.pan          = args.at(1).toInt();
-        inst.sample_label = args.at(2); // Label for the 32-byte wave data
+        inst.duty_cycle   = args.at(2).toInt();
+        inst.attack       = args.at(3).toInt();
+        inst.decay        = args.at(4).toInt();
+        inst.sustain      = args.at(5).toInt();
+        inst.release      = args.at(6).toInt();
+    }
+
+    // voice_programmable_wave base_midi_key:req, pan:req, wave_samples_pointer:req, attack:req, decay:req, sustain:req, release:req
+    else if (type.startsWith("voice_programmable_wave") && args.size() >= 7) {
+        if (type.endsWith("alt")) inst.type_id = 0x0B;
+        else inst.type_id = 0x03;
+
+        inst.base_key     = args.at(0).toInt();
+        inst.pan          = args.at(1).toInt();
+        inst.sample_label = args.at(2); // Label for the 16-byte wave data (32 4-bit samples)
         inst.attack       = args.at(3).toInt();
         inst.decay        = args.at(4).toInt();
         inst.sustain      = args.at(5).toInt();
@@ -352,18 +391,25 @@ void ProjectInterface::processInstrumentEntry(const QString &group_label, const 
     }
 
     // voice_keysplit voice_group_pointer:req, keysplit_table_pointer:req
-    else if (type == "voice_keysplit") {
+    else if (type == "voice_keysplit" && args.size() >= 2) {
         QString name = args.at(0); // eg. "voicegroup_piano_keysplit"
-        name.remove("voicegroup_").remove("_keysplit");
+        // Only remove the "voicegroup_" prefix, keep the rest of the name
+        if (name.startsWith("voicegroup_")) {
+            name = name.mid(11); // strlen("voicegroup_") == 11
+        }
 
         inst.type_id = 0x40;
         inst.sample_label = name;
+        inst.keysplit_table = args.at(1); // eg. "keysplit_piano"
     }
 
     // voice_keysplit_all voice_group_pointer:req
     else if (type == "voice_keysplit_all") {
         QString name = args.at(0);
-        name.remove("voicegroup_").remove("_keysplit");
+        // Only remove the "voicegroup_" prefix, keep the rest of the name
+        if (name.startsWith("voicegroup_")) {
+            name = name.mid(11);
+        }
 
         inst.type_id = 0x80;
         inst.sample_label = name;
@@ -491,16 +537,16 @@ bool ProjectInterface::loadSongs() {
 }
 
 void ProjectInterface::parseMidiConfig() {
+    // Parse song metadata from midi.cfg
+    // Format: <song>.mid: -E -R<reverb> -G_<voicegroup> -V<volume> [-P<priority>]
+
     QString text = this->readTextFile(this->concatPaths(this->m_root, "sound/songs/midi/midi.cfg"));
     if (text.isEmpty()) {
+        qDebug() << "parseMidiConfig: midi.cfg not found";
         return;
     }
 
-    // !TODO: -X, -E, -N, -L ?
-    // !TODO: what is the default when no -G is provided?? is dummy_ correct?
     static const QRegularExpression re_title("(?<title>[A-Za-z0-9_]+)\\.mid:");
-
-    // optional flags - these can appear anywhere on the line so can't use a single regex :(
     static const QRegularExpression re_voicegroup("-G(?<voicegroup>[A-Za-z0-9_]+)");
     static const QRegularExpression re_volume("-V(?<volume>\\d+)");
     static const QRegularExpression re_priority("-P(?<priority>\\d+)");
@@ -508,7 +554,8 @@ void ProjectInterface::parseMidiConfig() {
 
     QStringList lines = text.split('\n');
 
-    for (QString &line : lines) {
+    int parsed = 0;
+    for (const QString &line : lines) {
         QRegularExpressionMatch title_match = re_title.match(line);
         if (!title_match.hasMatch()) {
             continue;
@@ -516,7 +563,6 @@ void ProjectInterface::parseMidiConfig() {
 
         QString title = title_match.captured("title");
 
-        // hopefully correct default values (!TODO: investigate further)
         QString voicegroup = "dummy";
         int volume = 0x7F;
         int priority = 0;
@@ -525,6 +571,7 @@ void ProjectInterface::parseMidiConfig() {
         QRegularExpressionMatch group_match = re_voicegroup.match(line);
         if (group_match.hasMatch()) {
             voicegroup = group_match.captured("voicegroup");
+            // Strip leading underscore if present (e.g., "_abandoned_ship" -> "abandoned_ship")
             if (voicegroup.startsWith("_")) {
                 voicegroup = voicegroup.mid(1);
             }
@@ -546,7 +593,10 @@ void ProjectInterface::parseMidiConfig() {
         }
 
         this->m_project->updateSongData(title, voicegroup, volume, priority, reverb);
+        parsed++;
     }
+
+    qDebug() << "parseMidiConfig: parsed" << parsed << "song configs from midi.cfg";
 }
 
 smf::MidiFile ProjectInterface::loadMidi(const QString &title) {
