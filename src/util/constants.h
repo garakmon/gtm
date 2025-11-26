@@ -9,6 +9,8 @@ const int g_max_num_tracks = 16;
 const int g_max_voices = 16;
 const int g_num_midi_channels = 16;
 const int g_sample_rate = 44100;
+const int g_gba_fps = 60;  // GBA frame rate (envelope update rate)
+const int g_samples_per_frame = g_sample_rate / g_gba_fps;  // ~735 samples per frame
 
 // MIDI piano
 const int g_num_notes_piano = 128; // C-1

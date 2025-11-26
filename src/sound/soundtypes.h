@@ -148,14 +148,15 @@ struct Voice {
     int noise_counter = 0;
     int noise_period = 1;
 
-    // ADSR Envelope
+    // ADSR Envelope (GBA-accurate: frame-based, 0-255 level)
     enum EnvPhase { ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE };
     EnvPhase env_phase = ENV_ATTACK;
-    float envelope = 0.0f;       // current envelope level (0.0 - 1.0)
-    float attack_rate = 0.0f;    // per-sample increment during attack
-    float decay_rate = 0.0f;     // per-sample decrement during decay
-    float sustain_level = 1.0f;  // level to hold during sustain (0.0 - 1.0)
-    float release_rate = 0.0f;   // per-sample decrement during release
+    uint8_t env_level = 0;       // current envelope level (0-255, GBA-style)
+    uint8_t env_attack = 0;      // attack value (higher = faster, additive per frame)
+    uint8_t env_decay = 0;       // decay value (higher = slower, multiplicative)
+    uint8_t env_sustain = 0;     // sustain level (0-255)
+    uint8_t env_release = 0;     // release value (higher = slower, multiplicative)
+    int frame_counter = 0;       // samples until next envelope update
 
     float getNextSample(float pitch_bend_multiplier = 1.0f);
     void noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,

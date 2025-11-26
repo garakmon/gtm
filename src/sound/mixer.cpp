@@ -33,26 +33,25 @@ float Voice::getNextSample(float pitch_bend_multiplier) {
     case 0x08:  // DirectSound (no resample)
     case 0x10:  // DirectSound (alt)
         if (sample_data && sample_length > 0) {
-            // Handle looping - check against loop_end, not sample_length
-            if (loops && loop_end > loop_start && position >= loop_end) {
-                position = loop_start + std::fmod(position - loop_start, loop_end - loop_start);
-            }
-
+            // GBA uses nearest-neighbor (point) sampling, no interpolation
             int idx = static_cast<int>(position);
 
-            // Check for end of non-looping sample
-            if (idx >= static_cast<int>(sample_length)) {
-                is_active = false;
-                return 0.0f;
+            if (loops && loop_end > loop_start) {
+                // Looping sample: wrap position within loop region
+                if (idx >= static_cast<int>(loop_end)) {
+                    position = loop_start + std::fmod(position - loop_start, loop_end - loop_start);
+                    idx = static_cast<int>(position);
+                }
+            } else {
+                // Non-looping sample: check for end
+                if (idx >= static_cast<int>(sample_length)) {
+                    is_active = false;
+                    return 0.0f;
+                }
             }
 
-            // Linear interpolation with bounds check
-            float s0 = sample_data[idx] / 128.0f;
-            float s1 = (idx + 1 < static_cast<int>(sample_length))
-                ? sample_data[idx + 1] / 128.0f
-                : s0;  // Use same sample at boundary
-            float frac = position - idx;
-            sample = s0 + (s1 - s0) * frac;
+            // Point sampling (GBA-accurate)
+            sample = sample_data[idx] / 128.0f;
 
             position += pitch_ratio * pitch_bend_multiplier;
         }
@@ -111,7 +110,9 @@ float Voice::getNextSample(float pitch_bend_multiplier) {
 
     if (!is_active) return 0.0f;
 
-    return sample * envelope * (velocity / 127.0f);
+    // Convert uint8_t envelope level (0-255) to float (0.0-1.0)
+    float env_float = env_level / 255.0f;
+    return sample * env_float * (velocity / 127.0f);
 }
 
 void Voice::noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
@@ -177,33 +178,21 @@ void Voice::noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
         break;
     }
 
-    // Set up ADSR envelope from instrument parameters
-    // GBA m4a: attack/decay 0-255 (higher = faster), sustain 0-255, release 0-255 (higher = slower)
-    int attack = inst ? inst->attack : 255;
-    int decay = inst ? inst->decay : 0;
-    int sustain = inst ? inst->sustain : 255;
-    int release = inst ? inst->release : 0;
-
-    // Convert to per-sample rates at 44100 Hz
-    // Attack/Decay: higher value = faster rate
-    // Release: higher value = slower rate (0 = instant)
-    constexpr float base_rate = 1.0f / 256.0f;
-
-    // Attack: 255 = instant, 0 = very slow
-    attack_rate = (attack >= 255) ? 1.0f : base_rate * (attack + 1) / 64.0f;
-
-    // Decay: 255 = instant, 0 = very slow
-    decay_rate = (decay >= 255) ? 1.0f : base_rate * (decay + 1) / 64.0f;
-
-    // Sustain: 0-255 scaled to 0.0-1.0
-    sustain_level = sustain / 255.0f;
-
-    // Release: 0 = instant, 255 = very slow
-    release_rate = (release == 0) ? 1.0f : base_rate / ((release / 4.0f) + 1);
+    // Set up ADSR envelope from instrument parameters (GBA-accurate)
+    // GBA m4a: attack 0-255 (higher = faster, additive per frame)
+    //          decay/release 0-255 (higher = slower, multiplicative: level = (level * param) >> 8)
+    //          sustain 0-255 (target level during decay)
+    env_attack = inst ? static_cast<uint8_t>(inst->attack) : 255;
+    env_decay = inst ? static_cast<uint8_t>(inst->decay) : 0;
+    env_sustain = inst ? static_cast<uint8_t>(inst->sustain) : 255;
+    env_release = inst ? static_cast<uint8_t>(inst->release) : 0;
 
     // Start envelope at attack phase
     env_phase = ENV_ATTACK;
-    envelope = 0.0f;
+    // If attack is 255 (instant), start at full level like agbplay does
+    env_level = (env_attack == 255) ? 255 : 0;
+    // GBA runs at ~60fps, 44100/60 ≈ 735 samples per frame
+    frame_counter = g_samples_per_frame;
 }
 
 void Voice::noteOff() {
@@ -212,32 +201,51 @@ void Voice::noteOff() {
 }
 
 void Voice::updateEnvelope() {
+    // GBA-accurate envelope: updates once per frame (~60Hz)
+    // Decrement frame counter; only update when it reaches 0
+    if (--frame_counter > 0) {
+        return;
+    }
+    frame_counter = g_samples_per_frame;
+
     switch (env_phase) {
     case ENV_ATTACK:
-        envelope += attack_rate;
-        if (envelope >= 1.0f) {
-            envelope = 1.0f;
-            env_phase = ENV_DECAY;
+        {
+            // Attack is additive: level += attack
+            uint32_t new_level = env_level + env_attack;
+            if (new_level >= 255) {
+                env_level = 255;
+                env_phase = ENV_DECAY;
+            } else {
+                env_level = static_cast<uint8_t>(new_level);
+            }
         }
         break;
 
     case ENV_DECAY:
-        envelope -= decay_rate;
-        if (envelope <= sustain_level) {
-            envelope = sustain_level;
-            env_phase = ENV_SUSTAIN;
+        // Decay is multiplicative: level = (level * decay) >> 8
+        // Higher decay value = slower decay (255 = almost no change)
+        env_level = static_cast<uint8_t>((env_level * env_decay) >> 8);
+        if (env_level <= env_sustain) {
+            env_level = env_sustain;
+            if (env_level == 0) {
+                // If sustain is 0, go to release/die
+                env_phase = ENV_RELEASE;
+            } else {
+                env_phase = ENV_SUSTAIN;
+            }
         }
         break;
 
     case ENV_SUSTAIN:
         // Hold at sustain level until note off
-        envelope = sustain_level;
         break;
 
     case ENV_RELEASE:
-        envelope -= release_rate;
-        if (envelope <= 0.0f) {
-            envelope = 0.0f;
+        // Release is multiplicative: level = (level * release) >> 8
+        // Higher release value = slower release (255 = almost no change)
+        env_level = static_cast<uint8_t>((env_level * env_release) >> 8);
+        if (env_level == 0) {
             is_active = false;
         }
         break;
@@ -396,6 +404,13 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
         auto it = m_samples->find(inst->sample_label);
         if (it != m_samples->end()) {
             sample = &it.value();
+            qDebug() << "noteOn: ch" << channel << "key" << key
+                     << "sample:" << inst->sample_label
+                     << "len:" << sample->data.size()
+                     << "rate:" << sample->sample_rate
+                     << "loop:" << sample->loops
+                     << "loop_start:" << sample->loop_start
+                     << "loop_end:" << sample->loop_end;
         } else {
             qDebug() << "noteOn: ch" << channel << "prog" << program
                      << "- DirectSound sample not found:" << inst->sample_label;
