@@ -17,6 +17,7 @@ public:
     void seekToTick(int tick);
 
     void update(unsigned long frames);
+    void fillAudio(float *out_buffer, unsigned long frames);
 
     bool isPlaying() const { return m_is_playing; }
     double getCurrentTime() const { return m_current_time; }
@@ -27,6 +28,7 @@ private:
 
     bool m_is_playing = false;
     double m_current_time = 0.0;
+    int64_t m_current_sample = 0;
     int m_event_index = 0;
     int m_loop_begin_index = -1;
 

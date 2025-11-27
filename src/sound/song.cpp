@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <QDebug>
+#include <cmath>
 
 
 
@@ -136,40 +137,61 @@ int Song::durationInTicks() {
 int Song::getTickFromTime(double seconds) {
     if (seconds <= 0.0) return 0;
 
-    smf::MidiEventList &event_list = (*this)[0];
-    int n_events = event_list.size();
+    // Tempo-aware time -> tick conversion to avoid drift on tempo changes.
+    int tpqn = this->getTicksPerQuarterNote();
+    if (tpqn <= 0) return 0;
 
-    if (n_events == 0) return 0;
+    static int debug_count = 0;
 
-    // binary search to find the event closest to our target time
-    int left = 0;
-    int right = n_events - 1;
-    int mid;
+    // Default MIDI tempo is 120 BPM = 500000 us per quarter note.
+    double current_spt = 0.5 / static_cast<double>(tpqn);
+    int prev_tick = 0;
+    double remaining = seconds;
 
-    while (left <= right) {
-        mid = left + (right - left) / 2;
-        if (event_list[mid].seconds < seconds) {
-            left = mid + 1;
-        } else if (event_list[mid].seconds > seconds) {
-            right = mid - 1;
-        } else {
-            return event_list[mid].tick;
+    // If there is a tempo at tick 0, use it as initial tempo.
+    if (!m_tempo_changes.isEmpty()) {
+        auto it0 = m_tempo_changes.begin();
+        if (it0.key() == 0 && it0.value()) {
+            current_spt = it0.value()->getTempoSPT(tpqn);
         }
     }
 
-    // with no exact match, right is the index of the event immediately before the target time.
-    if (right < 0) return 0;
+    for (auto it = m_tempo_changes.begin(); it != m_tempo_changes.end(); ++it) {
+        int tempo_tick = it.key();
+        smf::MidiEvent *tempo_event = it.value();
+        if (!tempo_event) continue;
 
-    smf::MidiEvent &prev_event = event_list[right];
+        if (tempo_tick <= prev_tick) {
+            current_spt = tempo_event->getTempoSPT(tpqn);
+            continue;
+        }
 
-    // calculate the 'leftover' ticks between the last event and the target time based on the tempo
-    double time_diff = seconds - prev_event.seconds;
+        int delta_ticks = tempo_tick - prev_tick;
+        double segment_seconds = delta_ticks * current_spt;
 
-    double spt = this->getFileDurationInSeconds() / this->getFileDurationInTicks();
+        if (remaining < segment_seconds) {
+            int tick = prev_tick + static_cast<int>(std::floor(remaining / current_spt));
+            if (debug_count < 8) {
+                qDebug() << "getTickFromTime:" << seconds << "->" << tick
+                         << "(tempo-aware, remaining segment)";
+                debug_count++;
+            }
+            return tick;
+        }
 
-    int extra_ticks = static_cast<int>(time_diff / spt);
+        remaining -= segment_seconds;
+        prev_tick = tempo_tick;
+        current_spt = tempo_event->getTempoSPT(tpqn);
+    }
 
-    return prev_event.tick + extra_ticks;
+    // After last tempo change.
+    int tick = prev_tick + static_cast<int>(std::floor(remaining / current_spt));
+    if (debug_count < 8) {
+        qDebug() << "getTickFromTime:" << seconds << "->" << tick
+                 << "(tempo-aware, after last tempo)";
+        debug_count++;
+    }
+    return tick;
 }
 
 void Song::extractInitialState() {

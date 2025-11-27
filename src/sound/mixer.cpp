@@ -2,6 +2,7 @@
 #include "mixer.h"
 
 #include <cmath>
+#include <algorithm>
 #include <QDebug>
 
 
@@ -127,6 +128,8 @@ void Voice::noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
 
     int base_key = inst ? inst->base_key : g_midi_middle_c;
     voice_type = inst ? inst->type_id : 0;
+    inst_pan_enabled = (inst && inst->pan != 0);
+    inst_pan = inst_pan_enabled ? static_cast<int8_t>(std::clamp(inst->pan, -128, 127)) : 0;
 
     // Calculate frequency for synthesized voices
     // MIDI note to frequency: f = 440 * 2^((note - 69) / 12)
@@ -483,7 +486,8 @@ void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
     constexpr float master_volume = 0.25f;  // !TODO: use the slider
 
     for (unsigned long i = 0; i < frame_count; i++) {
-        float mixed_sample = 0.0f;
+        float mixed_l = 0.0f;
+        float mixed_r = 0.0f;
 
         for (int v = 0; v < g_max_voices; v++) {
             if (m_voices[v].is_active) {
@@ -507,18 +511,35 @@ void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
                 float ch_exp = m_channels[ch].expression / 127.0f;
                 sample *= ch_vol * ch_exp;
 
-                mixed_sample += sample;
+                // MP2K/GBA-style pan math (linear, signed -128..128)
+                int pan = static_cast<int>(m_channels[ch].pan) - 64; // 0..127 -> -64..63
+                if (m_voices[v].inst_pan_enabled) {
+                    pan += m_voices[v].inst_pan;
+                }
+                if (pan < -128) pan = -128;
+                if (pan > 128) pan = 128;
+                if (pan >= 126) pan = 128; // match mp2k edge clamp
+
+                float left_gain = static_cast<float>(-pan + 128) * (1.0f / 256.0f);
+                float right_gain = static_cast<float>(pan + 128) * (1.0f / 256.0f);
+
+                mixed_l += sample * left_gain;
+                mixed_r += sample * right_gain;
             }
         }
 
-        mixed_sample *= master_volume;
+        mixed_l *= master_volume;
+        mixed_r *= master_volume;
 
         // clip the volume so it doesnt blow out my speakers
-        if (mixed_sample > 1.0f) mixed_sample = 1.0f;
-        else if (mixed_sample < -1.0f) mixed_sample = -1.0f;
+        if (mixed_l > 1.0f) mixed_l = 1.0f;
+        else if (mixed_l < -1.0f) mixed_l = -1.0f;
 
-        *out_buffer++ = mixed_sample;
-        *out_buffer++ = mixed_sample;
+        if (mixed_r > 1.0f) mixed_r = 1.0f;
+        else if (mixed_r < -1.0f) mixed_r = -1.0f;
+
+        *out_buffer++ = mixed_l;
+        *out_buffer++ = mixed_r;
     }
 }
 

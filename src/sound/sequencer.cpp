@@ -4,6 +4,9 @@
 #include "mixer.h"
 #include "constants.h"
 
+#include <cstring>
+#include <cmath>
+#include <cstdint>
 
 
 void Sequencer::setSong(Song *song) {
@@ -24,6 +27,7 @@ void Sequencer::stop() {
 
 void Sequencer::reset() {
     m_current_time = 0.0;
+    m_current_sample = 0;
     m_event_index = 0;
     m_loop_begin_index = -1;
     m_is_playing = false;
@@ -50,12 +54,14 @@ void Sequencer::reset() {
 void Sequencer::seekToTick(int tick) {
     if (!m_song) {
         m_current_time = 0.0;
+        m_current_sample = 0;
         m_event_index = 0;
         m_loop_begin_index = -1;
         return;
     }
 
     m_current_time = m_song->getTimeInSeconds(tick);
+    m_current_sample = static_cast<int64_t>(std::llround(m_current_time * g_sample_rate));
 
     auto &events = m_song->getMergedEvents();
 
@@ -119,8 +125,80 @@ void Sequencer::update(unsigned long frames) {
 
     double time_delta = static_cast<double>(frames) / g_sample_rate;
     m_current_time += time_delta;
+    m_current_sample += static_cast<int64_t>(frames);
 
     processEventsUpTo(m_current_time);
+}
+
+void Sequencer::fillAudio(float *out_buffer, unsigned long frames) {
+    if (!out_buffer || frames == 0) return;
+
+    // Silence if not ready or not playing.
+    if (!m_is_playing || !m_song || !m_mixer) {
+        std::memset(out_buffer, 0, frames * 2 * sizeof(float));
+        return;
+    }
+
+    auto &events = m_song->getMergedEvents();
+    unsigned long frames_remaining = frames;
+    float *write_ptr = out_buffer;
+
+    while (frames_remaining > 0) {
+        // Dispatch any events scheduled at or before current time
+        while (m_event_index < events.size()) {
+            double event_time = events[m_event_index]->seconds;
+            int64_t event_sample = static_cast<int64_t>(std::floor(event_time * g_sample_rate));
+            if (event_sample > m_current_sample) break;
+            if (dispatchEvent(events[m_event_index])) {
+                // Loop occurred; continue processing at new time/index
+                m_current_sample = static_cast<int64_t>(std::floor(m_current_time * g_sample_rate));
+                continue;
+            }
+            m_event_index++;
+        }
+
+        // Determine next event time or end of buffer
+        int64_t buffer_end_sample = m_current_sample + static_cast<int64_t>(frames_remaining);
+        int64_t next_event_sample = buffer_end_sample;
+
+        if (m_event_index < events.size()) {
+            int64_t event_sample = static_cast<int64_t>(
+                std::floor(events[m_event_index]->seconds * g_sample_rate));
+            if (event_sample < next_event_sample) {
+                next_event_sample = event_sample;
+            }
+        }
+
+        if (next_event_sample < m_current_sample) {
+            next_event_sample = m_current_sample;
+        }
+
+        unsigned long frames_until_event = 0;
+        if (next_event_sample > m_current_sample) {
+            frames_until_event = static_cast<unsigned long>(next_event_sample - m_current_sample);
+        }
+
+        if (frames_until_event > frames_remaining) {
+            frames_until_event = frames_remaining;
+        }
+
+        if (frames_until_event == 0) {
+            if (m_event_index >= events.size()) {
+                frames_until_event = frames_remaining;
+            } else {
+                // Advance to the event boundary without rendering audio.
+                m_current_sample = next_event_sample;
+                m_current_time = static_cast<double>(m_current_sample) / g_sample_rate;
+                continue;
+            }
+        }
+
+        m_mixer->processAudio(write_ptr, frames_until_event);
+        write_ptr += frames_until_event * 2;
+        frames_remaining -= frames_until_event;
+        m_current_sample += static_cast<int64_t>(frames_until_event);
+        m_current_time = static_cast<double>(m_current_sample) / g_sample_rate;
+    }
 }
 
 void Sequencer::processEventsUpTo(double time) {

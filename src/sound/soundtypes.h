@@ -125,6 +125,8 @@ struct Voice {
 
     // Voice type (from GbaVoiceType enum)
     uint8_t voice_type = 0;
+    int8_t inst_pan = 0;       // instrument pan offset (signed), if enabled
+    bool inst_pan_enabled = false;
 
     // Sample playback (DirectSound)
     const int8_t *sample_data = nullptr;

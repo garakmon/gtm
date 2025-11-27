@@ -46,8 +46,7 @@ int Player::paStaticCallback(const void *input, void *output,
 }
 
 void Player::audioCallback(float *out_buffer, unsigned long frame_count) {
-    m_sequencer.update(frame_count);
-    m_mixer.processAudio(out_buffer, frame_count);
+    m_sequencer.fillAudio(out_buffer, frame_count);
 }
 
 void Player::loadSong(Song *song, const VoiceGroup *vg,
