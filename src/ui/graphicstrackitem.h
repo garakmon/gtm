@@ -14,7 +14,9 @@
 //   
 
 #include <QGraphicsObject>
+#include <QGraphicsProxyWidget>
 
+class QPushButton;
 
 
 class GraphicsScoreItem;
@@ -36,15 +38,19 @@ public:
     int track() { return this->m_track; }
     int row() { return this->m_row; }
     bool isMuted() const { return m_muted; }
+    bool isSoloed() const;
 
     void addItem(GraphicsScoreItem *item);
 
     // Update the current playing instrument info for display
     void setPlayingInfo(const QString &instrument, const QString &voiceType);
     void clearPlayingInfo();
+    void setMuted(bool muted);
+    void setSoloed(bool soloed);
 
 signals:
     void muteToggled(int channel, bool muted);
+    void soloToggled(int channel, bool soloed);
 
 private:
     QColor m_color;
@@ -53,11 +59,19 @@ private:
     int m_row;
     bool m_muted = false;
 
+    QGraphicsProxyWidget *m_mute_proxy = nullptr;
+    QPushButton *m_mute_button = nullptr;
+    QGraphicsProxyWidget *m_solo_proxy = nullptr;
+    QPushButton *m_solo_button = nullptr;
+
     QList<GraphicsScoreItem *> m_score_items;
 
     // Current playback info display
     QString m_playing_instrument;
     QString m_playing_voice_type;
+
+    void updateMuteButton();
+    void updateSoloButton();
 };
 
 

@@ -27,6 +27,7 @@ Controller::Controller(MainWindow *window) : QObject(window) {
     connect(this->m_piano_roll, &PianoRoll::eventItemSelected, this, &Controller::displayEvent);
     this->m_track_roll = new TrackRoll(this);
     connect(this->m_track_roll, &TrackRoll::trackMuteToggled, this, &Controller::onTrackMuteToggled);
+    connect(this->m_track_roll, &TrackRoll::trackSoloToggled, this, &Controller::onTrackSoloToggled);
     this->m_measure_roll = new MeasureRoll(this);
 
     this->m_player = std::make_unique<Player>();
@@ -298,7 +299,37 @@ void Controller::stop() {
 }
 
 void Controller::onTrackMuteToggled(int channel, bool muted) {
+    // Mute is non-exclusive. If any solo is active, clear it and keep current mute state.
+    if (m_track_roll->hasSoloed()) {
+        m_track_roll->clearAllSoloed();
+    }
+
+    m_track_roll->setTrackMuted(channel, muted);
     m_player->getMixer()->setChannelMute(channel, muted);
+}
+
+void Controller::onTrackSoloToggled(int channel, bool soloed) {
+    if (soloed) {
+        // Solo mutes all other tracks, and clears any other solo state.
+        m_track_roll->clearAllSoloed();
+        m_track_roll->setTrackSoloed(channel, true);
+
+        m_player->getMixer()->setAllMuted(true);
+        m_player->getMixer()->setChannelMute(channel, false);
+
+        // Reflect in UI mute states.
+        for (int ch = 0; ch < g_num_midi_channels; ch++) {
+            m_track_roll->setTrackMuted(ch, ch != channel);
+        }
+    } else {
+        // Clearing solo unmutes all tracks.
+        m_track_roll->clearAllSoloed();
+        m_player->getMixer()->setAllMuted(false);
+        for (int ch = 0; ch < g_num_midi_channels; ch++) {
+            m_track_roll->setTrackMuted(ch, false);
+            m_player->getMixer()->setChannelMute(ch, false);
+        }
+    }
 }
 
 void Controller::seekToTick(int tick) {

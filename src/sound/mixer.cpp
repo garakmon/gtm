@@ -482,6 +482,12 @@ void Mixer::setChannelMute(uint8_t channel, bool muted) {
     }
 }
 
+void Mixer::setAllMuted(bool muted) {
+    for (int ch = 0; ch < g_num_midi_channels; ch++) {
+        m_channels[ch].muted = muted;
+    }
+}
+
 void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
     constexpr float master_volume = 0.25f;  // !TODO: use the slider
 

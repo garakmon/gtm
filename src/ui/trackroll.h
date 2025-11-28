@@ -35,9 +35,14 @@ public:
     // Update track display with current instrument info (called during playback)
     void setTrackPlayingInfo(int channel, const QString &instrument, const QString &voiceType);
     void clearAllPlayingInfo();
+    void setTrackMuted(int channel, bool muted);
+    void setTrackSoloed(int channel, bool soloed);
+    void clearAllSoloed();
+    bool hasSoloed() const;
 
 signals:
     void trackMuteToggled(int channel, bool muted);
+    void trackSoloToggled(int channel, bool soloed);
 
 private:
     void drawTracks();

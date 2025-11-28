@@ -3,6 +3,9 @@
 #include <QPainter>
 #include <QFontMetrics>
 #include <QGraphicsSceneMouseEvent>
+#include <QPushButton>
+#include <QIcon>
+#include <QSignalBlocker>
 
 #include "graphicsscorenoteitem.h"
 #include "constants.h"
@@ -21,6 +24,46 @@ GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent) 
     int color_index = row < g_max_num_tracks ? row : g_max_num_tracks - 1;
     this->m_color = ui_track_color_array[color_index];
     this->m_color_light = ui_track_color_array[color_index].lighter(150);
+
+    // Mute button as a proxy widget (for future expansion with more controls)
+    m_mute_button = new QPushButton();
+    m_mute_button->setCheckable(true);
+    m_mute_button->setFocusPolicy(Qt::NoFocus);
+    m_mute_button->setFixedSize(ui_track_item_height - 10, ui_track_item_height - 10);
+    m_mute_button->setIconSize(QSize(ui_track_item_height - 14, ui_track_item_height - 14));
+
+    m_mute_proxy = new QGraphicsProxyWidget(this);
+    m_mute_proxy->setWidget(m_mute_button);
+    m_mute_proxy->setPos(5, ui_track_item_height * this->m_row + 5);
+    m_mute_proxy->setZValue(2);
+
+    // Solo button
+    m_solo_button = new QPushButton("S");
+    m_solo_button->setCheckable(true);
+    m_solo_button->setFocusPolicy(Qt::NoFocus);
+    m_solo_button->setFixedSize(ui_track_item_height - 10, ui_track_item_height - 10);
+
+    m_solo_proxy = new QGraphicsProxyWidget(this);
+    m_solo_proxy->setWidget(m_solo_button);
+    m_solo_proxy->setPos(5 + (ui_track_item_height - 10) + 4, ui_track_item_height * this->m_row + 5);
+    m_solo_proxy->setZValue(2);
+
+    updateMuteButton();
+    updateSoloButton();
+
+    connect(m_mute_button, &QPushButton::clicked, this, [this]() {
+        m_muted = m_mute_button->isChecked();
+        updateMuteButton();
+        update();
+        emit muteToggled(m_row, m_muted);
+    });
+
+    connect(m_solo_button, &QPushButton::clicked, this, [this]() {
+        bool soloed = m_solo_button->isChecked();
+        updateSoloButton();
+        update();
+        emit soloToggled(m_row, soloed);
+    });
 }
 
 QRectF GraphicsTrackItem::boundingRect() const {
@@ -33,22 +76,6 @@ void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     painter->setBrush(this->m_color);
     painter->drawRoundedRect(rect, 5, 5);
 
-    // Mute button (the small square)
-    QRectF muteRect(5, rect.y() + 5, ui_track_item_height - 10, ui_track_item_height - 10);
-    if (m_muted) {
-        painter->setBrush(QColor(100, 100, 100));  // gray when muted
-    } else {
-        painter->setBrush(this->m_color_light);
-    }
-    painter->drawRoundedRect(muteRect, 3, 3);
-
-    // Draw "M" if muted
-    if (m_muted) {
-        painter->setPen(Qt::white);
-        painter->setFont(QFont("sans-serif", 10, QFont::Bold));
-        painter->drawText(muteRect, Qt::AlignCenter, "M");
-    }
-
     // Draw current instrument/voice type info if playing
     if (!m_playing_instrument.isEmpty() || !m_playing_voice_type.isEmpty()) {
         painter->setPen(m_color.lightness() > 100 ? Qt::black : Qt::white);
@@ -59,21 +86,14 @@ void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
             info += " " + m_playing_instrument;
         }
 
-        QRectF textRect(ui_track_item_height, rect.y() + 2, rect.width() - ui_track_item_height - 5, rect.height() - 4);
+        int button_width = ui_track_item_height - 10;
+        int left_pad = 5 + button_width + 4 + button_width + 6;
+        QRectF textRect(left_pad, rect.y() + 2, rect.width() - left_pad - 5, rect.height() - 4);
         painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, info);
     }
 }
 
 void GraphicsTrackItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-    QRectF rect = boundingRect();
-    QRectF muteRect(5, rect.y() + 5, ui_track_item_height - 10, ui_track_item_height - 10);
-
-    if (muteRect.contains(event->pos())) {
-        m_muted = !m_muted;
-        update();
-        emit muteToggled(m_row, m_muted);  // use row as channel
-    }
-
     QGraphicsObject::mousePressEvent(event);
 }
 
@@ -93,6 +113,53 @@ void GraphicsTrackItem::clearPlayingInfo() {
     m_playing_instrument.clear();
     m_playing_voice_type.clear();
     update();
+}
+
+bool GraphicsTrackItem::isSoloed() const {
+    return m_solo_button && m_solo_button->isChecked();
+}
+
+void GraphicsTrackItem::setMuted(bool muted) {
+    if (!m_mute_button) return;
+    QSignalBlocker blocker(m_mute_button);
+    m_muted = muted;
+    m_mute_button->setChecked(muted);
+    updateMuteButton();
+    update();
+}
+
+void GraphicsTrackItem::setSoloed(bool soloed) {
+    if (!m_solo_button) return;
+    QSignalBlocker blocker(m_solo_button);
+    m_solo_button->setChecked(soloed);
+    updateSoloButton();
+    update();
+}
+
+void GraphicsTrackItem::updateMuteButton() {
+    if (!m_mute_button) return;
+
+    m_mute_button->setIcon(QIcon(m_muted ? ":/icons/sound-off.svg" : ":/icons/sound-high.svg"));
+
+    if (m_muted) {
+        m_mute_button->setStyleSheet("QPushButton { background: #646464; color: white; border-radius: 3px; }");
+    } else {
+        const QColor c = m_color_light;
+        m_mute_button->setStyleSheet(QString("QPushButton { background: %1; color: black; border-radius: 3px; }")
+                                         .arg(c.name()));
+    }
+}
+
+void GraphicsTrackItem::updateSoloButton() {
+    if (!m_solo_button) return;
+
+    if (m_solo_button->isChecked()) {
+        m_solo_button->setStyleSheet("QPushButton { background: #f2c94c; color: black; border-radius: 3px; }");
+    } else {
+        const QColor c = m_color_light;
+        m_solo_button->setStyleSheet(QString("QPushButton { background: %1; color: black; border-radius: 3px; }")
+                                         .arg(c.name()));
+    }
 }
 
 

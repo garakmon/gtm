@@ -25,6 +25,7 @@ public:
     void setChannelExpression(uint8_t channel, uint8_t value);
     void setChannelPitchBend(uint8_t channel, int value);
     void setChannelMute(uint8_t channel, bool muted);
+    void setAllMuted(bool muted);
     void processAudio(float *out_buffer, unsigned long frame_count);
     void end();
 
