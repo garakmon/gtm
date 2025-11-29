@@ -29,23 +29,23 @@ GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent) 
     m_mute_button = new QPushButton();
     m_mute_button->setCheckable(true);
     m_mute_button->setFocusPolicy(Qt::NoFocus);
-    m_mute_button->setFixedSize(ui_track_item_height - 10, ui_track_item_height - 10);
-    m_mute_button->setIconSize(QSize(ui_track_item_height - 14, ui_track_item_height - 14));
+    m_mute_button->setFixedSize(16, 12);
+    m_mute_button->setIconSize(QSize(10, 10));
 
     m_mute_proxy = new QGraphicsProxyWidget(this);
     m_mute_proxy->setWidget(m_mute_button);
-    m_mute_proxy->setPos(5, ui_track_item_height * this->m_row + 5);
+    m_mute_proxy->setPos(28, ui_track_item_height * this->m_row + 4);
     m_mute_proxy->setZValue(2);
 
     // Solo button
     m_solo_button = new QPushButton("S");
     m_solo_button->setCheckable(true);
     m_solo_button->setFocusPolicy(Qt::NoFocus);
-    m_solo_button->setFixedSize(ui_track_item_height - 10, ui_track_item_height - 10);
+    m_solo_button->setFixedSize(16, 12);
 
     m_solo_proxy = new QGraphicsProxyWidget(this);
     m_solo_proxy->setWidget(m_solo_button);
-    m_solo_proxy->setPos(5 + (ui_track_item_height - 10) + 4, ui_track_item_height * this->m_row + 5);
+    m_solo_proxy->setPos(28, ui_track_item_height * this->m_row + 4 + 12 + 2);
     m_solo_proxy->setZValue(2);
 
     updateMuteButton();
@@ -76,6 +76,15 @@ void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     painter->setBrush(this->m_color);
     painter->drawRoundedRect(rect, 5, 5);
 
+    // Track number block (left)
+    QRectF numRect(5, rect.y() + 4, 20, ui_track_item_height - 8);
+    painter->setBrush(this->m_color_light);
+    painter->setPen(Qt::NoPen);
+    painter->drawRoundedRect(numRect, 3, 3);
+    painter->setPen(Qt::black);
+    painter->setFont(QFont("sans-serif", 9, QFont::Bold));
+    painter->drawText(numRect, Qt::AlignCenter, QString::number(m_track));
+
     // Draw current instrument/voice type info if playing
     if (!m_playing_instrument.isEmpty() || !m_playing_voice_type.isEmpty()) {
         painter->setPen(m_color.lightness() > 100 ? Qt::black : Qt::white);
@@ -86,8 +95,7 @@ void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
             info += " " + m_playing_instrument;
         }
 
-        int button_width = ui_track_item_height - 10;
-        int left_pad = 5 + button_width + 4 + button_width + 6;
+        int left_pad = 5 + 20 + 6 + 16 + 6;
         QRectF textRect(left_pad, rect.y() + 2, rect.width() - left_pad - 5, rect.height() - 4);
         painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, info);
     }
