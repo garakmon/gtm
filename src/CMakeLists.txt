@@ -16,8 +16,8 @@ set_target_properties(gtm PROPERTIES
     MACOSX_BUNDLE ON
 )
 
-add_subdirectory(ui)
-add_subdirectory(util)
 add_subdirectory(deps)
+add_subdirectory(util)
+add_subdirectory(ui)
 add_subdirectory(app)
 add_subdirectory(sound)

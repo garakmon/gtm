@@ -1,8 +1,10 @@
 qt_add_library(gtm-util STATIC
     util.cpp
+    gtmconfig.cpp
 )
 
 target_link_libraries(gtm-util PUBLIC
+    orderedjson
     Qt6::Core
 )
 

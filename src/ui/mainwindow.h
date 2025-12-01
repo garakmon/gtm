@@ -4,10 +4,12 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QFileDialog>
+#include <QCloseEvent>
 #include <memory>
 
 #include "../app/project.h"
 #include "../app/controller.h"
+#include "../util/gtmconfig.h"
 
 
 
@@ -33,6 +35,8 @@ private:
     QPointer<PreviewSoundWindow> m_preview_sound_window;
 
     std::unique_ptr<Controller> m_controller;
+    QString m_project_root;
+    GtmConfig m_config;
 
     // PianoRoll *m_piano_roll = nullptr; // TODO: unique_ptr? maybe break with ownership of qobjects
     // TrackRoll *m_track_roll = nullptr;
@@ -46,6 +50,9 @@ private:
     void drawTrackList();
 
     void open(QString path);
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
 private slots:
     void on_action_Open_triggered();

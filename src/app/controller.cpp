@@ -220,7 +220,9 @@ bool Controller::loadProject(const QString &root) {
     if (this->m_interface->loadProject(root)) {
         // display the project values in the ui
         this->displayProject();
+        return true;
     }
+    return false;
 }
 
 bool Controller::loadSong() {

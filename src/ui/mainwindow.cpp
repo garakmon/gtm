@@ -5,6 +5,7 @@
 #include <QStandardPaths>
 #include <QLoggingCategory>
 #include <QDebug>
+#include <QDir>
 
 #include "constants.h"
 #include "colors.h"
@@ -70,8 +71,16 @@ void MainWindow::setupUi() {
 }
 
 void MainWindow::loadProject() {
-    //m_project->load();
-    this->m_controller->loadProject(QDir::homePath() + "/Documents/projects/pkmn/testing/pokeemerald");
+    bool cfg_ok = false;
+    m_config = GtmConfig::loadFromFile(GtmConfig::defaultPath(), &cfg_ok);
+    if (!cfg_ok || m_config.most_recent_project.isEmpty()) {
+        return;
+    }
+
+    const QString root = m_config.most_recent_project;
+    if (this->m_controller->loadProject(root)) {
+        m_project_root = root;
+    }
 
     //this->ui->listView_songTable->addItems()
 }
@@ -103,7 +112,10 @@ void MainWindow::open(QString path) {
 void MainWindow::on_action_Open_triggered() {
     QString path = QFileDialog::getExistingDirectory(this, tr("Open Directory"), ".", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
     if (!path.isEmpty()) {
-        this->m_controller->loadProject(path);
+        if (this->m_controller->loadProject(path)) {
+            m_project_root = path;
+            m_config.most_recent_project = path;
+        }
     }
 }
 
@@ -127,4 +139,11 @@ void MainWindow::on_Button_Stop_clicked() {
     this->m_controller->stop();
 }
 
-
+void MainWindow::closeEvent(QCloseEvent *event) {
+    if (!m_project_root.isEmpty()) {
+        m_config.most_recent_project = m_project_root;
+        if (m_config.palette.isEmpty()) m_config.palette = "default";
+        m_config.saveToFile(GtmConfig::defaultPath());
+    }
+    QMainWindow::closeEvent(event);
+}
