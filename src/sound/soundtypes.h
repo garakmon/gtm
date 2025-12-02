@@ -147,6 +147,7 @@ struct Voice {
 
     // Noise generation (LFSR)
     uint16_t lfsr = 0x7FFF;
+    uint16_t noise_mask = 0x6000; // Galois LFSR mask (15-bit default)
     int noise_counter = 0;
     int noise_period = 1;
 
@@ -159,6 +160,7 @@ struct Voice {
     uint8_t env_sustain = 0;     // sustain level (0-255)
     uint8_t env_release = 0;     // release value (higher = slower, multiplicative)
     int frame_counter = 0;       // samples until next envelope update
+    bool is_psg = false;         // square/wave/noise use GBA PSG-style envelopes
 
     float getNextSample(float pitch_bend_multiplier = 1.0f);
     void noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,

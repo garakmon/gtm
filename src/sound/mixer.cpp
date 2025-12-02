@@ -90,13 +90,15 @@ float Voice::getNextSample(float pitch_bend_multiplier) {
     case 0x04:  // Noise
     case 0x0C:  // Noise (alt)
         {
-            // Clock the LFSR based on noise_period
-            noise_counter++;
-            if (noise_counter >= noise_period) {
+            // Clock the LFSR based on noise_period (Galois form)
+            if (++noise_counter >= noise_period) {
                 noise_counter = 0;
-                // 15-bit LFSR with taps at bits 0 and 1 (GBA style)
-                uint16_t bit = ((lfsr >> 0) ^ (lfsr >> 1)) & 1;
-                lfsr = (lfsr >> 1) | (bit << 14);
+                if (lfsr & 1) {
+                    lfsr >>= 1;
+                    lfsr ^= noise_mask;
+                } else {
+                    lfsr >>= 1;
+                }
             }
             sample = (lfsr & 1) ? 0.5f : -0.5f;
         }
@@ -111,8 +113,8 @@ float Voice::getNextSample(float pitch_bend_multiplier) {
 
     if (!is_active) return 0.0f;
 
-    // Convert uint8_t envelope level (0-255) to float (0.0-1.0)
-    float env_float = env_level / 255.0f;
+    // Convert envelope level to float (PSG: 0-15, DS: 0-255)
+    float env_float = is_psg ? (env_level / 15.0f) : (env_level / 255.0f);
     return sample * env_float * (velocity / 127.0f);
 }
 
@@ -160,42 +162,91 @@ void Voice::noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
     case 0x09:  // Square1 (alt)
     case 0x02:  // Square2
     case 0x0A:  // Square2 (alt)
+        is_psg = true;
         duty_cycle = inst ? inst->duty_cycle : 2;
         break;
 
     case 0x03:  // ProgrammableWave
     case 0x0B:  // ProgrammableWave (alt)
+        is_psg = true;
         wave_data = wave;
         break;
 
     case 0x04:  // Noise
     case 0x0C:  // Noise (alt)
-        lfsr = 0x7FFF;
+        is_psg = true;
+        {
+            const int instr_np = inst ? inst->duty_cycle : 0; // noise period/mode param
+            if (instr_np & 0x1) {
+                lfsr = 0x40;        // 7-bit LFSR
+                noise_mask = 0x60; // taps for 7-bit
+            } else {
+                lfsr = 0x4000;      // 15-bit LFSR
+                noise_mask = 0x6000; // taps for 15-bit
+            }
+        }
         noise_counter = 0;
-        // Higher notes = faster noise, lower = slower
-        // Period based on MIDI key (this is an approximation)
-        noise_period = std::max(1, 128 - key);
+        // Approximate GBA noise pitch behavior (agbplay-style)
+        {
+            float fkey = static_cast<float>(key);
+            float noisefreq;
+            if (fkey < 76.0f) {
+                noisefreq = 4096.0f * std::pow(8.0f, (fkey - 60.0f) * (1.0f / 12.0f));
+            } else if (fkey < 78.0f) {
+                noisefreq = 65536.0f * std::pow(2.0f, (fkey - 76.0f) * (1.0f / 2.0f));
+            } else if (fkey < 80.0f) {
+                noisefreq = 131072.0f * std::pow(2.0f, (fkey - 78.0f));
+            } else {
+                noisefreq = 524288.0f;
+            }
+            if (noisefreq < 4.5714f) noisefreq = 4.5714f;
+            noise_period = std::max(1, static_cast<int>(std::round(g_sample_rate / noisefreq)));
+        }
+        qDebug() << "Noise noteOn ch" << ch
+                 << "key" << key
+                 << "vel" << vel
+                 << "inst pan" << (inst ? inst->pan : 0)
+                 << "env a/d/s/r" << (inst ? inst->attack : 0)
+                 << (inst ? inst->decay : 0)
+                 << (inst ? inst->sustain : 0)
+                 << (inst ? inst->release : 0)
+                 << "period" << noise_period;
         break;
 
     default:
         break;
     }
 
-    // Set up ADSR envelope from instrument parameters (GBA-accurate)
-    // GBA m4a: attack 0-255 (higher = faster, additive per frame)
-    //          decay/release 0-255 (higher = slower, multiplicative: level = (level * param) >> 8)
-    //          sustain 0-255 (target level during decay)
-    env_attack = inst ? static_cast<uint8_t>(inst->attack) : 255;
-    env_decay = inst ? static_cast<uint8_t>(inst->decay) : 0;
-    env_sustain = inst ? static_cast<uint8_t>(inst->sustain) : 255;
-    env_release = inst ? static_cast<uint8_t>(inst->release) : 0;
+    // Set up ADSR envelope
+    if (is_psg) {
+        // PSG envelopes use small integer steps (0-7 / 0-15)
+        env_attack = inst ? static_cast<uint8_t>(inst->attack & 0x07) : 0;
+        env_decay = inst ? static_cast<uint8_t>(inst->decay & 0x07) : 0;
+        env_sustain = inst ? static_cast<uint8_t>(inst->sustain & 0x0F) : 15;
+        env_release = inst ? static_cast<uint8_t>(inst->release & 0x07) : 0;
 
-    // Start envelope at attack phase
-    env_phase = ENV_ATTACK;
-    // If attack is 255 (instant), start at full level like agbplay does
-    env_level = (env_attack == 255) ? 255 : 0;
-    // GBA runs at ~60fps, 44100/60 ≈ 735 samples per frame
-    frame_counter = g_samples_per_frame;
+        // If attack is 0, jump to peak immediately (matches GBA PSG behavior)
+        if (env_attack == 0) {
+            env_level = 15;
+            env_phase = (env_decay == 0) ? ENV_SUSTAIN : ENV_DECAY;
+            int frames = (env_decay == 0) ? 1 : env_decay;
+            frame_counter = g_samples_per_frame * frames;
+        } else {
+            env_phase = ENV_ATTACK;
+            env_level = 0; // 0..15
+            frame_counter = g_samples_per_frame * env_attack;
+        }
+    } else {
+        // DirectSound envelope (0-255, additive/multiplicative)
+        env_attack = inst ? static_cast<uint8_t>(inst->attack) : 255;
+        env_decay = inst ? static_cast<uint8_t>(inst->decay) : 0;
+        env_sustain = inst ? static_cast<uint8_t>(inst->sustain) : 255;
+        env_release = inst ? static_cast<uint8_t>(inst->release) : 0;
+
+        env_phase = ENV_ATTACK;
+        env_level = (env_attack == 255) ? 255 : 0;
+        frame_counter = g_samples_per_frame;
+    }
 }
 
 void Voice::noteOff() {
@@ -204,11 +255,64 @@ void Voice::noteOff() {
 }
 
 void Voice::updateEnvelope() {
-    // GBA-accurate envelope: updates once per frame (~60Hz)
-    // Decrement frame counter; only update when it reaches 0
+    // Update once per frame (or PSG step length)
     if (--frame_counter > 0) {
         return;
     }
+
+    if (is_psg) {
+        auto reset_counter = [&](uint8_t env_frames) {
+            int frames = (env_frames == 0) ? 1 : env_frames;
+            frame_counter = g_samples_per_frame * frames;
+        };
+
+        switch (env_phase) {
+        case ENV_ATTACK:
+            if (env_level < 15) {
+                env_level++;
+            }
+            if (env_level >= 15) {
+                env_level = 15;
+                env_phase = (env_decay == 0) ? ENV_SUSTAIN : ENV_DECAY;
+            }
+            reset_counter(env_attack);
+            break;
+
+        case ENV_DECAY:
+            if (env_level > env_sustain) {
+                env_level--;
+            }
+            if (env_level <= env_sustain) {
+                env_level = env_sustain;
+                env_phase = (env_level == 0) ? ENV_RELEASE : ENV_SUSTAIN;
+            }
+            reset_counter(env_decay);
+            break;
+
+        case ENV_SUSTAIN:
+            // Hold at sustain level until note off
+            reset_counter(1);
+            break;
+
+        case ENV_RELEASE:
+            if (env_release == 0 || env_level == 0) {
+                env_level = 0;
+                is_active = false;
+                break;
+            }
+            if (env_level > 0) {
+                env_level--;
+            }
+            if (env_level == 0) {
+                is_active = false;
+            } else {
+                reset_counter(env_release);
+            }
+            break;
+        }
+        return;
+    }
+
     frame_counter = g_samples_per_frame;
 
     switch (env_phase) {

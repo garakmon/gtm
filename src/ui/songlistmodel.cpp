@@ -19,11 +19,11 @@ QVariant SongListModel::data(const QModelIndex &index, int role) const {
     const SongEntry &entry = m_project->getSongEntryByTitle(title);
 
     if (role == Qt::DisplayRole) {
-        return title;
+        return QString("[%1] ").arg(index.row(), 4, 10, QLatin1Char('0')) + title;
     }
 
     if (role == Qt::UserRole) {
-        return QVariant();
+        return title;
     }
 
     if (role == Qt::ForegroundRole) {

@@ -142,7 +142,7 @@ void Controller::connectSignals() {
 }
 
 void Controller::songListSongRequested(const QModelIndex &index) {
-    QString title = index.data(Qt::DisplayRole).toString();
+    QString title = index.data(Qt::UserRole).toString();
 
     SongEntry entry = this->m_project->getSongEntryByTitle(title);
 
