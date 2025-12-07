@@ -47,7 +47,11 @@ public:
 
     void play();
     void stop();
+    void pause();
     void seekToTick(int tick);
+    void seekToStart();
+    int currentTick() const;
+    bool selectSongByIndex(int index);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;

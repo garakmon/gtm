@@ -135,8 +135,33 @@ void MainWindow::on_Button_Play_clicked() {
     this->m_controller->play();
 }
 
+void MainWindow::on_Button_Pause_clicked() {
+    this->m_controller->pause();
+}
+
 void MainWindow::on_Button_Stop_clicked() {
     this->m_controller->stop();
+    this->m_controller->seekToStart();
+}
+
+void MainWindow::on_Button_Previous_clicked() {
+    if (this->m_controller->currentTick() > 0) {
+        this->m_controller->seekToStart();
+        return;
+    }
+    auto *view = this->ui->listView_songTable;
+    if (!view || !view->model()) return;
+    QModelIndex current = view->currentIndex();
+    int row = current.isValid() ? current.row() : 0;
+    this->m_controller->selectSongByIndex(row - 1);
+}
+
+void MainWindow::on_Button_Skip_clicked() {
+    auto *view = this->ui->listView_songTable;
+    if (!view || !view->model()) return;
+    QModelIndex current = view->currentIndex();
+    int row = current.isValid() ? current.row() : 0;
+    this->m_controller->selectSongByIndex(row + 1);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {

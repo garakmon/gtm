@@ -300,6 +300,12 @@ void Controller::stop() {
     m_track_roll->clearAllPlayingInfo();
 }
 
+void Controller::pause() {
+    m_player->stop();
+    m_player_timer.stop();
+    m_track_roll->clearAllPlayingInfo();
+}
+
 void Controller::onTrackMuteToggled(int channel, bool muted) {
     // Mute is non-exclusive. If any solo is active, clear it and keep current mute state.
     if (m_track_roll->hasSoloed()) {
@@ -346,6 +352,33 @@ void Controller::seekToTick(int tick) {
         m_player->seekToTick(tick);
         m_player_elapsed.restart();
     }
+}
+
+void Controller::seekToStart() {
+    seekToTick(0);
+}
+
+int Controller::currentTick() const {
+    if (!m_song) return 0;
+    double current_seconds = m_player->getSequencer()->getCurrentTime();
+    return m_song->getTickFromTime(current_seconds);
+}
+
+bool Controller::selectSongByIndex(int index) {
+    if (!m_window || !m_window->listView_songTable) return false;
+    auto *view = m_window->listView_songTable;
+    int rows = view->model() ? view->model()->rowCount() : 0;
+    if (rows <= 0) return false;
+    if (index < 0 || index >= rows) return false;
+
+    QModelIndex current = view->currentIndex();
+    int column = current.isValid() ? current.column() : 0;
+    QModelIndex next = view->model()->index(index, column);
+    if (!next.isValid()) return false;
+
+    view->setCurrentIndex(next);
+    songListSongRequested(next);
+    return true;
 }
 
 bool Controller::eventFilter(QObject *watched, QEvent *event) {
