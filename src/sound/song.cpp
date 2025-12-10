@@ -108,12 +108,9 @@ void Song::mergeEvents() {
         }
     }
 
-    // qsort is deprecated apparently
-    std::sort(this->m_merged_events.begin(), this->m_merged_events.end(),
+    // Preserve event order for identical ticks (important for note on/off ordering)
+    std::stable_sort(this->m_merged_events.begin(), this->m_merged_events.end(),
         [](smf::MidiEvent *a, smf::MidiEvent *b) {
-            if (a->tick == b->tick) {
-                return a->track < b->track;
-            }
             return a->tick < b->tick;
         }
     );

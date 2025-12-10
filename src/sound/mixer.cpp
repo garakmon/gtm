@@ -127,6 +127,7 @@ void Voice::noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
     releasing = false;
     position = 0.0;
     phase = 0.0;
+    is_psg = false;
 
     int base_key = inst ? inst->base_key : g_midi_middle_c;
     voice_type = inst ? inst->type_id : 0;
@@ -202,15 +203,6 @@ void Voice::noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
             if (noisefreq < 4.5714f) noisefreq = 4.5714f;
             noise_period = std::max(1, static_cast<int>(std::round(g_sample_rate / noisefreq)));
         }
-        qDebug() << "Noise noteOn ch" << ch
-                 << "key" << key
-                 << "vel" << vel
-                 << "inst pan" << (inst ? inst->pan : 0)
-                 << "env a/d/s/r" << (inst ? inst->attack : 0)
-                 << (inst ? inst->decay : 0)
-                 << (inst ? inst->sustain : 0)
-                 << (inst ? inst->release : 0)
-                 << "period" << noise_period;
         break;
 
     default:
@@ -541,7 +533,21 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
         m_channel_play_info[channel].voice_type = voiceTypeName(inst->type_id);
     }
 
-    Voice *voice = allocateVoice(key);
+    Voice *voice = nullptr;
+    int voice_index = -1;
+    for (int i = 0; i < g_max_voices; i++) {
+        if (m_voices[i].is_active &&
+            m_voices[i].channel == channel &&
+            m_voices[i].midi_key == key) {
+            voice = &m_voices[i];
+            voice_index = i;
+            break;
+        }
+    }
+    if (!voice) {
+        voice = allocateVoice(key);
+        voice_index = static_cast<int>(voice - m_voices);
+    }
     voice->noteOn(channel, key, velocity, inst, sample, wave_data);
 }
 

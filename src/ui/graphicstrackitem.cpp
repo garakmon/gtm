@@ -83,7 +83,7 @@ void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     painter->drawRoundedRect(numRect, 3, 3);
     painter->setPen(Qt::black);
     painter->setFont(QFont("sans-serif", 9, QFont::Bold));
-    painter->drawText(numRect, Qt::AlignCenter, QString::number(m_track));
+    painter->drawText(numRect, Qt::AlignCenter, QString::number(m_row));
 
     // Draw current instrument/voice type info if playing
     if (!m_playing_instrument.isEmpty() || !m_playing_voice_type.isEmpty()) {
