@@ -41,3 +41,22 @@ QColor ui_meta_event_timesignature = QColor(0xff00ff);
 QColor ui_meta_event_tempo = QColor(0x00ffff);
 QColor ui_meta_event_keysignature = QColor(0x1a1a1a);
 QColor ui_meta_event_marker = QColor(0xffff00);
+
+void applyThemeColors(const ThemePalette &palette) {
+    for (int i = 0; i < g_max_num_tracks; i++) {
+        if (i < palette.track_colors.size()) {
+            ui_track_color_array[i] = QColor(palette.track_colors[i]);
+        }
+    }
+
+    ui_color_piano_roll_bg = QColor(palette.piano_roll_bg);
+    ui_color_score_line_dark = QColor(palette.score_line_dark);
+    ui_color_score_line_light = QColor(palette.score_line_light);
+    ui_color_piano_roll_tick_mark = QColor(palette.piano_roll_tick_mark);
+    ui_color_measure_timestamps = QColor(palette.measure_timestamps);
+    ui_color_measure_guide = QColor(palette.measure_guide);
+    ui_meta_event_timesignature = QColor(palette.meta_timesignature);
+    ui_meta_event_tempo = QColor(palette.meta_tempo);
+    ui_meta_event_keysignature = QColor(palette.meta_keysignature);
+    ui_meta_event_marker = QColor(palette.meta_marker);
+}

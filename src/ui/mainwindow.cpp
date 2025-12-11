@@ -9,6 +9,7 @@
 
 #include "constants.h"
 #include "colors.h"
+#include "theme.h"
 #include "pianoroll.h"
 #include "trackroll.h"
 #include "graphicstrackitem.h"
@@ -73,6 +74,9 @@ void MainWindow::setupUi() {
 void MainWindow::loadProject() {
     bool cfg_ok = false;
     m_config = GtmConfig::loadFromFile(GtmConfig::defaultPath(), &cfg_ok);
+    ThemePalette palette = paletteByName(m_config.palette);
+    applyTheme(palette);
+    applyThemeColors(palette);
     if (!cfg_ok || m_config.most_recent_project.isEmpty()) {
         return;
     }

@@ -5,6 +5,7 @@
 #include <QColor>
 
 #include "constants.h"
+#include "theme.h"
 
 
 
@@ -30,5 +31,7 @@ extern QColor ui_meta_event_timesignature;
 extern QColor ui_meta_event_tempo;
 extern QColor ui_meta_event_keysignature;
 extern QColor ui_meta_event_marker;
+
+void applyThemeColors(const ThemePalette &palette);
 
 #endif // COLORS_H

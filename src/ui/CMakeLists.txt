@@ -30,6 +30,7 @@ target_include_directories(gtm-ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 qt_add_resources(gtm-ui "gtm-icons"
     PREFIX "/"
     FILES
+        themes/default.qss
         icons/album-list.svg
         icons/check-circle.svg
         icons/check-square.svg
