@@ -31,6 +31,7 @@ qt_add_resources(gtm-ui "gtm-icons"
     PREFIX "/"
     FILES
         themes/default.qss
+        themes/retro.qss
         icons/album-list.svg
         icons/check-circle.svg
         icons/check-square.svg

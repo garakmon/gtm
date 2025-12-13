@@ -34,7 +34,8 @@ struct ThemePalette {
 };
 
 ThemePalette paletteByName(const QString &name);
-QString renderStyleSheet(const ThemePalette &palette);
-void applyTheme(const ThemePalette &palette);
+QString themeQssPath(const QString &theme_name);
+QString renderStyleSheet(const ThemePalette &palette, const QString &theme_name);
+void applyTheme(const ThemePalette &palette, const QString &theme_name);
 
 #endif // THEME_H

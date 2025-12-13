@@ -74,8 +74,9 @@ void MainWindow::setupUi() {
 void MainWindow::loadProject() {
     bool cfg_ok = false;
     m_config = GtmConfig::loadFromFile(GtmConfig::defaultPath(), &cfg_ok);
+    qDebug() << "Config path:" << GtmConfig::defaultPath();
     ThemePalette palette = paletteByName(m_config.palette);
-    applyTheme(palette);
+    applyTheme(palette, m_config.theme);
     applyThemeColors(palette);
     if (!cfg_ok || m_config.most_recent_project.isEmpty()) {
         return;
@@ -172,6 +173,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     if (!m_project_root.isEmpty()) {
         m_config.most_recent_project = m_project_root;
         if (m_config.palette.isEmpty()) m_config.palette = "default";
+        if (m_config.theme.isEmpty()) m_config.theme = "default";
         m_config.saveToFile(GtmConfig::defaultPath());
     }
     QMainWindow::closeEvent(event);

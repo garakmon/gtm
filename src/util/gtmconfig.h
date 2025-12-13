@@ -14,6 +14,7 @@ public:
 public:
     QString most_recent_project;
     QString palette = "default";
+    QString theme = "default";
 };
 
 #endif // GTMCONFIG_H

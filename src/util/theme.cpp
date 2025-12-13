@@ -5,18 +5,18 @@
 
 static ThemePalette defaultPalette() {
     ThemePalette p;
-    p.bg = "#202124";
-    p.panel = "#2a2c30";
-    p.panel_alt = "#32353a";
-    p.text_primary = "#e6e6e6";
-    p.text_secondary = "#b8b8b8";
-    p.accent = "#7fd0ff";
-    p.accent_hover = "#5fb8ff";
-    p.accent_active = "#3ea0ff";
-    p.border = "#3b3f46";
-    p.danger = "#ff6b6b";
-    p.scroll_thumb = "#4a4f58";
-    p.scroll_track = "#24272c";
+    p.bg = "#272822";
+    p.panel = "#2e2f29";
+    p.panel_alt = "#3a3b35";
+    p.text_primary = "#f8f8f2";
+    p.text_secondary = "#cfcfc2";
+    p.accent = "#a6e22e";
+    p.accent_hover = "#b6f03e";
+    p.accent_active = "#86c20e";
+    p.border = "#49483e";
+    p.danger = "#f92672";
+    p.scroll_thumb = "#5a5a4f";
+    p.scroll_track = "#1f201c";
     p.track_colors = QVector<QString>{
         "#d32f2f", // 0 Crimson Red
         "#f57c00", // 1 Rich Orange
@@ -48,16 +48,44 @@ static ThemePalette defaultPalette() {
     return p;
 }
 
+static ThemePalette retroPalette() {
+    ThemePalette p = defaultPalette();
+    p.bg = "#1b1f1d";
+    p.panel = "#2a2f2c";
+    p.panel_alt = "#343a36";
+    p.text_primary = "#e6e1c5";
+    p.text_secondary = "#b7b19a";
+    p.accent = "#8fc66a";
+    p.accent_hover = "#7fb85c";
+    p.accent_active = "#6aa34c";
+    p.border = "#4b524c";
+    p.danger = "#d96b5f";
+    p.scroll_thumb = "#5a615b";
+    p.scroll_track = "#242926";
+    return p;
+}
+
 ThemePalette paletteByName(const QString &name) {
     const QString key = name.trimmed().toLower();
     if (key.isEmpty() || key == "default") {
         return defaultPalette();
     }
+    if (key == "retro") {
+        return retroPalette();
+    }
     return defaultPalette();
 }
 
-QString renderStyleSheet(const ThemePalette &p) {
-    QFile file(":/themes/default.qss");
+QString themeQssPath(const QString &theme_name) {
+    const QString name = theme_name.trimmed().toLower();
+    if (name == "retro") {
+        return QString(":/themes/retro.qss");
+    }
+    return QString(":/themes/default.qss");
+}
+
+QString renderStyleSheet(const ThemePalette &p, const QString &theme_name) {
+    QFile file(themeQssPath(theme_name));
     QString qss;
     if (file.open(QIODevice::ReadOnly)) {
         qss = QString::fromUtf8(file.readAll());
@@ -79,8 +107,8 @@ QString renderStyleSheet(const ThemePalette &p) {
     return qss;
 }
 
-void applyTheme(const ThemePalette &palette) {
-    QString qss = renderStyleSheet(palette);
+void applyTheme(const ThemePalette &palette, const QString &theme_name) {
+    QString qss = renderStyleSheet(palette, theme_name);
     if (qApp) {
         qApp->setStyleSheet(qss);
     }

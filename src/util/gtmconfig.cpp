@@ -49,6 +49,11 @@ GtmConfig GtmConfig::loadFromFile(const QString &path, bool *ok) {
         cfg.palette = it_palette->second.string_value();
         if (cfg.palette.isEmpty()) cfg.palette = "default";
     }
+    auto it_theme = obj.find("theme");
+    if (it_theme != obj.end() && it_theme->second.is_string()) {
+        cfg.theme = it_theme->second.string_value();
+        if (cfg.theme.isEmpty()) cfg.theme = "default";
+    }
 
     if (ok) *ok = true;
     return cfg;
@@ -58,6 +63,7 @@ bool GtmConfig::saveToFile(const QString &path) const {
     orderedjson::Json::object obj;
     obj["most_recent_project"] = most_recent_project;
     obj["palette"] = palette.isEmpty() ? "default" : palette;
+    obj["theme"] = theme.isEmpty() ? "default" : theme;
     orderedjson::Json json(obj);
 
     QFile file(path);
