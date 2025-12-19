@@ -18,6 +18,7 @@
 #include "project.h"
 #include "projectinterface.h"
 #include "songlistmodel.h"
+#include "minimapwidget.h"
 
 
 /// controller loads the song, creates the track items, etc.
@@ -38,6 +39,9 @@ Controller::Controller(MainWindow *window) : QObject(window) {
     connect(&this->m_player_timer, &QTimer::timeout, this, &Controller::syncRolls);
 
     this->setupRolls();
+    if (window) {
+        setMinimap(window->m_minimap);
+    }
 }
 
 void Controller::setupRolls() {
@@ -72,12 +76,19 @@ void Controller::setupRolls() {
     m_window->view_measures->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_window->view_measures->setFrameShape(QFrame::NoFrame);
 
+    // Hide horizontal scrollbar; minimap will drive scrolling.
+    m_window->hscroll_pianoRoll->setVisible(false);
+
     m_window->view_measures->viewport()->installEventFilter(this);
     m_window->view_pianoRoll->viewport()->installEventFilter(this);
     m_window->view_trackRoll->viewport()->installEventFilter(this);
 
     m_scroll_debounce.setSingleShot(true);
     m_scroll_debounce.setInterval(400);
+
+    // Hide vertical scrollbars; minimap will handle horizontal, and mouse wheel can pan vertically.
+    m_window->vscroll_pianoRoll->setVisible(false);
+    m_window->vscroll_trackRoll->setVisible(false);
 }
 
 void Controller::displayRolls() {
@@ -120,6 +131,12 @@ void Controller::displayRolls() {
     m_window->view_measures->setScene(m_measure_roll->sceneMeasures());
     m_window->view_measures->setSceneRect(0.0, 0.0, measure_bounds.width(), ui_measure_info_height);
     m_window->view_measures->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+
+    if (m_minimap) {
+        m_minimap->setSong(m_song);
+        m_minimap->setScrollBar(m_window->hscroll_pianoRoll);
+        m_minimap->setView(m_window->view_pianoRoll);
+    }
 
     // Navigation
     if (!m_piano_roll->keys().isEmpty()) {
@@ -338,6 +355,10 @@ void Controller::onTrackSoloToggled(int channel, bool soloed) {
             m_player->getMixer()->setChannelMute(ch, false);
         }
     }
+}
+
+void Controller::setMinimap(MinimapWidget *minimap) {
+    m_minimap = minimap;
 }
 
 void Controller::seekToTick(int tick) {

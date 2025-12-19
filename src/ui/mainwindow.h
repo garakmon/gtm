@@ -20,6 +20,7 @@ QT_END_NAMESPACE
 class PianoRoll;
 class TrackRoll;
 class PreviewSoundWindow;
+class MinimapWidget;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -35,6 +36,7 @@ private:
     QPointer<PreviewSoundWindow> m_preview_sound_window;
 
     std::unique_ptr<Controller> m_controller;
+    QPointer<MinimapWidget> m_minimap;
     QString m_project_root;
     GtmConfig m_config;
 

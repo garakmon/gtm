@@ -6,10 +6,12 @@
 #include <QLoggingCategory>
 #include <QDebug>
 #include <QDir>
+#include <QGridLayout>
 
 #include "constants.h"
 #include "colors.h"
 #include "theme.h"
+#include "minimapwidget.h"
 #include "pianoroll.h"
 #include "trackroll.h"
 #include "graphicstrackitem.h"
@@ -67,6 +69,18 @@ void MainWindow::setupUi() {
     // this->ui->view_tracklist->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 
     m_controller = std::make_unique<Controller>(this);
+
+    if (ui->widget_minimap) {
+        m_minimap = new MinimapWidget(this);
+        m_minimap->setObjectName("minimap");
+        if (auto *grid = qobject_cast<QGridLayout *>(ui->scrollAreaWidgetContents_2->layout())) {
+            grid->replaceWidget(ui->widget_minimap, m_minimap);
+        }
+        ui->widget_minimap->deleteLater();
+        if (m_controller) {
+            m_controller->setMinimap(m_minimap);
+        }
+    }
 
     // drawScoreArea();
 }

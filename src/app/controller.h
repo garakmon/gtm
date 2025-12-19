@@ -20,6 +20,7 @@ class TrackRoll;
 class MeasureRoll;
 class Song;
 class SongListModel;
+class MinimapWidget;
 namespace smf { class MidiEvent; }
 
 /*
@@ -52,6 +53,7 @@ public:
     void seekToStart();
     int currentTick() const;
     bool selectSongByIndex(int index);
+    void setMinimap(MinimapWidget *minimap);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -72,6 +74,7 @@ private:
     QPointer<PianoRoll> m_piano_roll;
     QPointer<TrackRoll> m_track_roll;
     QPointer<MeasureRoll> m_measure_roll;
+    QPointer<MinimapWidget> m_minimap;
     QPointer<SongListModel> m_song_list_model;
 
     // playback stuff
