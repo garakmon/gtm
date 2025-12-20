@@ -28,6 +28,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 
     //this->m_project = std::make_unique<Project>();
 
+    // Restore window geometry early (if available)
+    bool cfg_ok = false;
+    m_config = GtmConfig::loadFromFile(GtmConfig::defaultPath(), &cfg_ok);
+    if (cfg_ok && !m_config.window_geometry.isEmpty()) {
+        restoreGeometry(QByteArray::fromBase64(m_config.window_geometry.toUtf8()));
+    }
+
     // TODO: temp
     loadProject();
     //loadSong();
@@ -188,6 +195,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
         m_config.most_recent_project = m_project_root;
         if (m_config.palette.isEmpty()) m_config.palette = "default";
         if (m_config.theme.isEmpty()) m_config.theme = "default";
+        m_config.window_geometry = QString::fromUtf8(saveGeometry().toBase64());
         m_config.saveToFile(GtmConfig::defaultPath());
     }
     QMainWindow::closeEvent(event);

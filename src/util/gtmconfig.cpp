@@ -54,6 +54,10 @@ GtmConfig GtmConfig::loadFromFile(const QString &path, bool *ok) {
         cfg.theme = it_theme->second.string_value();
         if (cfg.theme.isEmpty()) cfg.theme = "default";
     }
+    auto it_geom = obj.find("window_geometry");
+    if (it_geom != obj.end() && it_geom->second.is_string()) {
+        cfg.window_geometry = it_geom->second.string_value();
+    }
 
     if (ok) *ok = true;
     return cfg;
@@ -64,6 +68,7 @@ bool GtmConfig::saveToFile(const QString &path) const {
     obj["most_recent_project"] = most_recent_project;
     obj["palette"] = palette.isEmpty() ? "default" : palette;
     obj["theme"] = theme.isEmpty() ? "default" : theme;
+    obj["window_geometry"] = window_geometry;
     orderedjson::Json json(obj);
 
     QFile file(path);

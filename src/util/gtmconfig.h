@@ -15,6 +15,7 @@ public:
     QString most_recent_project;
     QString palette = "default";
     QString theme = "default";
+    QString window_geometry;
 };
 
 #endif // GTMCONFIG_H
