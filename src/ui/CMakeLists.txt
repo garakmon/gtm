@@ -3,6 +3,7 @@ qt_add_library(gtm-ui STATIC
     mainwindow.cpp
     pianoroll.cpp
     minimapwidget.cpp
+    meters.cpp
     trackroll.cpp
     measureroll.cpp
     graphicsmetaeventitem.cpp

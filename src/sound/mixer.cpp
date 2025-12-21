@@ -10,17 +10,44 @@
 // Duty cycle thresholds for square waves (12.5%, 25%, 50%, 75%)
 static const double duty_thresholds[4] = {0.125, 0.25, 0.5, 0.75};
 
-// Helper to get voice type name from type_id
-static QString voiceTypeName(int type_id) {
+// Helper to get voice type abbreviation (agbplay-style, pokeemerald-relevant)
+static QString voiceTypeAbbrev(const Instrument *inst) {
+    if (!inst) return "-";
+
+    static const QMap<int, QString> baseType = {
+        {0x00, "PCM"}, {0x08, "PCM"}, {0x10, "PCM"},
+        {0x03, "Wave"}, {0x0B, "Wave"},
+    };
+    static const QMap<int, QString> dutyMap = {
+        {0, "12"}, {1, "25"}, {2, "50"}, {3, "75"}
+    };
+
+    const int type_id = inst->type_id;
+    if (baseType.contains(type_id)) {
+        return baseType.value(type_id);
+    }
+
+    const QString duty = dutyMap.value(inst->duty_cycle & 0x03, "50");
+
     switch (type_id) {
-    case 0x00: case 0x08: case 0x10: return "DS";      // DirectSound
-    case 0x01: case 0x09: return "SQ1";                 // Square1
-    case 0x02: case 0x0A: return "SQ2";                 // Square2
-    case 0x03: case 0x0B: return "WAV";                 // ProgrammableWave
-    case 0x04: case 0x0C: return "NOI";                 // Noise
-    case 0x40: return "KEY";                            // Keysplit
-    case 0x80: return "KA";                             // KeysplitAll
-    default: return QString("?%1").arg(type_id, 2, 16);
+    case 0x01: // Square1 (sweep)
+    case 0x09:
+        return QString("Sq.%1S").arg(duty);
+    case 0x02: // Square2
+    case 0x0A:
+        return QString("Sq.%1").arg(duty);
+    case 0x04: // Noise
+    case 0x0C:
+        return (inst->duty_cycle & 0x1) ? "Ns.7" : "Ns.15";
+    default:
+        return "Multi";
+    }
+}
+
+Mixer::Mixer() {
+    for (int i = 0; i < g_num_midi_channels; ++i) {
+        m_channel_peak_l[i].store(0.0f, std::memory_order_relaxed);
+        m_channel_peak_r[i].store(0.0f, std::memory_order_relaxed);
     }
 }
 
@@ -529,8 +556,7 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
     // Store info for UI display
     if (channel < g_num_midi_channels) {
         m_channel_play_info[channel].active = true;
-        m_channel_play_info[channel].instrument_name = inst->sample_label;
-        m_channel_play_info[channel].voice_type = voiceTypeName(inst->type_id);
+        m_channel_play_info[channel].voice_type = voiceTypeAbbrev(inst);
     }
 
     Voice *voice = nullptr;
@@ -598,8 +624,33 @@ void Mixer::setAllMuted(bool muted) {
     }
 }
 
+void Mixer::setMasterVolume(float volume) {
+    float clamped = std::clamp(volume, 0.0f, 1.0f);
+    m_master_volume.store(clamped, std::memory_order_relaxed);
+}
+
+float Mixer::masterVolume() const {
+    return m_master_volume.load(std::memory_order_relaxed);
+}
+
+void Mixer::getMeterLevels(MeterLevels *out) const {
+    if (!out) return;
+    out->master_l = m_master_peak_l.load(std::memory_order_relaxed);
+    out->master_r = m_master_peak_r.load(std::memory_order_relaxed);
+    for (int i = 0; i < g_num_midi_channels; ++i) {
+        out->channel_l[i] = m_channel_peak_l[i].load(std::memory_order_relaxed);
+        out->channel_r[i] = m_channel_peak_r[i].load(std::memory_order_relaxed);
+    }
+}
+
 void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
-    constexpr float master_volume = 0.25f;  // !TODO: use the slider
+    float master_volume = m_master_volume.load(std::memory_order_relaxed);
+
+    float master_peak_l = 0.0f;
+    float master_peak_r = 0.0f;
+    float channel_peak_l[g_num_midi_channels] = {0};
+    float channel_peak_r[g_num_midi_channels] = {0};
+    bool channel_active[g_num_midi_channels] = {0};
 
     for (unsigned long i = 0; i < frame_count; i++) {
         float mixed_l = 0.0f;
@@ -608,6 +659,7 @@ void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
         for (int v = 0; v < g_max_voices; v++) {
             if (m_voices[v].is_active) {
                 uint8_t ch = m_voices[v].channel;
+                channel_active[ch] = true;
 
                 // Skip muted channels (but still advance the voice state)
                 if (m_channels[ch].muted) {
@@ -639,13 +691,26 @@ void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
                 float left_gain = static_cast<float>(-pan + 128) * (1.0f / 256.0f);
                 float right_gain = static_cast<float>(pan + 128) * (1.0f / 256.0f);
 
-                mixed_l += sample * left_gain;
-                mixed_r += sample * right_gain;
+                float out_l = sample * left_gain;
+                float out_r = sample * right_gain;
+
+                mixed_l += out_l;
+                mixed_r += out_r;
+
+                float abs_l = std::fabs(out_l);
+                float abs_r = std::fabs(out_r);
+                if (abs_l > channel_peak_l[ch]) channel_peak_l[ch] = abs_l;
+                if (abs_r > channel_peak_r[ch]) channel_peak_r[ch] = abs_r;
             }
         }
 
         mixed_l *= master_volume;
         mixed_r *= master_volume;
+
+        float abs_ml = std::fabs(mixed_l);
+        float abs_mr = std::fabs(mixed_r);
+        if (abs_ml > master_peak_l) master_peak_l = abs_ml;
+        if (abs_mr > master_peak_r) master_peak_r = abs_mr;
 
         // clip the volume so it doesnt blow out my speakers
         if (mixed_l > 1.0f) mixed_l = 1.0f;
@@ -656,6 +721,14 @@ void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
 
         *out_buffer++ = mixed_l;
         *out_buffer++ = mixed_r;
+    }
+
+    m_master_peak_l.store(master_peak_l, std::memory_order_relaxed);
+    m_master_peak_r.store(master_peak_r, std::memory_order_relaxed);
+    for (int ch = 0; ch < g_num_midi_channels; ++ch) {
+        m_channel_peak_l[ch].store(channel_peak_l[ch], std::memory_order_relaxed);
+        m_channel_peak_r[ch].store(channel_peak_r[ch], std::memory_order_relaxed);
+        m_channel_play_info[ch].active = channel_active[ch];
     }
 }
 
@@ -668,8 +741,14 @@ void Mixer::end() {
     // Clear play info
     for (int i = 0; i < g_num_midi_channels; i++) {
         m_channel_play_info[i].active = false;
-        m_channel_play_info[i].instrument_name.clear();
         m_channel_play_info[i].voice_type.clear();
+    }
+
+    m_master_peak_l.store(0.0f, std::memory_order_relaxed);
+    m_master_peak_r.store(0.0f, std::memory_order_relaxed);
+    for (int ch = 0; ch < g_num_midi_channels; ++ch) {
+        m_channel_peak_l[ch].store(0.0f, std::memory_order_relaxed);
+        m_channel_peak_r[ch].store(0.0f, std::memory_order_relaxed);
     }
 }
 

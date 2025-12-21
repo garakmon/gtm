@@ -10,6 +10,7 @@
 #include "graphicsscorenoteitem.h"
 #include "constants.h"
 #include "colors.h"
+#include "meters.h"
 #include "MidiEventList.h"
 #include "MidiEvent.h"
 
@@ -25,6 +26,11 @@ GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent) 
     this->m_color = ui_track_color_array[color_index];
     this->m_color_light = ui_track_color_array[color_index].lighter(150);
 
+    const int row_y = ui_track_item_height * this->m_row;
+    const int num_block_w = 20;
+    const int num_block_x = 5;
+    const int buttons_x = num_block_x + num_block_w + 3;
+
     // Mute button as a proxy widget (for future expansion with more controls)
     m_mute_button = new QPushButton();
     m_mute_button->setCheckable(true);
@@ -34,7 +40,7 @@ GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent) 
 
     m_mute_proxy = new QGraphicsProxyWidget(this);
     m_mute_proxy->setWidget(m_mute_button);
-    m_mute_proxy->setPos(28, ui_track_item_height * this->m_row + 4);
+    m_mute_proxy->setPos(buttons_x, row_y + 4);
     m_mute_proxy->setZValue(2);
 
     // Solo button
@@ -45,8 +51,21 @@ GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent) 
 
     m_solo_proxy = new QGraphicsProxyWidget(this);
     m_solo_proxy->setWidget(m_solo_button);
-    m_solo_proxy->setPos(28, ui_track_item_height * this->m_row + 4 + 12 + 2);
+    m_solo_proxy->setPos(buttons_x, row_y + 4 + 12 + 2);
     m_solo_proxy->setZValue(2);
+
+    // Centered stereo meter (agbplay-like)
+    m_meter_widget = new CenteredStereoMeter();
+    m_meter_widget->setBaseColor(m_color_light);
+    m_meter_widget->setSegmentsPerSide(12);
+    m_meter_widget->setFixedSize(44, 10);
+
+    m_meter_proxy = new QGraphicsProxyWidget(this);
+    m_meter_proxy->setWidget(m_meter_widget);
+    int meter_x = buttons_x + 16 + 6;
+    int meter_y = row_y + (ui_track_item_height / 2) + 4;
+    m_meter_proxy->setPos(meter_x, meter_y);
+    m_meter_proxy->setZValue(2);
 
     updateMuteButton();
     updateSoloButton();
@@ -85,19 +104,20 @@ void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     painter->setFont(QFont("sans-serif", 9, QFont::Bold));
     painter->drawText(numRect, Qt::AlignCenter, QString::number(m_row));
 
-    // Draw current instrument/voice type info if playing
-    if (!m_playing_instrument.isEmpty() || !m_playing_voice_type.isEmpty()) {
+    // Draw current voice type info if playing (top half, above meter)
+    if (!m_playing_voice_type.isEmpty()) {
         painter->setPen(m_color.lightness() > 100 ? Qt::black : Qt::white);
-        painter->setFont(QFont("sans-serif", 8));
+        painter->setFont(QFont("sans-serif", 7));
 
-        QString info = m_playing_voice_type;
-        if (!m_playing_instrument.isEmpty()) {
-            info += " " + m_playing_instrument;
-        }
+        const QString info = m_playing_voice_type;
+        const int num_block_w = 20;
+        const int num_block_x = 5;
+        const int buttons_x = num_block_x + num_block_w + 3;
+        const int meter_x = buttons_x + 16 + 6;
+        const int meter_w = 44;
 
-        int left_pad = 5 + 20 + 6 + 16 + 6;
-        QRectF textRect(left_pad, rect.y() + 2, rect.width() - left_pad - 5, rect.height() - 4);
-        painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, info);
+        QRectF textRect(meter_x, rect.y() + 2, meter_w, (rect.height() / 2) - 2);
+        painter->drawText(textRect, Qt::AlignCenter, info);
     }
 }
 
@@ -111,14 +131,12 @@ void GraphicsTrackItem::addItem(GraphicsScoreItem *item) {
     //item->setColor(this->m_color);
 }
 
-void GraphicsTrackItem::setPlayingInfo(const QString &instrument, const QString &voiceType) {
-    m_playing_instrument = instrument;
+void GraphicsTrackItem::setPlayingInfo(const QString &voiceType) {
     m_playing_voice_type = voiceType;
     update();  // trigger repaint
 }
 
 void GraphicsTrackItem::clearPlayingInfo() {
-    m_playing_instrument.clear();
     m_playing_voice_type.clear();
     update();
 }
@@ -142,6 +160,12 @@ void GraphicsTrackItem::setSoloed(bool soloed) {
     m_solo_button->setChecked(soloed);
     updateSoloButton();
     update();
+}
+
+void GraphicsTrackItem::setMeterLevels(float left, float right) {
+    if (m_meter_widget) {
+        m_meter_widget->setLevels(left, right);
+    }
 }
 
 void GraphicsTrackItem::updateMuteButton() {

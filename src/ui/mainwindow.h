@@ -21,6 +21,7 @@ class PianoRoll;
 class TrackRoll;
 class PreviewSoundWindow;
 class MinimapWidget;
+class MasterMeterWidget;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -37,6 +38,7 @@ private:
 
     std::unique_ptr<Controller> m_controller;
     QPointer<MinimapWidget> m_minimap;
+    QPointer<MasterMeterWidget> m_master_meter;
     QString m_project_root;
     GtmConfig m_config;
 

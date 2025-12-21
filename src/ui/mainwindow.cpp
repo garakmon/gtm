@@ -7,11 +7,14 @@
 #include <QDebug>
 #include <QDir>
 #include <QGridLayout>
+#include <QHBoxLayout>
+#include <QSlider>
 
 #include "constants.h"
 #include "colors.h"
 #include "theme.h"
 #include "minimapwidget.h"
+#include "meters.h"
 #include "pianoroll.h"
 #include "trackroll.h"
 #include "graphicstrackitem.h"
@@ -86,6 +89,20 @@ void MainWindow::setupUi() {
         ui->widget_minimap->deleteLater();
         if (m_controller) {
             m_controller->setMinimap(m_minimap);
+        }
+    }
+
+    if (ui->widget_masterMeter) {
+        m_master_meter = new MasterMeterWidget(this);
+        m_master_meter->setObjectName("masterMeter");
+        if (auto *layout = qobject_cast<QHBoxLayout *>(ui->widget_masterMeter->parentWidget()->layout())) {
+            layout->replaceWidget(ui->widget_masterMeter, m_master_meter);
+        }
+        ui->widget_masterMeter->deleteLater();
+        if (m_controller) {
+            m_controller->setMasterMeter(m_master_meter);
+            connect(m_master_meter->slider(), &QSlider::valueChanged, m_controller.get(), &Controller::setMasterVolume);
+            m_controller->setMasterVolume(m_master_meter->slider()->value());
         }
     }
 

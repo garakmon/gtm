@@ -17,6 +17,7 @@
 #include <QGraphicsProxyWidget>
 
 class QPushButton;
+class CenteredStereoMeter;
 
 
 class GraphicsScoreItem;
@@ -43,10 +44,11 @@ public:
     void addItem(GraphicsScoreItem *item);
 
     // Update the current playing instrument info for display
-    void setPlayingInfo(const QString &instrument, const QString &voiceType);
+    void setPlayingInfo(const QString &voiceType);
     void clearPlayingInfo();
     void setMuted(bool muted);
     void setSoloed(bool soloed);
+    void setMeterLevels(float left, float right);
 
 signals:
     void muteToggled(int channel, bool muted);
@@ -63,11 +65,12 @@ private:
     QPushButton *m_mute_button = nullptr;
     QGraphicsProxyWidget *m_solo_proxy = nullptr;
     QPushButton *m_solo_button = nullptr;
+    QGraphicsProxyWidget *m_meter_proxy = nullptr;
+    CenteredStereoMeter *m_meter_widget = nullptr;
 
     QList<GraphicsScoreItem *> m_score_items;
 
     // Current playback info display
-    QString m_playing_instrument;
     QString m_playing_voice_type;
 
     void updateMuteButton();

@@ -7,12 +7,14 @@ extern "C" {
 }
 
 #include <QMap>
+#include <array>
+#include <atomic>
 #include "soundtypes.h"
 #include "constants.h"
 
 class Mixer {
 public:
-    Mixer() {}
+    Mixer();
 
     void setInstrumentData(const VoiceGroup *vg, const QMap<QString, VoiceGroup> *all_vg,
                            const QMap<QString, Sample> *samples,
@@ -26,13 +28,22 @@ public:
     void setChannelPitchBend(uint8_t channel, int value);
     void setChannelMute(uint8_t channel, bool muted);
     void setAllMuted(bool muted);
+    void setMasterVolume(float volume);
+    float masterVolume() const;
     void processAudio(float *out_buffer, unsigned long frame_count);
     void end();
+
+    struct MeterLevels {
+        float master_l = 0.0f;
+        float master_r = 0.0f;
+        std::array<float, g_num_midi_channels> channel_l{};
+        std::array<float, g_num_midi_channels> channel_r{};
+    };
+    void getMeterLevels(MeterLevels *out) const;
 
     // Get current instrument info for a channel (for UI display)
     struct ChannelPlayInfo {
         bool active = false;
-        QString instrument_name;
         QString voice_type;
     };
     ChannelPlayInfo getChannelPlayInfo(uint8_t channel) const;
@@ -49,6 +60,12 @@ private:
 
     // Track current instrument per channel for UI display
     ChannelPlayInfo m_channel_play_info[g_num_midi_channels];
+
+    std::atomic<float> m_master_volume{0.25f};
+    std::atomic<float> m_master_peak_l{0.0f};
+    std::atomic<float> m_master_peak_r{0.0f};
+    std::array<std::atomic<float>, g_num_midi_channels> m_channel_peak_l;
+    std::array<std::atomic<float>, g_num_midi_channels> m_channel_peak_r;
 
     // Resolve keysplit instruments to their actual underlying instrument
     const Instrument *resolveInstrument(const Instrument *inst, uint8_t key,

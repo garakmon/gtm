@@ -33,10 +33,12 @@ public:
     GraphicsTrackItem *addTrack();
 
     // Update track display with current instrument info (called during playback)
-    void setTrackPlayingInfo(int channel, const QString &instrument, const QString &voiceType);
+    void setTrackPlayingInfo(int channel, const QString &voiceType);
     void clearAllPlayingInfo();
     void setTrackMuted(int channel, bool muted);
     void setTrackSoloed(int channel, bool soloed);
+    void setTrackMeterLevels(int channel, float left, float right);
+    void clearAllMeters();
     void clearAllSoloed();
     bool hasSoloed() const;
 

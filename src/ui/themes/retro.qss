@@ -10,6 +10,14 @@ QFrame, QGroupBox {
     border-radius: 0px;
 }
 
+QGraphicsView {
+    background: transparent;
+    border: 0px;
+}
+QGraphicsView::viewport {
+    background: transparent;
+}
+
 QToolButton, QPushButton {
     background: {panel_alt};
     border: 1px solid {border};

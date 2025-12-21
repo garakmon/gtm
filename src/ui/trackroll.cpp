@@ -45,10 +45,10 @@ void TrackRoll::drawTracks() {
     }
 }
 
-void TrackRoll::setTrackPlayingInfo(int channel, const QString &instrument, const QString &voiceType) {
+void TrackRoll::setTrackPlayingInfo(int channel, const QString &voiceType) {
     // Channel typically maps to display row for GBA music
     if (m_track_items.contains(channel)) {
-        m_track_items[channel]->setPlayingInfo(instrument, voiceType);
+        m_track_items[channel]->setPlayingInfo(voiceType);
     }
 }
 
@@ -67,6 +67,18 @@ void TrackRoll::setTrackMuted(int channel, bool muted) {
 void TrackRoll::setTrackSoloed(int channel, bool soloed) {
     if (m_track_items.contains(channel)) {
         m_track_items[channel]->setSoloed(soloed);
+    }
+}
+
+void TrackRoll::setTrackMeterLevels(int channel, float left, float right) {
+    if (m_track_items.contains(channel)) {
+        m_track_items[channel]->setMeterLevels(left, right);
+    }
+}
+
+void TrackRoll::clearAllMeters() {
+    for (auto item : m_track_items) {
+        item->setMeterLevels(0.0f, 0.0f);
     }
 }
 

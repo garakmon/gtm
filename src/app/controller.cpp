@@ -19,6 +19,7 @@
 #include "projectinterface.h"
 #include "songlistmodel.h"
 #include "minimapwidget.h"
+#include "meters.h"
 
 
 /// controller loads the song, creates the track items, etc.
@@ -202,12 +203,6 @@ void Controller::syncRolls() {
 
     // Update track items with current instrument info
     Mixer *mixer = m_player->getMixer();
-    for (int ch = 0; ch < g_num_midi_channels; ch++) {
-        auto info = mixer->getChannelPlayInfo(ch);
-        if (info.active) {
-            m_track_roll->setTrackPlayingInfo(ch, info.instrument_name, info.voice_type);
-        }
-    }
 
     int playhead_x = current_tick * ui_tick_x_scale;
     int viewport_left = this->m_window->hscroll_pianoRoll->value();
@@ -225,6 +220,24 @@ void Controller::syncRolls() {
 
     if (current_tick >= this->m_song->durationInTicks()) {
         this->stop();
+    }
+
+    // Update meters at UI tick rate
+    if (mixer) {
+        Mixer::MeterLevels levels;
+        mixer->getMeterLevels(&levels);
+        if (m_master_meter) {
+            m_master_meter->setLevels(levels.master_l, levels.master_r);
+        }
+        for (int ch = 0; ch < g_num_midi_channels; ++ch) {
+            auto info = mixer->getChannelPlayInfo(ch);
+            if (info.active) {
+                m_track_roll->setTrackPlayingInfo(ch, info.voice_type);
+            } else {
+                m_track_roll->setTrackPlayingInfo(ch, QString());
+            }
+            m_track_roll->setTrackMeterLevels(ch, levels.channel_l[ch], levels.channel_r[ch]);
+        }
     }
 }
 
@@ -315,12 +328,20 @@ void Controller::stop() {
     m_player->stop();
     m_player_timer.stop();
     m_track_roll->clearAllPlayingInfo();
+    m_track_roll->clearAllMeters();
+    if (m_master_meter) {
+        m_master_meter->setLevels(0.0f, 0.0f);
+    }
 }
 
 void Controller::pause() {
     m_player->stop();
     m_player_timer.stop();
     m_track_roll->clearAllPlayingInfo();
+    m_track_roll->clearAllMeters();
+    if (m_master_meter) {
+        m_master_meter->setLevels(0.0f, 0.0f);
+    }
 }
 
 void Controller::onTrackMuteToggled(int channel, bool muted) {
@@ -359,6 +380,16 @@ void Controller::onTrackSoloToggled(int channel, bool soloed) {
 
 void Controller::setMinimap(MinimapWidget *minimap) {
     m_minimap = minimap;
+}
+
+void Controller::setMasterMeter(MasterMeterWidget *meter) {
+    m_master_meter = meter;
+}
+
+void Controller::setMasterVolume(int value) {
+    if (!m_player) return;
+    float volume = static_cast<float>(value) / 100.0f;
+    m_player->getMixer()->setMasterVolume(volume);
 }
 
 void Controller::seekToTick(int tick) {
