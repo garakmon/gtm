@@ -85,6 +85,7 @@ private:
     QTimer m_player_timer;
     QElapsedTimer m_player_elapsed;
     int m_playback_start_tick = 0;
+    int m_meter_frame = 0;
 
     // scroll state
     QTimer m_scroll_debounce;

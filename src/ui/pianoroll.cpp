@@ -31,6 +31,7 @@ void PianoRoll::drawPiano() {
             item->setZValue(1);
             item->setPos(0, blackNoteToY(i));
         }
+        item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
         //item->setPos(0, note_to_y_pos(i));
         this->m_piano_keys.append(item);
         this->m_scene_piano.addItem(item);
@@ -62,6 +63,7 @@ void PianoRoll::drawScoreArea() {
             item->setPen(ui_color_score_line_light);
             item->setZValue(-1);
         }
+        item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
         this->m_score_lines.append(item);
         this->m_scene_roll.addItem(item);
     }
@@ -73,6 +75,7 @@ void PianoRoll::drawScoreArea() {
         QGraphicsLineItem *line = new QGraphicsLineItem(x, 0, x, ui_score_line_height * g_num_notes_piano);
         line->setPen(tick_pen);
         line->setZValue(-1);
+        line->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
         this->m_scene_roll.addItem(line);
     }
 }

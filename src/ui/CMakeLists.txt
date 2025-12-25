@@ -4,6 +4,8 @@ qt_add_library(gtm-ui STATIC
     pianoroll.cpp
     minimapwidget.cpp
     meters.cpp
+    trackmeteritem.cpp
+    trackbuttonitem.cpp
     trackroll.cpp
     measureroll.cpp
     graphicsmetaeventitem.cpp

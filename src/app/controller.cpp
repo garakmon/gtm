@@ -77,6 +77,20 @@ void Controller::setupRolls() {
     m_window->view_measures->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_window->view_measures->setFrameShape(QFrame::NoFrame);
 
+    m_window->view_piano->setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
+    m_window->view_pianoRoll->setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
+    m_window->view_trackList->setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
+    m_window->view_trackRoll->setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
+    m_window->view_measures->setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
+    m_window->view_measures_tracks->setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
+
+    m_window->view_piano->setCacheMode(QGraphicsView::CacheBackground);
+    m_window->view_pianoRoll->setCacheMode(QGraphicsView::CacheBackground);
+    m_window->view_trackList->setCacheMode(QGraphicsView::CacheBackground);
+    m_window->view_trackRoll->setCacheMode(QGraphicsView::CacheBackground);
+    m_window->view_measures->setCacheMode(QGraphicsView::CacheBackground);
+    m_window->view_measures_tracks->setCacheMode(QGraphicsView::CacheBackground);
+
     // Hide horizontal scrollbar; minimap will drive scrolling.
     m_window->hscroll_pianoRoll->setVisible(false);
 
@@ -224,19 +238,32 @@ void Controller::syncRolls() {
 
     // Update meters at UI tick rate
     if (mixer) {
-        Mixer::MeterLevels levels;
-        mixer->getMeterLevels(&levels);
-        if (m_master_meter) {
-            m_master_meter->setLevels(levels.master_l, levels.master_r);
-        }
-        for (int ch = 0; ch < g_num_midi_channels; ++ch) {
-            auto info = mixer->getChannelPlayInfo(ch);
-            if (info.active) {
-                m_track_roll->setTrackPlayingInfo(ch, info.voice_type);
-            } else {
-                m_track_roll->setTrackPlayingInfo(ch, QString());
+        m_meter_frame = (m_meter_frame + 1) & 1;
+        if (m_meter_frame == 0) {
+            Mixer::MeterLevels levels;
+            mixer->getMeterLevels(&levels);
+            if (m_master_meter) {
+                m_master_meter->setLevels(levels.master_l, levels.master_r);
             }
-            m_track_roll->setTrackMeterLevels(ch, levels.channel_l[ch], levels.channel_r[ch]);
+            int first_row = 0;
+            int last_row = g_num_midi_channels - 1;
+            if (m_window && m_window->view_trackList) {
+                int scroll_y = m_window->view_trackList->verticalScrollBar()->value();
+                int viewport_h = m_window->view_trackList->viewport()->height();
+                first_row = qMax(0, scroll_y / ui_track_item_height);
+                last_row = qMin(g_num_midi_channels - 1,
+                                first_row + (viewport_h / ui_track_item_height) + 1);
+            }
+
+            for (int ch = first_row; ch <= last_row; ++ch) {
+                auto info = mixer->getChannelPlayInfo(ch);
+                if (info.active) {
+                    m_track_roll->setTrackPlayingInfo(ch, info.voice_type);
+                } else {
+                    m_track_roll->setTrackPlayingInfo(ch, QString());
+                }
+                m_track_roll->setTrackMeterLevels(ch, levels.channel_l[ch], levels.channel_r[ch]);
+            }
         }
     }
 }

@@ -14,10 +14,9 @@
 //   
 
 #include <QGraphicsObject>
-#include <QGraphicsProxyWidget>
 
-class QPushButton;
-class CenteredStereoMeter;
+class GraphicsTrackMeterItem;
+class GraphicsTrackButtonItem;
 
 
 class GraphicsScoreItem;
@@ -36,6 +35,7 @@ public:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
     QColor color() { return this->m_color; }
+    QColor colorLight() const { return m_color_light; }
     int track() { return this->m_track; }
     int row() { return this->m_row; }
     bool isMuted() const { return m_muted; }
@@ -49,6 +49,7 @@ public:
     void setMuted(bool muted);
     void setSoloed(bool soloed);
     void setMeterLevels(float left, float right);
+    void buttonToggled(bool isMuteButton, bool checked);
 
 signals:
     void muteToggled(int channel, bool muted);
@@ -61,17 +62,15 @@ private:
     int m_row;
     bool m_muted = false;
 
-    QGraphicsProxyWidget *m_mute_proxy = nullptr;
-    QPushButton *m_mute_button = nullptr;
-    QGraphicsProxyWidget *m_solo_proxy = nullptr;
-    QPushButton *m_solo_button = nullptr;
-    QGraphicsProxyWidget *m_meter_proxy = nullptr;
-    CenteredStereoMeter *m_meter_widget = nullptr;
+    GraphicsTrackButtonItem *m_mute_button = nullptr;
+    GraphicsTrackButtonItem *m_solo_button = nullptr;
+    GraphicsTrackMeterItem *m_meter_item = nullptr;
 
     QList<GraphicsScoreItem *> m_score_items;
 
     // Current playback info display
     QString m_playing_voice_type;
+    QString m_last_voice_type;
 
     void updateMuteButton();
     void updateSoloButton();

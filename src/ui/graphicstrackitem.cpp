@@ -3,14 +3,13 @@
 #include <QPainter>
 #include <QFontMetrics>
 #include <QGraphicsSceneMouseEvent>
-#include <QPushButton>
-#include <QIcon>
-#include <QSignalBlocker>
+#include <QPainter>
 
 #include "graphicsscorenoteitem.h"
 #include "constants.h"
 #include "colors.h"
-#include "meters.h"
+#include "trackmeteritem.h"
+#include "trackbuttonitem.h"
 #include "MidiEventList.h"
 #include "MidiEvent.h"
 
@@ -31,58 +30,32 @@ GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent) 
     const int num_block_x = 5;
     const int buttons_x = num_block_x + num_block_w + 3;
 
-    // Mute button as a proxy widget (for future expansion with more controls)
-    m_mute_button = new QPushButton();
-    m_mute_button->setCheckable(true);
-    m_mute_button->setFocusPolicy(Qt::NoFocus);
-    m_mute_button->setFixedSize(16, 12);
-    m_mute_button->setIconSize(QSize(10, 10));
+    // Mute button (graphics item)
+    m_mute_button = new GraphicsTrackButtonItem(GraphicsTrackButtonItem::Type::Mute, this);
+    m_mute_button->setPos(buttons_x, row_y + 4);
+    m_mute_button->setZValue(2);
 
-    m_mute_proxy = new QGraphicsProxyWidget(this);
-    m_mute_proxy->setWidget(m_mute_button);
-    m_mute_proxy->setPos(buttons_x, row_y + 4);
-    m_mute_proxy->setZValue(2);
+    // Solo button (graphics item)
+    m_solo_button = new GraphicsTrackButtonItem(GraphicsTrackButtonItem::Type::Solo, this);
+    m_solo_button->setPos(buttons_x, row_y + 4 + 12 + 2);
+    m_solo_button->setZValue(2);
 
-    // Solo button
-    m_solo_button = new QPushButton("S");
-    m_solo_button->setCheckable(true);
-    m_solo_button->setFocusPolicy(Qt::NoFocus);
-    m_solo_button->setFixedSize(16, 12);
-
-    m_solo_proxy = new QGraphicsProxyWidget(this);
-    m_solo_proxy->setWidget(m_solo_button);
-    m_solo_proxy->setPos(buttons_x, row_y + 4 + 12 + 2);
-    m_solo_proxy->setZValue(2);
-
-    // Centered stereo meter (agbplay-like)
-    m_meter_widget = new CenteredStereoMeter();
-    m_meter_widget->setBaseColor(m_color_light);
-    m_meter_widget->setSegmentsPerSide(12);
-    m_meter_widget->setFixedSize(44, 10);
-
-    m_meter_proxy = new QGraphicsProxyWidget(this);
-    m_meter_proxy->setWidget(m_meter_widget);
-    int meter_x = buttons_x + 16 + 6;
-    int meter_y = row_y + (ui_track_item_height / 2) + 4;
-    m_meter_proxy->setPos(meter_x, meter_y);
-    m_meter_proxy->setZValue(2);
+    // Centered stereo meter (agbplay-like), lightweight graphics item
+    constexpr bool k_enable_track_meters = true;
+    if (k_enable_track_meters) {
+        int meter_x = buttons_x + 16 + 6;
+        int meter_y = row_y + (ui_track_item_height / 2) + 4;
+        m_meter_item = new GraphicsTrackMeterItem(QSizeF(44, 10), this);
+        m_meter_item->setColors(m_color_light);
+        m_meter_item->setPos(meter_x, meter_y);
+        m_meter_item->setZValue(2);
+    }
 
     updateMuteButton();
     updateSoloButton();
 
-    connect(m_mute_button, &QPushButton::clicked, this, [this]() {
-        m_muted = m_mute_button->isChecked();
-        updateMuteButton();
-        update();
-        emit muteToggled(m_row, m_muted);
-    });
-
-    connect(m_solo_button, &QPushButton::clicked, this, [this]() {
-        bool soloed = m_solo_button->isChecked();
-        updateSoloButton();
-        update();
-        emit soloToggled(m_row, soloed);
-    });
+    updateMuteButton();
+    updateSoloButton();
 }
 
 QRectF GraphicsTrackItem::boundingRect() const {
@@ -132,11 +105,15 @@ void GraphicsTrackItem::addItem(GraphicsScoreItem *item) {
 }
 
 void GraphicsTrackItem::setPlayingInfo(const QString &voiceType) {
+    if (voiceType == m_last_voice_type) return;
+    m_last_voice_type = voiceType;
     m_playing_voice_type = voiceType;
     update();  // trigger repaint
 }
 
 void GraphicsTrackItem::clearPlayingInfo() {
+    if (m_last_voice_type.isEmpty()) return;
+    m_last_voice_type.clear();
     m_playing_voice_type.clear();
     update();
 }
@@ -146,51 +123,42 @@ bool GraphicsTrackItem::isSoloed() const {
 }
 
 void GraphicsTrackItem::setMuted(bool muted) {
-    if (!m_mute_button) return;
-    QSignalBlocker blocker(m_mute_button);
     m_muted = muted;
-    m_mute_button->setChecked(muted);
+    if (m_mute_button) m_mute_button->setChecked(muted);
     updateMuteButton();
     update();
 }
 
 void GraphicsTrackItem::setSoloed(bool soloed) {
-    if (!m_solo_button) return;
-    QSignalBlocker blocker(m_solo_button);
-    m_solo_button->setChecked(soloed);
+    if (m_solo_button) m_solo_button->setChecked(soloed);
     updateSoloButton();
     update();
 }
 
 void GraphicsTrackItem::setMeterLevels(float left, float right) {
-    if (m_meter_widget) {
-        m_meter_widget->setLevels(left, right);
+    if (m_meter_item) {
+        m_meter_item->setLevels(left, right);
     }
 }
 
 void GraphicsTrackItem::updateMuteButton() {
-    if (!m_mute_button) return;
-
-    m_mute_button->setIcon(QIcon(m_muted ? ":/icons/sound-off.svg" : ":/icons/sound-high.svg"));
-
-    if (m_muted) {
-        m_mute_button->setStyleSheet("QPushButton { background: #646464; color: white; border-radius: 3px; }");
-    } else {
-        const QColor c = m_color_light;
-        m_mute_button->setStyleSheet(QString("QPushButton { background: %1; color: black; border-radius: 3px; }")
-                                         .arg(c.name()));
-    }
+    if (m_mute_button) m_mute_button->update();
 }
 
 void GraphicsTrackItem::updateSoloButton() {
-    if (!m_solo_button) return;
+    if (m_solo_button) m_solo_button->update();
+}
 
-    if (m_solo_button->isChecked()) {
-        m_solo_button->setStyleSheet("QPushButton { background: #f2c94c; color: black; border-radius: 3px; }");
+void GraphicsTrackItem::buttonToggled(bool isMuteButton, bool checked) {
+    if (isMuteButton) {
+        m_muted = checked;
+        updateMuteButton();
+        update();
+        emit muteToggled(m_row, m_muted);
     } else {
-        const QColor c = m_color_light;
-        m_solo_button->setStyleSheet(QString("QPushButton { background: %1; color: black; border-radius: 3px; }")
-                                         .arg(c.name()));
+        updateSoloButton();
+        update();
+        emit soloToggled(m_row, checked);
     }
 }
 

@@ -76,7 +76,8 @@ void MeasureRoll::drawMeasures() {
             if (measure_width > 0) {
                 QPainterPath header_box;
                 header_box.addRoundedRect(measure_x + 1, 1, measure_width - 2, 8, 3, 3);
-                this->m_scene_measures.addPath(header_box, QPen(Qt::NoPen), QBrush(QColor(0, 0, 0, 100)));
+                auto *header_item = this->m_scene_measures.addPath(header_box, QPen(Qt::NoPen), QBrush(QColor(0, 0, 0, 100)));
+                header_item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
                 auto* m_text = new QGraphicsSimpleTextItem(QString::number(measure_number));
                 m_text->setBrush(Qt::white);
@@ -86,6 +87,7 @@ void MeasureRoll::drawMeasures() {
                 if (m_text->boundingRect().width() < measure_width) {
                     this->m_scene_measures.addItem(m_text);
                     m_text->setPos(measure_x + (measure_width / 2.0) - (m_text->boundingRect().width() / 2.0), 0);
+                    m_text->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
                 }
                 else {
                     // don't draw the text if there is not enough room in measure
@@ -102,9 +104,10 @@ void MeasureRoll::drawMeasures() {
                 bool is_start = (beat_id == 0);
 
                 // Vertical Lines
-                this->m_scene_measures.addLine(x_pos, is_start ? 0 : 10, x_pos, ui_measure_roll_height,
-                                               QPen(is_start ? QColor(255, 255, 255, 180) : QColor(255, 255, 255, 60),
-                                               1, is_start ? Qt::SolidLine : Qt::DotLine));
+                auto *line_item = this->m_scene_measures.addLine(x_pos, is_start ? 0 : 10, x_pos, ui_measure_roll_height,
+                                                                 QPen(is_start ? QColor(255, 255, 255, 180) : QColor(255, 255, 255, 60),
+                                                                 1, is_start ? Qt::SolidLine : Qt::DotLine));
+                line_item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
                 // timestamp
                 if (is_start) {
@@ -125,6 +128,7 @@ void MeasureRoll::drawMeasures() {
                     t_item->setFont(t_font);
                     this->m_scene_measures.addItem(t_item);
                     t_item->setPos(x_pos + 4, 11); // middle 10 pixels
+                    t_item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
                 }
 
                 // beat
@@ -134,6 +138,7 @@ void MeasureRoll::drawMeasures() {
                 b_item->setFont(b_font);
                 this->m_scene_measures.addItem(b_item);
                 b_item->setPos(x_pos + 4, 21); // bottom 10 pixels
+                b_item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
             }
 
             current_tick = measure_end_tick;
