@@ -115,14 +115,15 @@ void Controller::displayRolls() {
     m_window->view_piano->setSceneRect(0.0, 0.0, piano_bounds.width(), piano_bounds.height());
     m_window->view_piano->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     m_window->view_piano->setRenderHint(QPainter::Antialiasing, false);
+    // Keep piano keys background as-is (piano scene draws its own items)
     m_window->view_piano->setBackgroundBrush(QBrush(QColor(0x282828), Qt::SolidPattern));
 
     // 2. Piano Roll View (Notes) - Stickied to Top/Left
     m_window->view_pianoRoll->setScene(m_piano_roll->sceneRoll());
-    QRectF roll_bounds = m_piano_roll->sceneRoll()->itemsBoundingRect();
-    m_window->view_pianoRoll->setSceneRect(0.0, 0.0, roll_bounds.width(), roll_bounds.height());
+    QRectF roll_bounds = m_piano_roll->sceneRoll()->sceneRect();
+    m_window->view_pianoRoll->setSceneRect(roll_bounds);
     m_window->view_pianoRoll->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    m_window->view_pianoRoll->setBackgroundBrush(QBrush(QColor(0x282828), Qt::SolidPattern));
+    m_window->view_pianoRoll->setBackgroundBrush(Qt::NoBrush);
 
     // 3. Track Roll (Sticky Top/Left)
     m_window->view_trackRoll->setScene(m_track_roll->sceneRoll());

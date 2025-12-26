@@ -4,6 +4,9 @@
 #include <QGraphicsLineItem>
 #include <QEvent>
 #include <QWheelEvent>
+#include <QPixmap>
+#include <QPainter>
+#include <cmath>
 
 #include "graphicsscorenoteitem.h"
 #include "song.h"
@@ -44,40 +47,92 @@ void PianoRoll::drawPiano() {
 void PianoRoll::drawScoreArea() {
     // Clear
     this->m_score_lines.clear();
+    if (m_score_bg) {
+        m_scene_roll.removeItem(m_score_bg);
+        delete m_score_bg;
+        m_score_bg = nullptr;
+    }
 
     // Draw horizontal lines for piano keys
     int final_tick = this->m_active_song->durationInTicks();
-    for (int i = 0; i < g_num_notes_piano; i++) {
-        QGraphicsRectItem *item;
-        // TODO: calculate height of band, for each octave reset
-        int y = scoreNotePosition(i).y;
-        int height = scoreNotePosition(i).height;
-        if (isNoteWhite(i)) {
-            item = new QGraphicsRectItem(0, y, final_tick * ui_tick_x_scale, height);
-            item->setBrush(ui_color_score_line_light);
-            item->setPen(ui_color_score_line_dark);
-            item->setZValue(-1);
-        } else {
-            item = new QGraphicsRectItem(0, y, final_tick * ui_tick_x_scale, height);
-            item->setBrush(ui_color_score_line_dark);
-            item->setPen(ui_color_score_line_light);
-            item->setZValue(-1);
+    const int tpqn = this->m_active_song->getTicksPerQuarterNote();
+    const int grid_w = qMax(1, final_tick * ui_tick_x_scale);
+    const int grid_h = ui_score_line_height * g_num_notes_piano;
+
+    QPixmap bg_pix(grid_w, grid_h);
+    bg_pix.fill(ui_color_piano_roll_bg);
+    {
+        QPainter p(&bg_pix);
+        p.setRenderHint(QPainter::Antialiasing, false);
+
+        for (int i = 0; i < g_num_notes_piano; i++) {
+            const int y = scoreNotePosition(i).y;
+            const int h = scoreNotePosition(i).height;
+            QColor fill = isNoteWhite(i) ? ui_color_score_line_light : ui_color_score_line_dark;
+            QColor line = isNoteWhite(i) ? ui_color_score_line_dark : ui_color_score_line_light;
+            p.fillRect(QRect(0, y, grid_w, h), fill);
+            p.setPen(line);
+            p.drawLine(0, y + h - 1, grid_w, y + h - 1);
         }
-        item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
-        this->m_score_lines.append(item);
-        this->m_scene_roll.addItem(item);
+
+        // Vertical beat lines aligned to measures
+        auto &time_sigs = this->m_active_song->getTimeSignatures();
+        int current_num = 4;
+        int current_den = 4;
+        auto it_sig = time_sigs.begin();
+        if (it_sig != time_sigs.end() && it_sig.key() == 0) {
+            smf::MidiEvent *first_sig = it_sig.value();
+            current_num = (*first_sig)[3];
+            current_den = static_cast<int>(std::pow(2, (*first_sig)[4]));
+        }
+
+        int current_tick = 0;
+        while (current_tick < final_tick) {
+            if (it_sig != time_sigs.end() && it_sig.key() <= current_tick) {
+                smf::MidiEvent *sig_event = it_sig.value();
+                current_num = (*sig_event)[3];
+                current_den = static_cast<int>(std::pow(2, (*sig_event)[4]));
+            }
+
+            int ticks_per_beat = (tpqn * 4 / current_den);
+            int ticks_per_measure = current_num * ticks_per_beat;
+
+            auto next_it = std::next(it_sig);
+            int end_of_segment = (next_it != time_sigs.end()) ? next_it.key() : final_tick;
+
+            while (current_tick < end_of_segment) {
+                int measure_start_tick = current_tick;
+                int measure_end_tick = std::min(current_tick + ticks_per_measure, end_of_segment);
+
+                for (int beat_id = 0; beat_id < current_num; ++beat_id) {
+                    int beat_tick = measure_start_tick + (beat_id * ticks_per_beat);
+                    if (beat_tick >= end_of_segment) break;
+
+                    int x = beat_tick * ui_tick_x_scale;
+                    QColor line = ui_color_piano_roll_tick_mark;
+                    if (beat_id == 0) {
+                        line.setAlpha(220);
+                    } else {
+                        line.setAlpha(110);
+                    }
+                    p.setPen(QPen(line, 0));
+                    p.drawLine(x, 0, x, grid_h);
+                }
+
+                current_tick = measure_end_tick;
+            }
+
+            if (it_sig != time_sigs.end()) {
+                it_sig++;
+            }
+        }
     }
 
-    // Draw vertical tick marks every quarter note
-    static QPen tick_pen(ui_color_piano_roll_tick_mark, 0);//ui_color_piano_roll_tick_mark);
-    for (int i = 0; i < final_tick; i += this->m_active_song->getTicksPerQuarterNote()) {
-        int x = i * ui_tick_x_scale;
-        QGraphicsLineItem *line = new QGraphicsLineItem(x, 0, x, ui_score_line_height * g_num_notes_piano);
-        line->setPen(tick_pen);
-        line->setZValue(-1);
-        line->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
-        this->m_scene_roll.addItem(line);
-    }
+    m_score_bg = m_scene_roll.addPixmap(bg_pix);
+    m_score_bg->setZValue(-2);
+    m_score_bg->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    m_scene_roll.setBackgroundBrush(Qt::NoBrush);
+    m_scene_roll.setSceneRect(0, 0, grid_w, grid_h);
 }
 
 void PianoRoll::drawScoreNotes() {

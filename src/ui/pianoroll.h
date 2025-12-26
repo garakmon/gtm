@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QGraphicsScene>
+#include <QGraphicsPixmapItem>
 #include <memory>
 
 #include "graphicspianokeyitem.h"
@@ -72,6 +73,7 @@ private:
 
     QList<GraphicsPianoKeyItem *> m_piano_keys;
     QList<QGraphicsRectItem *> m_score_lines;
+    QGraphicsPixmapItem *m_score_bg = nullptr;
 
     std::shared_ptr<Song> m_active_song;
 };
