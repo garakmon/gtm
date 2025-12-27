@@ -5,6 +5,7 @@
 #include <QFrame>
 #include <QGraphicsView>
 #include <QScrollBar>
+#include <cmath>
 
 #include "../ui/ui_mainwindow.h"
 #include "mainwindow.h"
@@ -228,9 +229,25 @@ void Controller::syncRolls() {
         m_autoscroll_enabled = true;
     }
 
+    if (m_autoscroll_enabled && !m_autoscroll_prev) {
+        m_scroll_pos_valid = false;
+    }
+    m_autoscroll_prev = m_autoscroll_enabled;
+
     if (m_autoscroll_enabled) {
-        int scroll_value = playhead_x - viewport_width / 4;
-        this->m_window->hscroll_pianoRoll->setValue(scroll_value);
+        int target = playhead_x - viewport_width / 4;
+        int current = this->m_window->hscroll_pianoRoll->value();
+        if (target < current) target = current; // never scroll backwards during autoscroll
+        if (!m_scroll_pos_valid) {
+            m_scroll_pos = static_cast<double>(current);
+            m_scroll_pos_valid = true;
+        }
+        const double alpha = 0.75;
+        m_scroll_pos = m_scroll_pos + (static_cast<double>(target) - m_scroll_pos) * alpha;
+        int scroll_value = static_cast<int>(std::llround(m_scroll_pos));
+        if (current != scroll_value) {
+            this->m_window->hscroll_pianoRoll->setValue(scroll_value);
+        }
     }
 
     if (current_tick >= this->m_song->durationInTicks()) {
@@ -346,6 +363,7 @@ void Controller::play() {
     m_player->seekToTick(m_playback_start_tick);
 
     m_autoscroll_enabled = true;
+    m_scroll_pos_valid = false;
     m_player->play();
 
     m_player_elapsed.start();
@@ -432,6 +450,7 @@ void Controller::seekToTick(int tick) {
         m_player->seekToTick(tick);
         m_player_elapsed.restart();
     }
+    m_scroll_pos_valid = false;
 }
 
 void Controller::seekToStart() {
@@ -467,6 +486,7 @@ bool Controller::eventFilter(QObject *watched, QEvent *event) {
         if (wheel->angleDelta().x() != 0) {
             m_autoscroll_enabled = false;
             m_scroll_debounce.start();
+            m_scroll_pos_valid = false;
         }
     }
 

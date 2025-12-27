@@ -86,6 +86,9 @@ private:
     QElapsedTimer m_player_elapsed;
     int m_playback_start_tick = 0;
     int m_meter_frame = 0;
+    double m_scroll_pos = 0.0;
+    bool m_scroll_pos_valid = false;
+    bool m_autoscroll_prev = true;
 
     // scroll state
     QTimer m_scroll_debounce;

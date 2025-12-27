@@ -46,6 +46,7 @@ private:
     QGraphicsPolygonItem *m_playhead_arrow;
 
     int m_current_tick = 0;
+    int m_last_playhead_x = -1;
     std::shared_ptr<Song> m_active_song;
 };
 

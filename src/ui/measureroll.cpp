@@ -164,18 +164,22 @@ void MeasureRoll::createPlaybackGuide() {
 
     this->m_playhead_arrow->setBrush(QBrush(ui_color_measure_guide));
     this->m_playhead_arrow->setPen(Qt::NoPen);
+    this->m_playhead_arrow->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
     this->m_playhead_arrow->setZValue(100);
 
     this->m_scene_measures.addItem(this->m_playhead_arrow);
 
     this->m_playhead_arrow->setPos(0, ui_measure_info_height);
+    m_last_playhead_x = -1;
 }
 
 void MeasureRoll::updatePlaybackGuide(int tick) {
     int x_pos = tick * ui_tick_x_scale;
 
     if (this->m_playhead_arrow) {
+        if (m_last_playhead_x == x_pos) return;
+        m_last_playhead_x = x_pos;
         this->m_playhead_arrow->setPos(x_pos, ui_measure_info_height);
     }
 }
