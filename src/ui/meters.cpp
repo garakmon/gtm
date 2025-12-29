@@ -127,7 +127,7 @@ void CenteredStereoMeter::paintEvent(QPaintEvent *event) {
 MasterMeterWidget::MasterMeterWidget(QWidget *parent) : QWidget(parent) {
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(4);
+    layout->setSpacing(2);
 
     m_left = new SegmentedMeterBar(this);
     m_right = new SegmentedMeterBar(this);
@@ -136,6 +136,7 @@ MasterMeterWidget::MasterMeterWidget(QWidget *parent) : QWidget(parent) {
     m_right->setFixedSize(150, 12);
 
     m_slider = new QSlider(Qt::Horizontal, this);
+    m_slider->setObjectName("masterVolumeSlider");
     m_slider->setRange(0, 100);
     m_slider->setValue(25);
     m_slider->setFixedWidth(150);

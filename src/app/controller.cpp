@@ -235,6 +235,11 @@ void Controller::syncRolls() {
     m_autoscroll_prev = m_autoscroll_enabled;
 
     if (m_autoscroll_enabled) {
+        m_scroll_frame = (m_scroll_frame + 1) & 1;
+        if (m_scroll_frame != 0) {
+            // 30 Hz autoscroll
+            return;
+        }
         int target = playhead_x - viewport_width / 4;
         int current = this->m_window->hscroll_pianoRoll->value();
         if (target < current) target = current; // never scroll backwards during autoscroll
@@ -256,32 +261,29 @@ void Controller::syncRolls() {
 
     // Update meters at UI tick rate
     if (mixer) {
-        m_meter_frame = (m_meter_frame + 1) & 1;
-        if (m_meter_frame == 0) {
-            Mixer::MeterLevels levels;
-            mixer->getMeterLevels(&levels);
-            if (m_master_meter) {
-                m_master_meter->setLevels(levels.master_l, levels.master_r);
-            }
-            int first_row = 0;
-            int last_row = g_num_midi_channels - 1;
-            if (m_window && m_window->view_trackList) {
-                int scroll_y = m_window->view_trackList->verticalScrollBar()->value();
-                int viewport_h = m_window->view_trackList->viewport()->height();
-                first_row = qMax(0, scroll_y / ui_track_item_height);
-                last_row = qMin(g_num_midi_channels - 1,
-                                first_row + (viewport_h / ui_track_item_height) + 1);
-            }
+        Mixer::MeterLevels levels;
+        mixer->getMeterLevels(&levels);
+        if (m_master_meter) {
+            m_master_meter->setLevels(levels.master_l, levels.master_r);
+        }
+        int first_row = 0;
+        int last_row = g_num_midi_channels - 1;
+        if (m_window && m_window->view_trackList) {
+            int scroll_y = m_window->view_trackList->verticalScrollBar()->value();
+            int viewport_h = m_window->view_trackList->viewport()->height();
+            first_row = qMax(0, scroll_y / ui_track_item_height);
+            last_row = qMin(g_num_midi_channels - 1,
+                            first_row + (viewport_h / ui_track_item_height) + 1);
+        }
 
-            for (int ch = first_row; ch <= last_row; ++ch) {
-                auto info = mixer->getChannelPlayInfo(ch);
-                if (info.active) {
-                    m_track_roll->setTrackPlayingInfo(ch, info.voice_type);
-                } else {
-                    m_track_roll->setTrackPlayingInfo(ch, QString());
-                }
-                m_track_roll->setTrackMeterLevels(ch, levels.channel_l[ch], levels.channel_r[ch]);
+        for (int ch = first_row; ch <= last_row; ++ch) {
+            auto info = mixer->getChannelPlayInfo(ch);
+            if (info.active) {
+                m_track_roll->setTrackPlayingInfo(ch, info.voice_type);
+            } else {
+                m_track_roll->setTrackPlayingInfo(ch, QString());
             }
+            m_track_roll->setTrackMeterLevels(ch, levels.channel_l[ch], levels.channel_r[ch]);
         }
     }
 }

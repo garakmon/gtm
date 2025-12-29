@@ -498,13 +498,10 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
     const uint8_t *wave_data = nullptr;
 
     if (!m_voicegroup) {
-        qDebug() << "noteOn: ch" << channel << "prog" << program << "- no voicegroup set";
         return;
     }
 
     if (program >= m_voicegroup->instruments.size()) {
-        qDebug() << "noteOn: ch" << channel << "prog" << program
-                 << "- program out of range (voicegroup has" << m_voicegroup->instruments.size() << "instruments)";
         return;
     }
 
@@ -515,9 +512,6 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
     inst = resolveInstrument(inst, key, &resolved_vg);
 
     if (!inst) {
-        qDebug() << "noteOn: ch" << channel << "prog" << program << "key" << key
-                 << "- failed to resolve keysplit (type_id:"
-                 << m_voicegroup->instruments[program].type_id << ")";
         return;
     }
 
@@ -530,16 +524,6 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
         auto it = m_samples->find(inst->sample_label);
         if (it != m_samples->end()) {
             sample = &it.value();
-            qDebug() << "noteOn: ch" << channel << "key" << key
-                     << "sample:" << inst->sample_label
-                     << "len:" << sample->data.size()
-                     << "rate:" << sample->sample_rate
-                     << "loop:" << sample->loops
-                     << "loop_start:" << sample->loop_start
-                     << "loop_end:" << sample->loop_end;
-        } else {
-            qDebug() << "noteOn: ch" << channel << "prog" << program
-                     << "- DirectSound sample not found:" << inst->sample_label;
         }
     }
 
@@ -547,9 +531,6 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
         auto it = m_pcm_data->find(inst->sample_label);
         if (it != m_pcm_data->end()) {
             wave_data = reinterpret_cast<const uint8_t *>(it.value().constData());
-        } else {
-            qDebug() << "noteOn: ch" << channel << "prog" << program
-                     << "- ProgrammableWave data not found:" << inst->sample_label;
         }
     }
 

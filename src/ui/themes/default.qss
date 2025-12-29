@@ -48,6 +48,16 @@ QSlider::handle:horizontal {
     border-radius: 5px;
 }
 
+QSlider#masterVolumeSlider::groove:horizontal {
+    height: 4px;
+    border-radius: 2px;
+}
+QSlider#masterVolumeSlider::handle:horizontal {
+    width: 8px;
+    margin: -2px 0;
+    border-radius: 4px;
+}
+
 QScrollBar:vertical {
     background: {scroll_track};
     width: 10px;

@@ -72,7 +72,7 @@
              <string>...</string>
             </property>
             <property name="icon">
-             <iconset resource="../../build_debug/src/ui/.rcc/gtm-icons.qrc">
+             <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
               <normaloff>:/icons/cut.svg</normaloff>:/icons/cut.svg</iconset>
             </property>
            </widget>
@@ -83,7 +83,7 @@
              <string>...</string>
             </property>
             <property name="icon">
-             <iconset resource="../../build_debug/src/ui/.rcc/gtm-icons.qrc">
+             <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
               <normaloff>:/icons/restart.svg</normaloff>:/icons/restart.svg</iconset>
             </property>
            </widget>
@@ -131,7 +131,7 @@
              <string>...</string>
             </property>
             <property name="icon">
-             <iconset resource="../../build_debug/src/ui/.rcc/gtm-icons.qrc">
+             <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
               <normaloff>:/icons/play.svg</normaloff>:/icons/play.svg</iconset>
             </property>
            </widget>
@@ -142,7 +142,7 @@
              <string>...</string>
             </property>
             <property name="icon">
-             <iconset resource="../../build_debug/src/ui/.rcc/gtm-icons.qrc">
+             <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
               <normaloff>:/icons/pause.svg</normaloff>:/icons/pause.svg</iconset>
             </property>
            </widget>
@@ -153,7 +153,7 @@
              <string>...</string>
             </property>
             <property name="icon">
-             <iconset resource="../../build_debug/src/ui/.rcc/gtm-icons.qrc">
+             <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
               <normaloff>:/icons/square.svg</normaloff>:/icons/square.svg</iconset>
             </property>
            </widget>
@@ -164,7 +164,7 @@
              <string>...</string>
             </property>
             <property name="icon">
-             <iconset resource="../../build_debug/src/ui/.rcc/gtm-icons.qrc">
+             <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
               <normaloff>:/icons/skip-prev.svg</normaloff>:/icons/skip-prev.svg</iconset>
             </property>
            </widget>
@@ -175,7 +175,7 @@
              <string>...</string>
             </property>
             <property name="icon">
-             <iconset resource="../../build_debug/src/ui/.rcc/gtm-icons.qrc">
+             <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
               <normaloff>:/icons/skip-next.svg</normaloff>:/icons/skip-next.svg</iconset>
             </property>
            </widget>
@@ -186,7 +186,7 @@
              <string>...</string>
             </property>
             <property name="icon">
-             <iconset resource="../../build_debug/src/ui/.rcc/gtm-icons.qrc">
+             <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
               <normaloff>:/icons/repeat-once.svg</normaloff>:/icons/repeat-once.svg</iconset>
             </property>
            </widget>
@@ -216,6 +216,9 @@
              <enum>QFrame::Sunken</enum>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_volumeGroup">
+             <property name="spacing">
+              <number>3</number>
+             </property>
              <property name="leftMargin">
               <number>6</number>
              </property>
@@ -228,9 +231,6 @@
              <property name="bottomMargin">
               <number>4</number>
              </property>
-             <property name="spacing">
-              <number>6</number>
-             </property>
              <item>
               <widget class="QLabel" name="label_volume">
                <property name="frameShape">
@@ -240,7 +240,7 @@
                 <string/>
                </property>
                <property name="pixmap">
-                <pixmap resource="../../build_debug/src/ui/.rcc/gtm-icons.qrc">:/icons/sound-low.svg</pixmap>
+                <pixmap resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">:/icons/sound-low.svg</pixmap>
                </property>
               </widget>
              </item>
@@ -437,7 +437,7 @@
              <string/>
             </property>
             <property name="icon">
-             <iconset resource="../../build_debug/src/ui/.rcc/gtm-icons.qrc">
+             <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
               <normaloff>:/icons/play.svg</normaloff>:/icons/play.svg</iconset>
             </property>
            </widget>
@@ -546,7 +546,7 @@
           <x>0</x>
           <y>0</y>
           <width>614</width>
-          <height>271</height>
+          <height>251</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_2">
@@ -623,7 +623,7 @@
           <x>0</x>
           <y>0</y>
           <width>614</width>
-          <height>291</height>
+          <height>280</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_3">
@@ -669,7 +669,7 @@
           </widget>
          </item>
          <item row="4" column="2">
-          <widget class="QWidget" name="widget_minimap">
+          <widget class="QWidget" name="widget_minimap" native="true">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -802,7 +802,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="../../build_debug/src/ui/.rcc/gtm-icons.qrc"/>
+  <include location="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc"/>
  </resources>
  <connections/>
 </ui>
