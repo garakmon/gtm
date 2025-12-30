@@ -605,7 +605,9 @@ smf::MidiFile ProjectInterface::loadMidi(const QString &title) {
     QString path = this->concatPaths(this->m_root, "sound/songs/midi/" + title + ".mid");
 
     QFile f(path);
-    f.open(QIODevice::ReadOnly);
+    if (!f.open(QIODevice::ReadOnly)) {
+        return midifile;
+    }
     std::istringstream is(f.readAll().toStdString());
 
     midifile.read(is);

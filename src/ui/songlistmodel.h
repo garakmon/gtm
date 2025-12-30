@@ -20,6 +20,7 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
 
 private:
     Project *m_project; // make sure the model is deleted if ever other projects are allowed to be opened

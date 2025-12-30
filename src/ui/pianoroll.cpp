@@ -48,7 +48,9 @@ void PianoRoll::drawScoreArea() {
     // Clear
     this->m_score_lines.clear();
     if (m_score_bg) {
-        m_scene_roll.removeItem(m_score_bg);
+        if (m_score_bg->scene() == &m_scene_roll) {
+            m_scene_roll.removeItem(m_score_bg);
+        }
         delete m_score_bg;
         m_score_bg = nullptr;
     }

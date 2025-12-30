@@ -41,3 +41,18 @@ QVariant SongListModel::data(const QModelIndex &index, int role) const {
 
     return QVariant();
 }
+
+Qt::ItemFlags SongListModel::flags(const QModelIndex &index) const {
+    if (!index.isValid() || index.row() >= this->m_project->getNumSongsInTable()) {
+        return Qt::NoItemFlags;
+    }
+
+    const QString &title = this->m_project->getSongTitleAt(index.row());
+    const SongEntry &entry = m_project->getSongEntryByTitle(title);
+
+    if (entry.midifile.isEmpty()) {
+        return Qt::NoItemFlags;
+    }
+
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+}

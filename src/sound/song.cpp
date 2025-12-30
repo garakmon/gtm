@@ -119,6 +119,10 @@ void Song::mergeEvents() {
 double Song::durationInSeconds() {
     this->doTimeAnalysis();
     this->joinTracks();
+    if (this->getTrackCount() <= 0 || (*this)[0].size() == 0) {
+        this->splitTracks();
+        return 0.0;
+    }
     double end_time = (*this)[0].last().seconds;
     this->splitTracks();
     return end_time;
@@ -126,6 +130,10 @@ double Song::durationInSeconds() {
 
 int Song::durationInTicks() {
     this->joinTracks();
+    if (this->getTrackCount() <= 0 || (*this)[0].size() == 0) {
+        this->splitTracks();
+        return 0;
+    }
     int end_tick = (*this)[0].last().tick;
     this->splitTracks();
     return end_tick;

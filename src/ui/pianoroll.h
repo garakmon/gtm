@@ -39,6 +39,7 @@ public:
     QList<QGraphicsRectItem *> lines() { return this->m_score_lines; }
 
     void setSong(std::shared_ptr<Song> song) {
+        this->m_score_bg = nullptr;
         this->m_scene_roll.clear();
         //this->m_scene_piano.clear();
         //this->m_piano_keys.clear();

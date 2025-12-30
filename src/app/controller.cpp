@@ -5,6 +5,7 @@
 #include <QFrame>
 #include <QGraphicsView>
 #include <QScrollBar>
+#include <QMessageBox>
 #include <cmath>
 
 #include "../ui/ui_mainwindow.h"
@@ -180,6 +181,11 @@ void Controller::songListSongRequested(const QModelIndex &index) {
 
     SongEntry entry = this->m_project->getSongEntryByTitle(title);
 
+    if (entry.midifile.isEmpty()) {
+        QMessageBox::warning(nullptr, "Missing MIDI", QString("No MIDI file defined for %1.").arg(title));
+        return;
+    }
+
     // std::shared_ptr<Song> song = this->m_project->getSong(title);
     // !TODO: load unloaded songs here (well, in the project function)
 
@@ -190,6 +196,10 @@ void Controller::songListSongRequested(const QModelIndex &index) {
 
     if (!this->m_project->songLoaded(title)) {
         smf::MidiFile midi = this->m_interface->loadMidi(title);
+        if (midi.getTrackCount() == 0 || (midi.getTrackCount() > 0 && midi[0].size() == 0)) {
+            QMessageBox::warning(nullptr, "Missing MIDI", QString("MIDI file for %1 could not be loaded.").arg(title));
+            return;
+        }
         this->m_project->addSong(title, midi);
     }
 
