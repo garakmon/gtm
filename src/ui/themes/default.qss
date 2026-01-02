@@ -36,6 +36,30 @@ QToolButton:checked, QPushButton:checked {
     color: {text_primary};
 }
 
+QFrame#buttonBox_Playback {
+    background: {panel_alt};
+    border: 1px solid {border};
+    border-radius: 12px;
+    padding: 1px 3px;
+}
+QFrame#buttonBox_Playback QToolButton {
+    background: transparent;
+    border: 0px;
+    padding: 1px 4px;
+}
+QFrame#buttonBox_Playback QToolButton:hover {
+    background: {accent_hover};
+    border-radius: 10px;
+}
+QFrame#buttonBox_Playback QToolButton:pressed {
+    background: {accent_active};
+    border-radius: 10px;
+}
+QFrame#buttonBox_Playback QToolButton:checked {
+    background: {accent};
+    border-radius: 10px;
+}
+
 QSlider::groove:horizontal {
     background: {panel_alt};
     height: 6px;
