@@ -68,6 +68,9 @@ private slots:
     void onTrackSoloToggled(int channel, bool soloed);
 
 private:
+    void updateSongMetaDisplay();
+    void updateSongPositionDisplay(int tick);
+
     std::unique_ptr<Project> m_project;
     std::unique_ptr<ProjectInterface> m_interface;
 
@@ -87,6 +90,7 @@ private:
     int m_playback_start_tick = 0;
     int m_meter_frame = 0;
     int m_scroll_frame = 0;
+    int m_last_meta_tick = -1;
     double m_scroll_pos = 0.0;
     bool m_scroll_pos_valid = false;
     bool m_autoscroll_prev = true;

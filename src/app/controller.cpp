@@ -6,6 +6,8 @@
 #include <QGraphicsView>
 #include <QScrollBar>
 #include <QMessageBox>
+#include <QLabel>
+#include <cmath>
 #include <cmath>
 
 #include "../ui/ui_mainwindow.h"
@@ -226,6 +228,7 @@ void Controller::syncRolls() {
 
     this->m_measure_roll->updatePlaybackGuide(current_tick);
     this->m_measure_roll->setTick(current_tick);
+    this->updateSongPositionDisplay(current_tick);
 
     // Update track items with current instrument info
     Mixer *mixer = m_player->getMixer();
@@ -328,6 +331,7 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
     this->m_measure_roll->setSong(song);
 
     this->displayRolls();
+    this->updateSongMetaDisplay();
 
     // reset playhead to start
     this->m_measure_roll->setTick(0);
@@ -335,6 +339,138 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
     this->m_window->LCD_Timer->display("00:00.000");
 
     return true;
+}
+
+static QString keySignatureToString(int sharps_flats, int is_minor) {
+    static const QString major_keys[15] = {
+        "Cb", "Gb", "Db", "Ab", "Eb", "Bb", "F", "C",
+        "G", "D", "A", "E", "B", "F#", "C#"
+    };
+    static const QString minor_keys[15] = {
+        "Abm", "Ebm", "Bbm", "Fm", "Cm", "Gm", "Dm", "Am",
+        "Em", "Bm", "F#m", "C#m", "G#m", "D#m", "A#m"
+    };
+
+    int idx = sharps_flats + 7;
+    if (idx < 0 || idx >= 15) return "C";
+    return is_minor ? minor_keys[idx] : major_keys[idx];
+}
+
+void Controller::updateSongMetaDisplay() {
+    if (!m_window || !m_song) return;
+
+    QString tempo_text = "120.0 BPM";
+    QString time_sig_text = "4/4";
+    QString key_text = "C";
+
+    auto &tempos = m_song->getTempoChanges();
+    if (!tempos.isEmpty()) {
+        auto it = tempos.begin();
+        smf::MidiEvent *e = it.value();
+        if (e) {
+            tempo_text = QString("%1 BPM").arg(e->getTempoBPM(), 0, 'f', 1);
+        }
+    }
+
+    auto &sigs = m_song->getTimeSignatures();
+    if (!sigs.isEmpty()) {
+        auto it = sigs.begin();
+        smf::MidiEvent *e = it.value();
+        if (e) {
+            int num = (*e)[3];
+            int den = static_cast<int>(std::pow(2, (*e)[4]));
+            time_sig_text = QString("%1/%2").arg(num).arg(den);
+        }
+    }
+
+    auto &keys = m_song->getKeySignatures();
+    if (!keys.isEmpty()) {
+        auto it = keys.begin();
+        smf::MidiEvent *e = it.value();
+        if (e) {
+            int sharps_flats = static_cast<int>(static_cast<int8_t>((*e)[3]));
+            int is_minor = (*e)[4];
+            key_text = keySignatureToString(sharps_flats, is_minor);
+        }
+    }
+
+    if (m_window->label_MetaTempoValue) {
+        m_window->label_MetaTempoValue->setText(tempo_text);
+    }
+    if (m_window->label_MetaTimeSigValue) {
+        m_window->label_MetaTimeSigValue->setText(time_sig_text);
+    }
+    if (m_window->label_MetaTickValue) {
+        m_window->label_MetaTickValue->setText("0");
+    }
+    if (m_window->label_MetaMeasureBeatValue) {
+        m_window->label_MetaMeasureBeatValue->setText("1.1");
+    }
+}
+
+void Controller::updateSongPositionDisplay(int tick) {
+    if (!m_window || !m_song) return;
+    if (tick == m_last_meta_tick) return;
+    m_last_meta_tick = tick;
+
+    int measure_number = 1;
+    int beat_number = 1;
+
+    int tpqn = m_song->getTicksPerQuarterNote();
+    if (tpqn > 0) {
+        auto &time_sigs = m_song->getTimeSignatures();
+        int current_num = 4;
+        int current_den = 4;
+        auto it_sig = time_sigs.begin();
+
+        if (it_sig != time_sigs.end() && it_sig.key() == 0) {
+            smf::MidiEvent *first_sig = it_sig.value();
+            current_num = (*first_sig)[3];
+            current_den = static_cast<int>(std::pow(2, (*first_sig)[4]));
+        }
+
+        int current_tick = 0;
+        while (current_tick <= tick) {
+            if (it_sig != time_sigs.end() && it_sig.key() <= current_tick) {
+                smf::MidiEvent *sig_event = it_sig.value();
+                current_num = (*sig_event)[3];
+                current_den = static_cast<int>(std::pow(2, (*sig_event)[4]));
+            }
+
+            int ticks_per_beat = (tpqn * 4 / current_den);
+            int ticks_per_measure = current_num * ticks_per_beat;
+
+            auto next_it = std::next(it_sig);
+            int end_of_segment = (next_it != time_sigs.end()) ? next_it.key() : m_song->durationInTicks();
+
+            while (current_tick < end_of_segment) {
+                int measure_start = current_tick;
+                int measure_end = std::min(current_tick + ticks_per_measure, end_of_segment);
+
+                if (tick < measure_end) {
+                    int offset = tick - measure_start;
+                    beat_number = (offset / ticks_per_beat) + 1;
+                    if (beat_number < 1) beat_number = 1;
+                    if (beat_number > current_num) beat_number = current_num;
+                    current_tick = tick + 1;
+                    break;
+                }
+
+                measure_number++;
+                current_tick = measure_end;
+            }
+
+            if (current_tick > tick) break;
+            if (it_sig != time_sigs.end()) it_sig++;
+        }
+    }
+
+    if (m_window->label_MetaTickValue) {
+        m_window->label_MetaTickValue->setText(QString::number(tick));
+    }
+    if (m_window->label_MetaMeasureBeatValue) {
+        m_window->label_MetaMeasureBeatValue->setText(QString("%1.%2").arg(measure_number).arg(beat_number));
+    }
 }
 
 void Controller::displayEvent(smf::MidiEvent *event) {

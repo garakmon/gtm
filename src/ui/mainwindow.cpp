@@ -9,6 +9,7 @@
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QSlider>
+#include <QFontMetrics>
 
 #include "constants.h"
 #include "colors.h"
@@ -105,6 +106,18 @@ void MainWindow::setupUi() {
             m_controller->setMasterVolume(m_master_meter->slider()->value());
         }
     }
+
+    auto setFixedLabelWidth = [](QLabel *label, const QString &sample) {
+        if (!label) return;
+        QFontMetrics fm(label->font());
+        label->setMinimumWidth(fm.horizontalAdvance(sample));
+        label->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+        label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    };
+    setFixedLabelWidth(ui->label_MetaTickValue, "1234567");
+    setFixedLabelWidth(ui->label_MetaMeasureBeatValue, "123.16");
+    setFixedLabelWidth(ui->label_MetaTempoValue, "240.0 BPM");
+    setFixedLabelWidth(ui->label_MetaTimeSigValue, "12/16");
 
     // drawScoreArea();
 }
