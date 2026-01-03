@@ -5,6 +5,7 @@
 #include <QGraphicsScene>
 #include <QFileDialog>
 #include <QCloseEvent>
+#include <QVector>
 #include <memory>
 
 #include "../app/project.h"
@@ -41,6 +42,7 @@ private:
     QPointer<MasterMeterWidget> m_master_meter;
     QString m_project_root;
     GtmConfig m_config;
+    QVector<int> m_splitter_sizes;
 
     // PianoRoll *m_piano_roll = nullptr; // TODO: unique_ptr? maybe break with ownership of qobjects
     // TrackRoll *m_track_roll = nullptr;

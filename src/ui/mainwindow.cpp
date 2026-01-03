@@ -10,6 +10,7 @@
 #include <QHBoxLayout>
 #include <QSlider>
 #include <QFontMetrics>
+#include <QSplitter>
 
 #include "constants.h"
 #include "colors.h"
@@ -118,6 +119,52 @@ void MainWindow::setupUi() {
     setFixedLabelWidth(ui->label_MetaMeasureBeatValue, "123.16");
     setFixedLabelWidth(ui->label_MetaTempoValue, "240.0 BPM");
     setFixedLabelWidth(ui->label_MetaTimeSigValue, "12/16");
+
+    auto updateSplitterVisibility = [this]() {
+        if (!ui->splitter || !ui->scrollArea || !ui->scroll_pianoArea) return;
+        if (ui->scrollArea->isVisible() && ui->scroll_pianoArea->isVisible()) {
+            m_splitter_sizes = ui->splitter->sizes();
+        }
+        const bool show_all = ui->radioButton_pianoAll && ui->radioButton_pianoAll->isChecked();
+        const bool show_events = show_all || (ui->radioButton_pianoEvents && ui->radioButton_pianoEvents->isChecked());
+        const bool show_notes = show_all || (ui->radioButton_pianoNotes && ui->radioButton_pianoNotes->isChecked());
+
+        ui->scrollArea->setVisible(show_events);
+        ui->scroll_pianoArea->setVisible(show_notes);
+
+        int total = ui->splitter->height();
+        if (total <= 0) total = 1;
+        if (show_events && show_notes) {
+            if (m_splitter_sizes.size() == 2 && (m_splitter_sizes[0] + m_splitter_sizes[1]) > 0) {
+                ui->splitter->setSizes(m_splitter_sizes);
+            } else {
+                ui->splitter->setSizes({total / 2, total - (total / 2)});
+            }
+        } else if (show_events) {
+            ui->splitter->setSizes({total, 0});
+        } else if (show_notes) {
+            ui->splitter->setSizes({0, total});
+        }
+    };
+
+    if (ui->radioButton_pianoAll) {
+        connect(ui->radioButton_pianoAll, &QRadioButton::toggled, this, updateSplitterVisibility);
+    }
+    if (ui->radioButton_pianoEvents) {
+        connect(ui->radioButton_pianoEvents, &QRadioButton::toggled, this, updateSplitterVisibility);
+    }
+    if (ui->radioButton_pianoNotes) {
+        connect(ui->radioButton_pianoNotes, &QRadioButton::toggled, this, updateSplitterVisibility);
+    }
+    if (ui->splitter) {
+        connect(ui->splitter, &QSplitter::splitterMoved, this, [this](int, int) {
+            if (!ui->scrollArea || !ui->scroll_pianoArea) return;
+            if (ui->scrollArea->isVisible() && ui->scroll_pianoArea->isVisible()) {
+                m_splitter_sizes = ui->splitter->sizes();
+            }
+        });
+    }
+    updateSplitterVisibility();
 
     // drawScoreArea();
 }
