@@ -179,6 +179,7 @@ void Controller::connectSignals() {
 }
 
 void Controller::songListSongRequested(const QModelIndex &index) {
+    m_current_song_index = index.row();
     QString title = index.data(Qt::UserRole).toString();
 
     SongEntry entry = this->m_project->getSongEntryByTitle(title);
@@ -611,6 +612,10 @@ int Controller::currentTick() const {
     return m_song->getTickFromTime(current_seconds);
 }
 
+int Controller::currentSongIndex() const {
+    return m_current_song_index;
+}
+
 bool Controller::selectSongByIndex(int index) {
     if (!m_window || !m_window->listView_songTable) return false;
     auto *view = m_window->listView_songTable;
@@ -624,6 +629,7 @@ bool Controller::selectSongByIndex(int index) {
     if (!next.isValid()) return false;
 
     view->setCurrentIndex(next);
+    m_current_song_index = index;
     songListSongRequested(next);
     return true;
 }

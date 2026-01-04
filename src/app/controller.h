@@ -53,6 +53,7 @@ public:
     void seekToTick(int tick);
     void seekToStart();
     int currentTick() const;
+    int currentSongIndex() const;
     bool selectSongByIndex(int index);
     void setMinimap(MinimapWidget *minimap);
     void setMasterMeter(MasterMeterWidget *meter);
@@ -94,6 +95,7 @@ private:
     double m_scroll_pos = 0.0;
     bool m_scroll_pos_valid = false;
     bool m_autoscroll_prev = true;
+    int m_current_song_index = -1;
 
     // scroll state
     QTimer m_scroll_debounce;

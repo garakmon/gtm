@@ -108,6 +108,10 @@ void MainWindow::setupUi() {
         }
     }
 
+    if (ui->Button_Play) ui->Button_Play->setCheckable(true);
+    if (ui->Button_Pause) ui->Button_Pause->setCheckable(true);
+    if (ui->Button_Stop) ui->Button_Stop->setCheckable(true);
+
     auto setFixedLabelWidth = [](QLabel *label, const QString &sample) {
         if (!label) return;
         QFontMetrics fm(label->font());
@@ -235,14 +239,23 @@ void MainWindow::on_action_PreviewSound_triggered() {
 }
 
 void MainWindow::on_Button_Play_clicked() {
+    if (ui->Button_Play) ui->Button_Play->setChecked(true);
+    if (ui->Button_Pause) ui->Button_Pause->setChecked(false);
+    if (ui->Button_Stop) ui->Button_Stop->setChecked(false);
     this->m_controller->play();
 }
 
 void MainWindow::on_Button_Pause_clicked() {
+    if (ui->Button_Play) ui->Button_Play->setChecked(false);
+    if (ui->Button_Pause) ui->Button_Pause->setChecked(true);
+    if (ui->Button_Stop) ui->Button_Stop->setChecked(false);
     this->m_controller->pause();
 }
 
 void MainWindow::on_Button_Stop_clicked() {
+    if (ui->Button_Play) ui->Button_Play->setChecked(false);
+    if (ui->Button_Pause) ui->Button_Pause->setChecked(false);
+    if (ui->Button_Stop) ui->Button_Stop->setChecked(true);
     this->m_controller->stop();
     this->m_controller->seekToStart();
 }
@@ -254,17 +267,41 @@ void MainWindow::on_Button_Previous_clicked() {
     }
     auto *view = this->ui->listView_songTable;
     if (!view || !view->model()) return;
-    QModelIndex current = view->currentIndex();
-    int row = current.isValid() ? current.row() : 0;
-    this->m_controller->selectSongByIndex(row - 1);
+    auto *model = view->model();
+    int rows = model->rowCount();
+    if (rows <= 0) return;
+    int row = this->m_controller ? this->m_controller->currentSongIndex() : -1;
+    if (row < 0) {
+        QModelIndex current = view->currentIndex();
+        row = current.isValid() ? current.row() : 0;
+    }
+    for (int next = row - 1; next >= 0; --next) {
+        QModelIndex idx = model->index(next, 0);
+        if (idx.isValid() && (model->flags(idx) & Qt::ItemIsEnabled)) {
+            this->m_controller->selectSongByIndex(next);
+            return;
+        }
+    }
 }
 
 void MainWindow::on_Button_Skip_clicked() {
     auto *view = this->ui->listView_songTable;
     if (!view || !view->model()) return;
-    QModelIndex current = view->currentIndex();
-    int row = current.isValid() ? current.row() : 0;
-    this->m_controller->selectSongByIndex(row + 1);
+    auto *model = view->model();
+    int rows = model->rowCount();
+    if (rows <= 0) return;
+    int row = this->m_controller ? this->m_controller->currentSongIndex() : -1;
+    if (row < 0) {
+        QModelIndex current = view->currentIndex();
+        row = current.isValid() ? current.row() : 0;
+    }
+    for (int next = row + 1; next < rows; ++next) {
+        QModelIndex idx = model->index(next, 0);
+        if (idx.isValid() && (model->flags(idx) & Qt::ItemIsEnabled)) {
+            this->m_controller->selectSongByIndex(next);
+            return;
+        }
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
