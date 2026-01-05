@@ -60,6 +60,17 @@ QFrame#buttonBox_Playback QToolButton:checked {
     border-radius: 10px;
 }
 
+QFrame#frame_volumeGroup {
+    background: {panel_alt};
+    border: 1px solid {border};
+    border-radius: 12px;
+    padding: 0px;
+}
+QFrame#frame_volumeGroup QLabel {
+    background: transparent;
+    border: 0px;
+}
+
 QFrame#frame_MetaDisplay {
     background: {bg};
     border: 1px solid {border};
@@ -95,13 +106,20 @@ QSlider::handle:horizontal {
 }
 
 QSlider#masterVolumeSlider::groove:horizontal {
-    height: 4px;
-    border-radius: 2px;
+    background: transparent;
+    height: 2px;
+    border-radius: 1px;
+    margin: 0px;
+}
+QSlider#masterVolumeSlider {
+    padding: 0px;
+    margin: 0px;
 }
 QSlider#masterVolumeSlider::handle:horizontal {
-    width: 8px;
-    margin: -2px 0;
-    border-radius: 4px;
+    background: {accent};
+    width: 10px;
+    margin: -4px 0;
+    border-radius: 6px;
 }
 
 QScrollBar:vertical {

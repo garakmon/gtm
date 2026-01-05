@@ -127,19 +127,22 @@ void CenteredStereoMeter::paintEvent(QPaintEvent *event) {
 MasterMeterWidget::MasterMeterWidget(QWidget *parent) : QWidget(parent) {
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(2);
+    layout->setSpacing(0);
+    layout->setAlignment(Qt::AlignTop);
+    layout->setAlignment(Qt::AlignVCenter);
 
     m_left = new SegmentedMeterBar(this);
     m_right = new SegmentedMeterBar(this);
 
-    m_left->setFixedSize(150, 12);
-    m_right->setFixedSize(150, 12);
+    m_left->setFixedSize(150, 6);
+    m_right->setFixedSize(150, 6);
 
     m_slider = new QSlider(Qt::Horizontal, this);
     m_slider->setObjectName("masterVolumeSlider");
     m_slider->setRange(0, 100);
     m_slider->setValue(25);
     m_slider->setFixedWidth(150);
+    m_slider->setFixedHeight(4);
     m_slider->setTickPosition(QSlider::NoTicks);
 
     layout->addWidget(m_left);
@@ -147,6 +150,7 @@ MasterMeterWidget::MasterMeterWidget(QWidget *parent) : QWidget(parent) {
     layout->addWidget(m_right);
 
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setFixedSize(150, 24);
 }
 
 void MasterMeterWidget::setLevels(float left, float right) {

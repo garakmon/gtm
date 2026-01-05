@@ -423,8 +423,9 @@ void Controller::updateSongPositionDisplay(int tick) {
         int current_num = 4;
         int current_den = 4;
         auto it_sig = time_sigs.begin();
+        auto end_sig = time_sigs.end();
 
-        if (it_sig != time_sigs.end() && it_sig.key() == 0) {
+        if (it_sig != end_sig && it_sig.key() == 0) {
             smf::MidiEvent *first_sig = it_sig.value();
             current_num = (*first_sig)[3];
             current_den = static_cast<int>(std::pow(2, (*first_sig)[4]));
@@ -432,7 +433,7 @@ void Controller::updateSongPositionDisplay(int tick) {
 
         int current_tick = 0;
         while (current_tick <= tick) {
-            if (it_sig != time_sigs.end() && it_sig.key() <= current_tick) {
+            if (it_sig != end_sig && it_sig.key() <= current_tick) {
                 smf::MidiEvent *sig_event = it_sig.value();
                 current_num = (*sig_event)[3];
                 current_den = static_cast<int>(std::pow(2, (*sig_event)[4]));
@@ -441,8 +442,14 @@ void Controller::updateSongPositionDisplay(int tick) {
             int ticks_per_beat = (tpqn * 4 / current_den);
             int ticks_per_measure = current_num * ticks_per_beat;
 
-            auto next_it = std::next(it_sig);
-            int end_of_segment = (next_it != time_sigs.end()) ? next_it.key() : m_song->durationInTicks();
+            int end_of_segment = m_song->durationInTicks();
+            if (it_sig != end_sig) {
+                auto next_it = it_sig;
+                ++next_it;
+                if (next_it != end_sig) {
+                    end_of_segment = next_it.key();
+                }
+            }
 
             while (current_tick < end_of_segment) {
                 int measure_start = current_tick;
@@ -462,7 +469,7 @@ void Controller::updateSongPositionDisplay(int tick) {
             }
 
             if (current_tick > tick) break;
-            if (it_sig != time_sigs.end()) it_sig++;
+            if (it_sig != end_sig) it_sig++;
         }
     }
 

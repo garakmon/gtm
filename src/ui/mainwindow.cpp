@@ -11,6 +11,7 @@
 #include <QSlider>
 #include <QFontMetrics>
 #include <QSplitter>
+#include <QPixmap>
 
 #include "constants.h"
 #include "colors.h"
@@ -98,6 +99,7 @@ void MainWindow::setupUi() {
         m_master_meter = new MasterMeterWidget(this);
         m_master_meter->setObjectName("masterMeter");
         if (auto *layout = qobject_cast<QHBoxLayout *>(ui->widget_masterMeter->parentWidget()->layout())) {
+            layout->setAlignment(Qt::AlignVCenter);
             layout->replaceWidget(ui->widget_masterMeter, m_master_meter);
         }
         ui->widget_masterMeter->deleteLater();
@@ -106,6 +108,15 @@ void MainWindow::setupUi() {
             connect(m_master_meter->slider(), &QSlider::valueChanged, m_controller.get(), &Controller::setMasterVolume);
             m_controller->setMasterVolume(m_master_meter->slider()->value());
         }
+    }
+
+    if (ui->label_volume) {
+        ui->label_volume->setFixedHeight(16);
+        const QPixmap pix = ui->label_volume->pixmap();
+        if (!pix.isNull()) {
+            ui->label_volume->setPixmap(pix.scaledToHeight(16, Qt::SmoothTransformation));
+        }
+        ui->label_volume->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
     }
 
     if (ui->Button_Play) ui->Button_Play->setCheckable(true);
