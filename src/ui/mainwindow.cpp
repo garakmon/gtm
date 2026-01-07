@@ -12,6 +12,7 @@
 #include <QFontMetrics>
 #include <QSplitter>
 #include <QPixmap>
+#include <QFontDatabase>
 
 #include "constants.h"
 #include "colors.h"
@@ -31,6 +32,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 
     // TEMP: silence bug in my qt version re: mac trackpads [fix: update Qt version]
     QLoggingCategory::setFilterRules(QStringLiteral("qt.pointer.dispatch=false"));
+
+    QFontDatabase::addApplicationFont(":/fonts/IBMPlexMono-Regular.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/IBMPlexSans-Regular.ttf");
 
     //this->m_project = std::make_unique<Project>();
 
@@ -131,6 +135,11 @@ void MainWindow::setupUi() {
         label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     };
     setFixedLabelWidth(ui->label_MetaTickValue, "1234567");
+    if (ui->label_MetaTimeValue) {
+        ui->label_MetaTimeValue->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+        ui->label_MetaTimeValue->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    }
+    setFixedLabelWidth(ui->label_MetaTimeValue, "00:00.000");
     setFixedLabelWidth(ui->label_MetaMeasureBeatValue, "123.16");
     setFixedLabelWidth(ui->label_MetaTempoValue, "240.0 BPM");
     setFixedLabelWidth(ui->label_MetaTimeSigValue, "12/16");

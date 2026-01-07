@@ -1,7 +1,7 @@
 QWidget {
     background: {bg};
     color: {text_primary};
-    font: 9pt "Monaco";
+    font: 9pt "IBM Plex Sans";
 }
 
 QFrame, QGroupBox {
@@ -16,6 +16,10 @@ QGraphicsView {
 }
 QGraphicsView::viewport {
     background: transparent;
+}
+
+QListView#listView_songTable {
+    font: 9pt "IBM Plex Mono";
 }
 
 QToolButton, QPushButton {

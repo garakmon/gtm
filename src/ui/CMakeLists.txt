@@ -36,6 +36,10 @@ qt_add_resources(gtm-ui "gtm-icons"
     FILES
         themes/default.qss
         themes/retro.qss
+        fonts/IBMPlexMono-Regular.ttf
+        fonts/IBM_Plex_Mono_OFL.txt
+        fonts/IBMPlexSans-Regular.ttf
+        fonts/IBM_Plex_Sans_OFL.txt
         icons/album-list.svg
         icons/check-circle.svg
         icons/check-square.svg

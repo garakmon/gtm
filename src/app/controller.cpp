@@ -163,7 +163,7 @@ void Controller::displayRolls() {
         m_window->view_piano->centerOn(m_piano_roll->keys()[g_midi_middle_c]);
     }
 
-    this->m_window->LCD_Timer->setDigitCount(9);
+    // LCD timer removed; time display is in meta box.
 }
 
 void Controller::displayProject() {
@@ -223,7 +223,9 @@ void Controller::syncRolls() {
     QTime display_time(0, 0);
     display_time = display_time.addMSecs(static_cast<int>(current_seconds * 1000));
     QString time_text = display_time.toString("mm:ss.zzz");
-    this->m_window->LCD_Timer->display(time_text);
+    if (m_window->label_MetaTimeValue) {
+        m_window->label_MetaTimeValue->setText(time_text);
+    }
 
     int current_tick = this->m_song->getTickFromTime(current_seconds);
 
@@ -337,7 +339,12 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
     // reset playhead to start
     this->m_measure_roll->setTick(0);
     this->m_measure_roll->updatePlaybackGuide(0);
-    this->m_window->LCD_Timer->display("00:00.000");
+    if (m_window->label_MetaTimeValue) {
+        m_window->label_MetaTimeValue->setText("00:00.000");
+    }
+    if (m_window->Button_Play) m_window->Button_Play->setChecked(false);
+    if (m_window->Button_Pause) m_window->Button_Pause->setChecked(false);
+    if (m_window->Button_Stop) m_window->Button_Stop->setChecked(true);
 
     return true;
 }
@@ -403,6 +410,9 @@ void Controller::updateSongMetaDisplay() {
     }
     if (m_window->label_MetaTickValue) {
         m_window->label_MetaTickValue->setText("0");
+    }
+    if (m_window->label_MetaTimeValue) {
+        m_window->label_MetaTimeValue->setText("00:00.000");
     }
     if (m_window->label_MetaMeasureBeatValue) {
         m_window->label_MetaMeasureBeatValue->setText("1.1");
