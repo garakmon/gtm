@@ -130,16 +130,17 @@ void MainWindow::setupUi() {
     auto setFixedLabelWidth = [](QLabel *label, const QString &sample) {
         if (!label) return;
         QFontMetrics fm(label->font());
-        label->setMinimumWidth(fm.horizontalAdvance(sample));
+        label->setFixedWidth(fm.horizontalAdvance(sample));
         label->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
         label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     };
     setFixedLabelWidth(ui->label_MetaTickValue, "1234567");
     if (ui->label_MetaTimeValue) {
         ui->label_MetaTimeValue->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-        ui->label_MetaTimeValue->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+        ui->label_MetaTimeValue->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+        QFontMetrics fm(ui->label_MetaTimeValue->font());
+        ui->label_MetaTimeValue->setMinimumWidth(fm.horizontalAdvance("00:00.000") + 8);
     }
-    setFixedLabelWidth(ui->label_MetaTimeValue, "00:00.000");
     setFixedLabelWidth(ui->label_MetaMeasureBeatValue, "123.16");
     setFixedLabelWidth(ui->label_MetaTempoValue, "240.0 BPM");
     setFixedLabelWidth(ui->label_MetaTimeSigValue, "12/16");

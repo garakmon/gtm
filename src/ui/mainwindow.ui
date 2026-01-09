@@ -120,6 +120,19 @@
            <number>0</number>
           </property>
           <item>
+           <spacer name="horizontalSpacer_playbackLeft">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
            <widget class="QFrame" name="buttonBox_Playback">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -234,7 +247,7 @@
            </widget>
           </item>
           <item>
-           <spacer name="horizontalSpacer_metaLeft">
+           <spacer name="horizontalSpacer_playbackRight">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -545,6 +558,19 @@
              </item>
             </layout>
            </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_volumeRight">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </widget>
