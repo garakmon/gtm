@@ -271,7 +271,7 @@ void Controller::syncRolls() {
         }
     }
 
-    if (current_tick >= this->m_song->durationInTicks()) {
+    if (m_song_duration_ticks > 0 && current_tick >= m_song_duration_ticks) {
         this->stop();
     }
 
@@ -328,6 +328,7 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
     song->load();
 
     this->m_song = song;
+    m_song_duration_ticks = m_song ? m_song->durationInTicks() : 0;
 
     this->m_track_roll->setSong(song);
     this->m_piano_roll->setSong(song);
@@ -424,6 +425,21 @@ void Controller::updateSongPositionDisplay(int tick) {
     if (tick == m_last_meta_tick) return;
     m_last_meta_tick = tick;
 
+    int end_tick = m_song_duration_ticks;
+    if (end_tick <= 0) {
+        if (m_window->label_MetaTickValue) {
+            m_window->label_MetaTickValue->setText(QString::number(0));
+        }
+        if (m_window->label_MetaMeasureBeatValue) {
+            m_window->label_MetaMeasureBeatValue->setText("1.1");
+        }
+        return;
+    }
+    if (tick >= end_tick) {
+        tick = end_tick - 1;
+        if (tick < 0) tick = 0;
+    }
+
     int measure_number = 1;
     int beat_number = 1;
 
@@ -452,7 +468,7 @@ void Controller::updateSongPositionDisplay(int tick) {
             int ticks_per_beat = (tpqn * 4 / current_den);
             int ticks_per_measure = current_num * ticks_per_beat;
 
-            int end_of_segment = m_song->durationInTicks();
+            int end_of_segment = m_song_duration_ticks;
             if (it_sig != end_sig) {
                 auto next_it = it_sig;
                 ++next_it;
@@ -670,7 +686,9 @@ bool Controller::eventFilter(QObject *watched, QEvent *event) {
             int tick = static_cast<int>(scene_pos.x() / ui_tick_x_scale);
             int tpqn = m_song->getTicksPerQuarterNote();
             int snapped_tick = qRound(static_cast<double>(tick) / tpqn) * tpqn;
-            snapped_tick = qBound(0, snapped_tick, m_song->durationInTicks());
+            int end_tick = m_song_duration_ticks;
+            if (end_tick <= 0 && m_song) end_tick = m_song->durationInTicks();
+            snapped_tick = qBound(0, snapped_tick, end_tick);
 
             seekToTick(snapped_tick);
             return true;

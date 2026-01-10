@@ -96,6 +96,7 @@ private:
     bool m_scroll_pos_valid = false;
     bool m_autoscroll_prev = true;
     int m_current_song_index = -1;
+    int m_song_duration_ticks = 0;
 
     // scroll state
     QTimer m_scroll_debounce;
