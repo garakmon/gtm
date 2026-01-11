@@ -273,6 +273,9 @@ void Controller::syncRolls() {
 
     if (m_song_duration_ticks > 0 && current_tick >= m_song_duration_ticks) {
         this->stop();
+        if (m_window->Button_Play) m_window->Button_Play->setChecked(false);
+        if (m_window->Button_Pause) m_window->Button_Pause->setChecked(false);
+        if (m_window->Button_Stop) m_window->Button_Stop->setChecked(true);
     }
 
     // Update meters at UI tick rate
