@@ -30,14 +30,19 @@ GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent) 
     const int num_block_x = 5;
     const int buttons_x = num_block_x + num_block_w + 3;
 
+    const int button_h = 12;
+    const int button_gap = 2;
+    const int button_stack_h = button_h + button_gap + button_h;
+    const int buttons_y = row_y + (ui_track_item_height - button_stack_h) / 2;
+
     // Mute button (graphics item)
     m_mute_button = new GraphicsTrackButtonItem(GraphicsTrackButtonItem::Type::Mute, this);
-    m_mute_button->setPos(buttons_x, row_y + 4);
+    m_mute_button->setPos(buttons_x, buttons_y);
     m_mute_button->setZValue(2);
 
     // Solo button (graphics item)
     m_solo_button = new GraphicsTrackButtonItem(GraphicsTrackButtonItem::Type::Solo, this);
-    m_solo_button->setPos(buttons_x, row_y + 4 + 12 + 2);
+    m_solo_button->setPos(buttons_x, buttons_y + button_h + button_gap);
     m_solo_button->setZValue(2);
 
     // Centered stereo meter (agbplay-like), lightweight graphics item

@@ -73,6 +73,9 @@ void Controller::setupRolls() {
     m_window->view_trackList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_window->view_trackList->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
+    m_window->view_trackRoll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_window->view_trackRoll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
     m_window->view_measures_tracks->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_window->view_measures_tracks->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_window->view_measures_tracks->setFrameShape(QFrame::NoFrame);
@@ -80,6 +83,17 @@ void Controller::setupRolls() {
     m_window->view_measures->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_window->view_measures->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_window->view_measures->setFrameShape(QFrame::NoFrame);
+
+    if (m_window->scrollArea) {
+        m_window->scrollArea->setFrameShape(QFrame::NoFrame);
+        m_window->scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_window->scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    }
+    if (m_window->scroll_pianoArea) {
+        m_window->scroll_pianoArea->setFrameShape(QFrame::NoFrame);
+        m_window->scroll_pianoArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_window->scroll_pianoArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    }
 
     m_window->view_piano->setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);
     m_window->view_pianoRoll->setViewportUpdateMode(QGraphicsView::MinimalViewportUpdate);

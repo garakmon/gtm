@@ -128,8 +128,6 @@ MasterMeterWidget::MasterMeterWidget(QWidget *parent) : QWidget(parent) {
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
-    layout->setAlignment(Qt::AlignTop);
-    layout->setAlignment(Qt::AlignVCenter);
 
     m_left = new SegmentedMeterBar(this);
     m_right = new SegmentedMeterBar(this);
