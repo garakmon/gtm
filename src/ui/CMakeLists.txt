@@ -13,6 +13,7 @@ qt_add_library(gtm-ui STATIC
     graphicstrackitem.cpp
     graphicsscorenoteitem.cpp
     colors.cpp
+    customwidgets.cpp
     previewsoundwindow.ui
     previewsoundwindow.cpp
     midispinboxes.cpp

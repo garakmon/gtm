@@ -706,6 +706,140 @@
           <property name="bottomMargin">
            <number>0</number>
           </property>
+          <item>
+           <layout class="QFormLayout" name="formLayout_songInfo">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_SongInfoSongId">
+              <property name="text">
+               <string>Song ID</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="GTMLineEdit" name="label_SongInfoSongIdValue">
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+              <property name="text">
+               <string>-</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_SongInfoPlayerType">
+              <property name="text">
+               <string>Player Type</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="GTMComboBox" name="label_SongInfoPlayerTypeValue">
+              <property name="editable">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_SongInfoPriority">
+              <property name="text">
+               <string>Priority</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="GTMLineEdit" name="label_SongInfoPriorityValue">
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+              <property name="text">
+               <string>-</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_SongInfoReverb">
+              <property name="text">
+               <string>Reverb</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="GTMSpinBox" name="label_SongInfoReverbValue">
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+              <property name="maximum">
+               <number>127</number>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_SongInfoVolume">
+              <property name="text">
+               <string>Volume</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="GTMSpinBox" name="label_SongInfoVolumeValue">
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+              <property name="maximum">
+               <number>127</number>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_SongInfoTPQN">
+              <property name="text">
+               <string>TPQN</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="GTMLineEdit" name="label_SongInfoTPQNValue">
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+              <property name="text">
+               <string>-</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_SongInfoVoicegroup">
+              <property name="text">
+               <string>Voicegroup</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="GTMComboBox" name="label_SongInfoVoicegroupValue">
+              <property name="editable">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_SongInfoMusicTracks">
+              <property name="text">
+               <string>Music Tracks</string>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="GTMLineEdit" name="label_SongInfoMusicTracksValue">
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+              <property name="text">
+               <string>-</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
          </layout>
         </widget>
        </item>
@@ -1112,6 +1246,21 @@
   </action>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>GTMLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>customwidgets.h</header>
+  </customwidget>
+  <customwidget>
+   <class>GTMComboBox</class>
+   <extends>QComboBox</extends>
+   <header>customwidgets.h</header>
+  </customwidget>
+  <customwidget>
+   <class>GTMSpinBox</class>
+   <extends>QSpinBox</extends>
+   <header>customwidgets.h</header>
+  </customwidget>
   <customwidget>
    <class>MidiKeySpinBox</class>
    <extends>QSpinBox</extends>

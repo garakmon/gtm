@@ -22,6 +22,15 @@ QListView#listView_songTable {
     font: 9pt "IBM Plex Mono";
 }
 
+QGroupBox {
+    margin-top: 16px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 4px;
+}
+
 QToolButton, QPushButton {
     background: {panel_alt};
     border: 1px solid {border};

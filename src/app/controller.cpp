@@ -389,6 +389,45 @@ void Controller::updateSongMetaDisplay() {
     QString time_sig_text = "4/4";
     QString key_text = "C";
 
+    const SongEntry &meta = m_song->getMetaInfo();
+    if (m_window->label_SongInfoSongIdValue) {
+        m_window->label_SongInfoSongIdValue->setText(meta.title);
+    }
+    if (m_window->label_SongInfoPlayerTypeValue) {
+        if (m_window->label_SongInfoPlayerTypeValue->findText(meta.player) < 0) {
+            m_window->label_SongInfoPlayerTypeValue->clear();
+            m_window->label_SongInfoPlayerTypeValue->addItem(meta.player);
+        }
+        m_window->label_SongInfoPlayerTypeValue->setCurrentText(meta.player);
+    }
+    if (m_window->label_SongInfoPriorityValue) {
+        m_window->label_SongInfoPriorityValue->setText(QString::number(meta.priority));
+    }
+    if (m_window->label_SongInfoReverbValue) {
+        m_window->label_SongInfoReverbValue->setValue(meta.reverb);
+    }
+    if (m_window->label_SongInfoVolumeValue) {
+        m_window->label_SongInfoVolumeValue->setValue(meta.volume);
+    }
+    if (m_window->label_SongInfoTPQNValue) {
+        m_window->label_SongInfoTPQNValue->setText(QString::number(m_song->getTicksPerQuarterNote()));
+    }
+    if (m_window->label_SongInfoVoicegroupValue) {
+        if (m_window->label_SongInfoVoicegroupValue->findText(meta.voicegroup) < 0) {
+            m_window->label_SongInfoVoicegroupValue->clear();
+            m_window->label_SongInfoVoicegroupValue->addItem(meta.voicegroup);
+        }
+        m_window->label_SongInfoVoicegroupValue->setCurrentText(meta.voicegroup);
+    }
+    if (m_window->label_SongInfoMusicTracksValue) {
+        int tracks = 0;
+        int total = m_song->getTrackCount();
+        for (int i = 0; i < total; ++i) {
+            if (!m_song->isMetaTrack(i)) tracks++;
+        }
+        m_window->label_SongInfoMusicTracksValue->setText(QString::number(tracks));
+    }
+
     auto &tempos = m_song->getTempoChanges();
     if (!tempos.isEmpty()) {
         auto it = tempos.begin();

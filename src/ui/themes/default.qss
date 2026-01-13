@@ -102,6 +102,15 @@ QListView#listView_songTable {
     font: 10pt "IBM Plex Mono";
 }
 
+QGroupBox {
+    margin-top: 16px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 4px;
+}
+
 QSlider::groove:horizontal {
     background: {panel_alt};
     height: 6px;
