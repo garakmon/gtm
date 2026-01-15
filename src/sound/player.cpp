@@ -1,4 +1,5 @@
 #include "player.h"
+#include "song.h"
 
 
 
@@ -55,6 +56,7 @@ void Player::loadSong(Song *song, const VoiceGroup *vg,
                       const QMap<QString, QByteArray> *pcm_data,
                       const QMap<QString, KeysplitTable> *keysplit_tables) {
     m_mixer.setInstrumentData(vg, all_vg, samples, pcm_data, keysplit_tables);
+    m_mixer.setSongVolume(song->getMetaInfo().volume);
     m_sequencer.setSong(song);
     m_sequencer.setMixer(&m_mixer);
     m_sequencer.reset();

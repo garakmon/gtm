@@ -30,6 +30,7 @@ public:
     void setAllMuted(bool muted);
     void setMasterVolume(float volume);
     float masterVolume() const;
+    void setSongVolume(uint8_t vol);
     void processAudio(float *out_buffer, unsigned long frame_count);
     void end();
 
@@ -62,6 +63,7 @@ private:
     ChannelPlayInfo m_channel_play_info[g_num_midi_channels];
 
     std::atomic<float> m_master_volume{0.25f};
+    std::atomic<float> m_song_volume{1.0f};  // GBA song volume: (vol+1)/16
     std::atomic<float> m_master_peak_l{0.0f};
     std::atomic<float> m_master_peak_r{0.0f};
     std::array<std::atomic<float>, g_num_midi_channels> m_channel_peak_l;

@@ -127,6 +127,7 @@ struct Voice {
     uint8_t voice_type = 0;
     int8_t inst_pan = 0;       // instrument pan offset (signed), if enabled
     bool inst_pan_enabled = false;
+    bool is_fixed = false;     // type 0x08: play at native rate, ignore key/pitch bend
 
     // Sample playback (DirectSound)
     const int8_t *sample_data = nullptr;

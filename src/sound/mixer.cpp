@@ -81,7 +81,8 @@ float Voice::getNextSample(float pitch_bend_multiplier) {
             // Point sampling (GBA-accurate)
             sample = sample_data[idx] / 128.0f;
 
-            position += pitch_ratio * pitch_bend_multiplier;
+            // Fixed-rate voices ignore pitch bend
+            position += is_fixed ? pitch_ratio : (pitch_ratio * pitch_bend_multiplier);
         }
         break;
 
@@ -155,6 +156,7 @@ void Voice::noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
     position = 0.0;
     phase = 0.0;
     is_psg = false;
+    is_fixed = false;
 
     int base_key = inst ? inst->base_key : g_midi_middle_c;
     voice_type = inst ? inst->type_id : 0;
@@ -168,7 +170,7 @@ void Voice::noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
 
     switch (voice_type) {
     case 0x00:  // DirectSound
-    case 0x08:  // DirectSound (no resample)
+    case 0x08:  // DirectSound (fixed rate - no pitch adjustment)
     case 0x10:  // DirectSound (alt)
         if (sample && !sample->data.isEmpty()) {
             sample_data = reinterpret_cast<const int8_t *>(sample->data.constData());
@@ -177,8 +179,14 @@ void Voice::noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
             loop_end = sample->loop_end > 0 ? sample->loop_end : sample_length;
             loops = sample->loops;
 
-            double freq_ratio = std::pow(2.0, (key - base_key) / 12.0);
-            pitch_ratio = (static_cast<double>(sample->sample_rate) / g_sample_rate) * freq_ratio;
+            if (voice_type == 0x08) {
+                // Fixed-rate: play at native sample rate, ignore MIDI key
+                is_fixed = true;
+                pitch_ratio = static_cast<double>(sample->sample_rate) / g_sample_rate;
+            } else {
+                double freq_ratio = std::pow(2.0, (key - base_key) / 12.0);
+                pitch_ratio = (static_cast<double>(sample->sample_rate) / g_sample_rate) * freq_ratio;
+            }
         } else {
             sample_data = nullptr;
             sample_length = 0;
@@ -614,6 +622,12 @@ float Mixer::masterVolume() const {
     return m_master_volume.load(std::memory_order_relaxed);
 }
 
+void Mixer::setSongVolume(uint8_t vol) {
+    // Song volume from midi.cfg is 0-127, applied as a linear scaler
+    float v = static_cast<float>(vol) / 128.0f;
+    m_song_volume.store(v, std::memory_order_relaxed);
+}
+
 void Mixer::getMeterLevels(MeterLevels *out) const {
     if (!out) return;
     out->master_l = m_master_peak_l.load(std::memory_order_relaxed);
@@ -626,6 +640,7 @@ void Mixer::getMeterLevels(MeterLevels *out) const {
 
 void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
     float master_volume = m_master_volume.load(std::memory_order_relaxed);
+    float song_volume = m_song_volume.load(std::memory_order_relaxed);
 
     float master_peak_l = 0.0f;
     float master_peak_r = 0.0f;
@@ -685,8 +700,8 @@ void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
             }
         }
 
-        mixed_l *= master_volume;
-        mixed_r *= master_volume;
+        mixed_l *= song_volume * master_volume;
+        mixed_r *= song_volume * master_volume;
 
         float abs_ml = std::fabs(mixed_l);
         float abs_mr = std::fabs(mixed_r);
