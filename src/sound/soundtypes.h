@@ -94,6 +94,15 @@ struct ChannelContext {
     int16_t pitch_bend = 0;
     uint8_t priority = 0;
     bool muted = false;
+
+    // LFO state (m4a modulation)
+    uint8_t mod = 0;           // CC 1: modulation depth (0-127)
+    uint8_t lfos = 22;         // CC 21: LFO speed (default 22)
+    uint8_t lfodl = 0;         // CC 26: LFO delay (ticks)
+    uint8_t lfodl_count = 0;   // current delay countdown
+    uint8_t lfo_phase = 0;     // triangle wave phase (wrapping uint8_t)
+    int8_t lfo_value = 0;      // current LFO output
+    uint8_t modt = 0;          // CC 22: 0=pitch, 1=volume, 2=pan
 };
 
 
@@ -156,10 +165,12 @@ struct Voice {
     enum EnvPhase { ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE };
     EnvPhase env_phase = ENV_ATTACK;
     uint8_t env_level = 0;       // current envelope level (0-255, GBA-style)
+    uint8_t env_peak = 15;      // PSG: peak level from velocity/volume (0-15)
     uint8_t env_attack = 0;      // attack value (higher = faster, additive per frame)
     uint8_t env_decay = 0;       // decay value (higher = slower, multiplicative)
     uint8_t env_sustain = 0;     // sustain level (0-255)
     uint8_t env_release = 0;     // release value (higher = slower, multiplicative)
+    uint8_t psg_sus_raw = 15;   // PSG: raw instrument sustain param (0-15)
     int frame_counter = 0;       // samples until next envelope update
     bool is_psg = false;         // square/wave/noise use GBA PSG-style envelopes
 

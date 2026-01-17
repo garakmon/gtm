@@ -44,6 +44,23 @@ void Sequencer::reset() {
             m_mixer->setChannelExpression(i, initial_states[i].expression);
             m_mixer->setChannelPitchBend(i, initial_states[i].pitch_bend + 8192);
         }
+
+        // Set initial LFO tick rate from song tempo
+        int tpqn = m_song->getTicksPerQuarterNote();
+        if (tpqn > 0) {
+            // Default MIDI tempo: 120 BPM = 500000 us/quarter
+            double spt = 0.5 / static_cast<double>(tpqn);
+            // Check for tempo at tick 0
+            auto &tempo_changes = m_song->getTempoChanges();
+            if (!tempo_changes.isEmpty()) {
+                auto it = tempo_changes.begin();
+                if (it.key() == 0 && it.value()) {
+                    spt = it.value()->getTempoSPT(tpqn);
+                }
+            }
+            int samples_per_tick = static_cast<int>(spt * g_sample_rate);
+            if (samples_per_tick > 0) m_mixer->setLfoTickRate(samples_per_tick);
+        }
     } else {
         for (int i = 0; i < g_num_midi_channels; ++i) {
             m_channel_program[i] = 0;
@@ -108,9 +125,13 @@ void Sequencer::seekToTick(int tick) {
             uint8_t cc = events[i]->getP1();
             uint8_t value = events[i]->getP2();
 
-            if (cc == 7) m_mixer->setChannelVolume(ch, value);
+            if (cc == 1) m_mixer->setChannelMod(ch, value);
+            else if (cc == 7) m_mixer->setChannelVolume(ch, value);
             else if (cc == 10) m_mixer->setChannelPan(ch, value);
             else if (cc == 11) m_mixer->setChannelExpression(ch, value);
+            else if (cc == 21) m_mixer->setChannelLfos(ch, value);
+            else if (cc == 22) m_mixer->setChannelModt(ch, value);
+            else if (cc == 26) m_mixer->setChannelLfodl(ch, value);
         }
         else if (events[i]->isPitchbend() && m_mixer) {
             uint8_t ch = events[i]->getChannel();
@@ -225,6 +246,8 @@ bool Sequencer::dispatchEvent(smf::MidiEvent *event) {
         if (velocity == 0) {
             m_mixer->noteOff(channel, event->getKeyNumber());
         } else {
+            // Reset LFO delay on note-on (m4a behavior)
+            m_mixer->resetLfo(channel);
             uint8_t program = m_channel_program[channel];
             m_mixer->noteOn(channel, event->getKeyNumber(), velocity, program);
         }
@@ -240,6 +263,9 @@ bool Sequencer::dispatchEvent(smf::MidiEvent *event) {
         uint8_t value = event->getP2();
 
         switch (cc) {
+        case 1:   // Modulation depth (MOD)
+            m_mixer->setChannelMod(channel, value);
+            break;
         case 7:   // Channel volume
             m_mixer->setChannelVolume(channel, value);
             break;
@@ -249,12 +275,28 @@ bool Sequencer::dispatchEvent(smf::MidiEvent *event) {
         case 11:  // Expression
             m_mixer->setChannelExpression(channel, value);
             break;
+        case 21:  // LFO speed (LFOS)
+            m_mixer->setChannelLfos(channel, value);
+            break;
+        case 22:  // Modulation type (MODT)
+            m_mixer->setChannelModt(channel, value);
+            break;
+        case 26:  // LFO delay (LFODL)
+            m_mixer->setChannelLfodl(channel, value);
+            break;
         }
     }
     else if (event->isPitchbend()) {
         // Pitch bend is 14-bit: combine P1 (LSB) and P2 (MSB)
         int bend = (event->getP2() << 7) | event->getP1();
         m_mixer->setChannelPitchBend(channel, bend);
+    }
+    else if (event->isTempo() && m_mixer) {
+        // Update LFO tick rate when tempo changes
+        int tpqn = m_song ? m_song->getTicksPerQuarterNote() : 24;
+        double spt = event->getTempoSPT(tpqn);
+        int samples_per_tick = static_cast<int>(spt * g_sample_rate);
+        if (samples_per_tick > 0) m_mixer->setLfoTickRate(samples_per_tick);
     }
     else if (event->isText() || event->isMarkerText()) {
         std::string text = event->getMetaContent();

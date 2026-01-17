@@ -26,6 +26,12 @@ public:
     void setChannelPan(uint8_t channel, uint8_t value);
     void setChannelExpression(uint8_t channel, uint8_t value);
     void setChannelPitchBend(uint8_t channel, int value);
+    void setChannelMod(uint8_t channel, uint8_t value);
+    void setChannelLfos(uint8_t channel, uint8_t value);
+    void setChannelModt(uint8_t channel, uint8_t value);
+    void setChannelLfodl(uint8_t channel, uint8_t value);
+    void resetLfo(uint8_t channel);
+    void setLfoTickRate(int samples_per_tick);
     void setChannelMute(uint8_t channel, bool muted);
     void setAllMuted(bool muted);
     void setMasterVolume(float volume);
@@ -74,6 +80,12 @@ private:
                                         const VoiceGroup **out_vg) const;
 
     Voice *allocateVoice(uint8_t key);
+    void updatePsgVoicePeak(Voice *v, uint8_t ch);
+    void tickLfo(uint8_t ch);
+
+    // LFO timing
+    int m_lfo_counter = 0;
+    int m_samples_per_lfo_tick = 919;  // default ~120 BPM: 44100 / (120 * 0.4)
 };
 
 #endif // MIXER_H

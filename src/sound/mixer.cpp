@@ -141,9 +141,13 @@ float Voice::getNextSample(float pitch_bend_multiplier) {
 
     if (!is_active) return 0.0f;
 
-    // Convert envelope level to float (PSG: 0-15, DS: 0-255)
-    float env_float = is_psg ? (env_level / 15.0f) : (env_level / 255.0f);
-    return sample * env_float * (velocity / 127.0f);
+    // Convert envelope level to float
+    if (is_psg) {
+        // PSG: velocity/volume are baked into env_peak, don't apply separately
+        return sample * (env_level / 15.0f);
+    } else {
+        return sample * (env_level / 255.0f) * (velocity / 127.0f);
+    }
 }
 
 void Voice::noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
@@ -249,12 +253,17 @@ void Voice::noteOn(uint8_t ch, uint8_t key, uint8_t vel, const Instrument *inst,
         // PSG envelopes use small integer steps (0-7 / 0-15)
         env_attack = inst ? static_cast<uint8_t>(inst->attack & 0x07) : 0;
         env_decay = inst ? static_cast<uint8_t>(inst->decay & 0x07) : 0;
-        env_sustain = inst ? static_cast<uint8_t>(inst->sustain & 0x0F) : 15;
+        psg_sus_raw = inst ? static_cast<uint8_t>(inst->sustain & 0x0F) : 15;
         env_release = inst ? static_cast<uint8_t>(inst->release & 0x07) : 0;
+
+        // env_peak and env_sustain will be set by updatePsgVoicePeak() after noteOn
+        // For now, set defaults (will be overwritten)
+        env_peak = 15;
+        env_sustain = psg_sus_raw;
 
         // If attack is 0, jump to peak immediately (matches GBA PSG behavior)
         if (env_attack == 0) {
-            env_level = 15;
+            env_level = env_peak;
             env_phase = (env_decay == 0) ? ENV_SUSTAIN : ENV_DECAY;
             int frames = (env_decay == 0) ? 1 : env_decay;
             frame_counter = g_samples_per_frame * frames;
@@ -295,11 +304,11 @@ void Voice::updateEnvelope() {
 
         switch (env_phase) {
         case ENV_ATTACK:
-            if (env_level < 15) {
+            if (env_level < env_peak) {
                 env_level++;
             }
-            if (env_level >= 15) {
-                env_level = 15;
+            if (env_level >= env_peak) {
+                env_level = env_peak;
                 env_phase = (env_decay == 0) ? ENV_SUSTAIN : ENV_DECAY;
             }
             reset_counter(env_attack);
@@ -404,7 +413,16 @@ void Mixer::setInstrumentData(const VoiceGroup *vg, const QMap<QString, VoiceGro
         m_channels[i].expression = 127;  // default expression (full)
         m_channels[i].pan = 64;          // center pan
         m_channels[i].pitch_bend = 0;    // no bend
+        // Reset LFO state
+        m_channels[i].mod = 0;
+        m_channels[i].lfos = 22;
+        m_channels[i].lfodl = 0;
+        m_channels[i].lfodl_count = 0;
+        m_channels[i].lfo_phase = 0;
+        m_channels[i].lfo_value = 0;
+        m_channels[i].modt = 0;
     }
+    m_lfo_counter = 0;
 }
 
 const Instrument *Mixer::resolveInstrument(const Instrument *inst, uint8_t key,
@@ -479,6 +497,34 @@ const Instrument *Mixer::resolveInstrument(const Instrument *inst, uint8_t key,
     }
 
     return inst;
+}
+
+void Mixer::updatePsgVoicePeak(Voice *v, uint8_t ch) {
+    // Replicate agbplay's PSG volume formula (MP2KChnPSG::applyVol)
+    int vol = m_channels[ch].volume << 1;       // 0-254
+    int exp = m_channels[ch].expression;
+    vol = (vol * exp) >> 7;                      // fold in expression
+    int pan = (static_cast<int>(m_channels[ch].pan) - 64) << 1;  // -128..126
+
+    int rhythmPan = v->inst_pan_enabled ? static_cast<int>(v->inst_pan) : 0;
+
+    int trkVolML = ((127 - pan) * vol) >> 8;
+    int trkVolMR = ((pan + 128) * vol) >> 8;
+    int chnVolL = (((127 - rhythmPan) * v->velocity) * trkVolML) >> 14;
+    int chnVolR = (((rhythmPan + 128) * v->velocity) * trkVolMR) >> 14;
+
+    uint8_t new_peak = static_cast<uint8_t>(std::clamp((chnVolL + chnVolR) >> 4, 0, 15));
+    uint8_t new_sustain = static_cast<uint8_t>(std::clamp((new_peak * v->psg_sus_raw + 15) >> 4, 0, 15));
+
+    v->env_peak = new_peak;
+    v->env_sustain = new_sustain;
+
+    if (v->env_phase == Voice::ENV_SUSTAIN) {
+        v->env_level = new_sustain;
+    }
+    if (v->env_level > new_peak && v->env_phase == Voice::ENV_ATTACK) {
+        v->env_level = new_peak;
+    }
 }
 
 Voice *Mixer::allocateVoice(uint8_t key) {
@@ -564,6 +610,15 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
         voice_index = static_cast<int>(voice - m_voices);
     }
     voice->noteOn(channel, key, velocity, inst, sample, wave_data);
+
+    // For PSG voices, compute the envelope peak from velocity/volume
+    if (voice->is_psg && channel < g_num_midi_channels) {
+        updatePsgVoicePeak(voice, channel);
+        // Re-apply peak to envelope state set during noteOn
+        if (voice->env_attack == 0) {
+            voice->env_level = voice->env_peak;
+        }
+    }
 }
 
 void Mixer::noteOff(uint8_t channel, uint8_t key) {
@@ -579,18 +634,31 @@ void Mixer::noteOff(uint8_t channel, uint8_t key) {
 void Mixer::setChannelVolume(uint8_t channel, uint8_t value) {
     if (channel < g_num_midi_channels) {
         m_channels[channel].volume = value;
+        // Update PSG envelope peaks (volume is baked into peak)
+        for (int i = 0; i < g_max_voices; i++) {
+            if (m_voices[i].is_active && m_voices[i].is_psg && m_voices[i].channel == channel)
+                updatePsgVoicePeak(&m_voices[i], channel);
+        }
     }
 }
 
 void Mixer::setChannelPan(uint8_t channel, uint8_t value) {
     if (channel < g_num_midi_channels) {
         m_channels[channel].pan = value;
+        for (int i = 0; i < g_max_voices; i++) {
+            if (m_voices[i].is_active && m_voices[i].is_psg && m_voices[i].channel == channel)
+                updatePsgVoicePeak(&m_voices[i], channel);
+        }
     }
 }
 
 void Mixer::setChannelExpression(uint8_t channel, uint8_t value) {
     if (channel < g_num_midi_channels) {
         m_channels[channel].expression = value;
+        for (int i = 0; i < g_max_voices; i++) {
+            if (m_voices[i].is_active && m_voices[i].is_psg && m_voices[i].channel == channel)
+                updatePsgVoicePeak(&m_voices[i], channel);
+        }
     }
 }
 
@@ -599,6 +667,68 @@ void Mixer::setChannelPitchBend(uint8_t channel, int value) {
         // Store as signed offset from center (8192)
         m_channels[channel].pitch_bend = static_cast<int16_t>(value - 8192);
     }
+}
+
+void Mixer::setChannelMod(uint8_t channel, uint8_t value) {
+    if (channel < g_num_midi_channels) {
+        m_channels[channel].mod = value;
+        if (value == 0) resetLfo(channel);
+    }
+}
+
+void Mixer::setChannelLfos(uint8_t channel, uint8_t value) {
+    if (channel < g_num_midi_channels) {
+        m_channels[channel].lfos = value;
+        if (value == 0) resetLfo(channel);
+    }
+}
+
+void Mixer::setChannelModt(uint8_t channel, uint8_t value) {
+    if (channel < g_num_midi_channels) {
+        m_channels[channel].modt = value;
+    }
+}
+
+void Mixer::setChannelLfodl(uint8_t channel, uint8_t value) {
+    if (channel < g_num_midi_channels) {
+        m_channels[channel].lfodl = value;
+        m_channels[channel].lfodl_count = value;
+    }
+}
+
+void Mixer::resetLfo(uint8_t channel) {
+    if (channel < g_num_midi_channels) {
+        // On note-on: reset delay counter; if delay is set, also reset phase/value
+        m_channels[channel].lfodl_count = m_channels[channel].lfodl;
+        if (m_channels[channel].lfodl != 0) {
+            m_channels[channel].lfo_phase = 0;
+            m_channels[channel].lfo_value = 0;
+        }
+    }
+}
+
+void Mixer::setLfoTickRate(int samples_per_tick) {
+    if (samples_per_tick > 0) {
+        m_samples_per_lfo_tick = samples_per_tick;
+    }
+}
+
+void Mixer::tickLfo(uint8_t ch) {
+    auto &c = m_channels[ch];
+    if (c.lfos == 0 || c.mod == 0) return;
+    if (c.lfodl_count > 0) {
+        c.lfodl_count--;
+        return;
+    }
+
+    c.lfo_phase += c.lfos;
+    int lfo_point;
+    if (static_cast<int8_t>(c.lfo_phase - 64) >= 0)
+        lfo_point = 128 - c.lfo_phase;
+    else
+        lfo_point = static_cast<int8_t>(c.lfo_phase);
+    lfo_point = (lfo_point * c.mod) >> 6;
+    c.lfo_value = static_cast<int8_t>(lfo_point);
 }
 
 void Mixer::setChannelMute(uint8_t channel, bool muted) {
@@ -649,6 +779,14 @@ void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
     bool channel_active[g_num_midi_channels] = {0};
 
     for (unsigned long i = 0; i < frame_count; i++) {
+        // Tick LFO at m4a tick rate
+        if (++m_lfo_counter >= m_samples_per_lfo_tick) {
+            m_lfo_counter = 0;
+            for (int ch = 0; ch < g_num_midi_channels; ch++) {
+                tickLfo(ch);
+            }
+        }
+
         float mixed_l = 0.0f;
         float mixed_r = 0.0f;
 
@@ -664,22 +802,42 @@ void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
                 }
 
                 // Calculate pitch bend multiplier (±2 semitones range)
-                // pitch_bend is -8192 to +8191, map to ±2 semitones
                 float bend_semitones = (m_channels[ch].pitch_bend / 8192.0f) * 2.0f;
                 float pitch_multiplier = std::pow(2.0f, bend_semitones / 12.0f);
 
+                // Apply LFO pitch modulation (modt == 0)
+                if (m_channels[ch].modt == 0 && m_channels[ch].lfo_value != 0) {
+                    // lfo_value * 4 in pitch units (1/64 semitone), 768 = 64 * 12
+                    pitch_multiplier *= std::pow(2.0f, m_channels[ch].lfo_value * 4.0f / 768.0f);
+                }
+
                 float sample = m_voices[v].getNextSample(pitch_multiplier);
 
-                // Apply channel volume and expression
-                float ch_vol = m_channels[ch].volume / 127.0f;
-                float ch_exp = m_channels[ch].expression / 127.0f;
-                sample *= ch_vol * ch_exp;
+                // Apply channel volume and expression (skip for PSG - baked into envelope)
+                if (!m_voices[v].is_psg) {
+                    float ch_vol = m_channels[ch].volume / 127.0f;
+                    float ch_exp = m_channels[ch].expression / 127.0f;
+                    sample *= ch_vol * ch_exp;
+                }
+
+                // Apply LFO volume modulation (modt == 1)
+                if (m_channels[ch].modt == 1 && m_channels[ch].lfo_value != 0) {
+                    int lfo_vol_scale = m_channels[ch].lfo_value + 128;
+                    if (lfo_vol_scale < 0) lfo_vol_scale = 0;
+                    sample = sample * lfo_vol_scale / 128.0f;
+                }
 
                 // MP2K/GBA-style pan math (linear, signed -128..128)
                 int pan = static_cast<int>(m_channels[ch].pan) - 64; // 0..127 -> -64..63
                 if (m_voices[v].inst_pan_enabled) {
                     pan += m_voices[v].inst_pan;
                 }
+
+                // Apply LFO pan modulation (modt == 2)
+                if (m_channels[ch].modt == 2) {
+                    pan += m_channels[ch].lfo_value;
+                }
+
                 if (pan < -128) pan = -128;
                 if (pan > 128) pan = 128;
                 if (pan >= 126) pan = 128; // match mp2k edge clamp
