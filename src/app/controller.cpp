@@ -360,6 +360,16 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
     if (m_window->label_MetaTimeValue) {
         m_window->label_MetaTimeValue->setText("00:00.000");
     }
+    // Clear solo/mute UI state between songs.
+    if (m_track_roll) {
+        m_track_roll->clearAllSoloed();
+        for (int ch = 0; ch < g_num_midi_channels; ++ch) {
+            m_track_roll->setTrackMuted(ch, false);
+        }
+    }
+    if (m_player) {
+        m_player->getMixer()->setAllMuted(false);
+    }
     if (m_window->Button_Play) m_window->Button_Play->setChecked(false);
     if (m_window->Button_Pause) m_window->Button_Pause->setChecked(false);
     if (m_window->Button_Stop) m_window->Button_Stop->setChecked(true);

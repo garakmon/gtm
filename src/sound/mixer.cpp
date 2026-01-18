@@ -423,6 +423,11 @@ void Mixer::setInstrumentData(const VoiceGroup *vg, const QMap<QString, VoiceGro
         m_channels[i].modt = 0;
     }
     m_lfo_counter = 0;
+
+    // Reset reverb buffer
+    m_reverb_buf.fill({});
+    m_reverb_pos = 0;
+    m_reverb_pos2 = k_reverb_buf_size / 2;
 }
 
 const Instrument *Mixer::resolveInstrument(const Instrument *inst, uint8_t key,
@@ -758,6 +763,10 @@ void Mixer::setSongVolume(uint8_t vol) {
     m_song_volume.store(v, std::memory_order_relaxed);
 }
 
+void Mixer::setReverbLevel(uint8_t level) {
+    m_reverb_intensity = static_cast<float>(level) / 128.0f;
+}
+
 void Mixer::getMeterLevels(MeterLevels *out) const {
     if (!out) return;
     out->master_l = m_master_peak_l.load(std::memory_order_relaxed);
@@ -787,8 +796,8 @@ void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
             }
         }
 
-        float mixed_l = 0.0f;
-        float mixed_r = 0.0f;
+        float pcm_l = 0.0f, pcm_r = 0.0f;
+        float psg_l = 0.0f, psg_r = 0.0f;
 
         for (int v = 0; v < g_max_voices; v++) {
             if (m_voices[v].is_active) {
@@ -848,8 +857,14 @@ void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
                 float out_l = sample * left_gain;
                 float out_r = sample * right_gain;
 
-                mixed_l += out_l;
-                mixed_r += out_r;
+                // Split PCM and PSG for reverb routing
+                if (m_voices[v].is_psg) {
+                    psg_l += out_l;
+                    psg_r += out_r;
+                } else {
+                    pcm_l += out_l;
+                    pcm_r += out_r;
+                }
 
                 float abs_l = std::fabs(out_l);
                 float abs_r = std::fabs(out_r);
@@ -858,8 +873,20 @@ void Mixer::processAudio(float *out_buffer, unsigned long frame_count) {
             }
         }
 
-        mixed_l *= song_volume * master_volume;
-        mixed_r *= song_volume * master_volume;
+        // Apply reverb to PCM only (GBA behavior: PSG channels bypass reverb)
+        if (m_reverb_intensity > 0.0f) {
+            float rev = (m_reverb_buf[m_reverb_pos].left + m_reverb_buf[m_reverb_pos].right
+                       + m_reverb_buf[m_reverb_pos2].left + m_reverb_buf[m_reverb_pos2].right)
+                       * m_reverb_intensity * 0.25f;
+            pcm_l += rev;
+            pcm_r += rev;
+            m_reverb_buf[m_reverb_pos] = {pcm_l, pcm_r};
+            if (++m_reverb_pos >= k_reverb_buf_size) m_reverb_pos = 0;
+            if (++m_reverb_pos2 >= k_reverb_buf_size) m_reverb_pos2 = 0;
+        }
+
+        float mixed_l = (pcm_l + psg_l) * song_volume * master_volume;
+        float mixed_r = (pcm_r + psg_r) * song_volume * master_volume;
 
         float abs_ml = std::fabs(mixed_l);
         float abs_mr = std::fabs(mixed_r);
@@ -897,6 +924,11 @@ void Mixer::end() {
         m_channel_play_info[i].active = false;
         m_channel_play_info[i].voice_type.clear();
     }
+
+    // Clear reverb buffer
+    m_reverb_buf.fill({});
+    m_reverb_pos = 0;
+    m_reverb_pos2 = k_reverb_buf_size / 2;
 
     m_master_peak_l.store(0.0f, std::memory_order_relaxed);
     m_master_peak_r.store(0.0f, std::memory_order_relaxed);

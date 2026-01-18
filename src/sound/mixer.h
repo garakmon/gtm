@@ -37,6 +37,7 @@ public:
     void setMasterVolume(float volume);
     float masterVolume() const;
     void setSongVolume(uint8_t vol);
+    void setReverbLevel(uint8_t level);
     void processAudio(float *out_buffer, unsigned long frame_count);
     void end();
 
@@ -86,6 +87,14 @@ private:
     // LFO timing
     int m_lfo_counter = 0;
     int m_samples_per_lfo_tick = 919;  // default ~120 BPM: 44100 / (120 * 0.4)
+
+    // Reverb state (GBA NORMAL reverb: two-tap circular delay with feedback)
+    struct ReverbSample { float left = 0.0f; float right = 0.0f; };
+    static const int k_reverb_buf_size = g_samples_per_frame * 2;  // 1470
+    QVector<ReverbSample> m_reverb_buf = QVector<ReverbSample>(k_reverb_buf_size);
+    int m_reverb_pos = 0;
+    int m_reverb_pos2 = k_reverb_buf_size / 2;  // offset by half (735)
+    float m_reverb_intensity = 0.0f;
 };
 
 #endif // MIXER_H
