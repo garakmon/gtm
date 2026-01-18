@@ -8,7 +8,6 @@
 #include <cmath>
 #include <cstdint>
 
-
 void Sequencer::setSong(Song *song) {
     m_song = song;
 }

@@ -6,7 +6,6 @@
 #include <QDebug>
 
 
-
 // Duty cycle thresholds for square waves (12.5%, 25%, 50%, 75%)
 static const double duty_thresholds[4] = {0.125, 0.25, 0.5, 0.75};
 
@@ -565,6 +564,7 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
     }
 
     inst = &m_voicegroup->instruments[program];
+    const Instrument *base_inst = inst;
 
     // Resolve keysplit/drumset instruments to actual instrument
     const VoiceGroup *resolved_vg = nullptr;
@@ -597,6 +597,21 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
     if (channel < g_num_midi_channels) {
         m_channel_play_info[channel].active = true;
         m_channel_play_info[channel].voice_type = voiceTypeAbbrev(inst);
+    }
+
+    if (program == 56) {
+        static int dbg_prog56 = 0;
+        if (dbg_prog56++ < 20) {
+            qDebug() << "noteOn prog56 ch" << channel << "key" << key
+                     << "base" << base_inst->type << base_inst->sample_label
+                     << "keysplit" << base_inst->keysplit_table
+                     << "resolved" << inst->type << inst->sample_label
+                     << "adsr" << inst->attack << inst->decay << inst->sustain << inst->release
+                     << "mod" << m_channels[channel].mod
+                     << "modt" << m_channels[channel].modt
+                     << "lfos" << m_channels[channel].lfos
+                     << "lfodl" << m_channels[channel].lfodl;
+        }
     }
 
     Voice *voice = nullptr;
@@ -703,12 +718,10 @@ void Mixer::setChannelLfodl(uint8_t channel, uint8_t value) {
 
 void Mixer::resetLfo(uint8_t channel) {
     if (channel < g_num_midi_channels) {
-        // On note-on: reset delay counter; if delay is set, also reset phase/value
+        // On note-on or when modulation is disabled: reset delay counter and phase/value
         m_channels[channel].lfodl_count = m_channels[channel].lfodl;
-        if (m_channels[channel].lfodl != 0) {
-            m_channels[channel].lfo_phase = 0;
-            m_channels[channel].lfo_value = 0;
-        }
+        m_channels[channel].lfo_phase = 0;
+        m_channels[channel].lfo_value = 0;
     }
 }
 

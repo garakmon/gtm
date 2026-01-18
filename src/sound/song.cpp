@@ -146,7 +146,6 @@ int Song::getTickFromTime(double seconds) {
     int tpqn = this->getTicksPerQuarterNote();
     if (tpqn <= 0) return 0;
 
-    static int debug_count = 0;
 
     // Default MIDI tempo is 120 BPM = 500000 us per quarter note.
     double current_spt = 0.5 / static_cast<double>(tpqn);
@@ -176,11 +175,6 @@ int Song::getTickFromTime(double seconds) {
 
         if (remaining < segment_seconds) {
             int tick = prev_tick + static_cast<int>(std::floor(remaining / current_spt));
-            if (debug_count < 8) {
-                qDebug() << "getTickFromTime:" << seconds << "->" << tick
-                         << "(tempo-aware, remaining segment)";
-                debug_count++;
-            }
             return tick;
         }
 
@@ -191,11 +185,6 @@ int Song::getTickFromTime(double seconds) {
 
     // After last tempo change.
     int tick = prev_tick + static_cast<int>(std::floor(remaining / current_spt));
-    if (debug_count < 8) {
-        qDebug() << "getTickFromTime:" << seconds << "->" << tick
-                 << "(tempo-aware, after last tempo)";
-        debug_count++;
-    }
     return tick;
 }
 
