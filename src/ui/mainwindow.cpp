@@ -87,6 +87,13 @@ void MainWindow::setupUi() {
 
     m_controller = std::make_unique<Controller>(this);
 
+    // Ensure Song/Track/Event groupboxes share vertical space evenly.
+    if (ui->verticalLayout_3) {
+        ui->verticalLayout_3->setStretch(0, 1);
+        ui->verticalLayout_3->setStretch(1, 1);
+        ui->verticalLayout_3->setStretch(2, 1);
+    }
+
     if (ui->widget_minimap) {
         m_minimap = new MinimapWidget(this);
         m_minimap->setObjectName("minimap");

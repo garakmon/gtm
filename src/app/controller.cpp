@@ -707,6 +707,10 @@ void Controller::seekToStart() {
 
 int Controller::currentTick() const {
     if (!m_song) return 0;
+    // When not playing, the sequencer time can be stale; use the UI playhead instead.
+    if (!m_player_timer.isActive()) {
+        return m_measure_roll ? m_measure_roll->tick() : 0;
+    }
     double current_seconds = m_player->getSequencer()->getCurrentTime();
     return m_song->getTickFromTime(current_seconds);
 }
