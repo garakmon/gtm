@@ -25,6 +25,34 @@ QListView#listView_songTable {
 QGroupBox {
     margin-top: 16px;
 }
+QGroupBox#groupBox_Controls {
+    background: transparent;
+    border: 0px;
+    margin-top: 0px;
+}
+QGroupBox#groupBox_Controls::title {
+    padding: 0px;
+    border: 0px;
+}
+
+QFrame#frame_3 {
+    background: transparent;
+    border: 0px;
+    padding: 0px;
+}
+QFrame#frame_3 QRadioButton {
+    background: transparent;
+    border: 0px;
+    padding: 2px 6px;
+}
+QFrame#frame_radioWrap {
+    background: transparent;
+    border: 0px;
+}
+QGroupBox QLabel {
+    border: 0px;
+    background: transparent;
+}
 QGroupBox::title {
     subcontrol-origin: margin;
     subcontrol-position: top left;

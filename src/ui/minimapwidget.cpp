@@ -15,6 +15,7 @@ MinimapWidget::MinimapWidget(QWidget *parent)
     setMinimumHeight(30);
     setMaximumHeight(30);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    setAttribute(Qt::WA_TranslucentBackground);
 }
 
 void MinimapWidget::setSong(std::shared_ptr<Song> song) {
@@ -43,6 +44,10 @@ void MinimapWidget::paintEvent(QPaintEvent *event) {
     }
 
     QPainter painter(this);
+    if (!m_song || m_total_ticks <= 0) {
+        // Leave transparent when no song is loaded.
+        return;
+    }
     painter.fillRect(rect(), ui_color_piano_roll_bg.darker(120));
 
     if (!m_cache.isNull()) {
