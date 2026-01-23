@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
@@ -5,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1111</width>
-    <height>733</height>
+    <width>1203</width>
+    <height>811</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -45,65 +46,6 @@
         <number>2</number>
        </property>
        <item>
-        <widget class="QFrame" name="ButtonBox_Tools">
-         <property name="frameShape">
-          <enum>QFrame::NoFrame</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <property name="leftMargin">
-           <number>6</number>
-          </property>
-          <property name="topMargin">
-           <number>4</number>
-          </property>
-          <property name="rightMargin">
-           <number>6</number>
-          </property>
-          <property name="bottomMargin">
-           <number>4</number>
-          </property>
-          <item>
-           <widget class="QToolButton" name="button_Cut">
-            <property name="text">
-             <string>...</string>
-            </property>
-            <property name="icon">
-             <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
-              <normaloff>:/icons/cut.svg</normaloff>:/icons/cut.svg</iconset>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QToolButton" name="Button_CreateLoop">
-            <property name="text">
-             <string>...</string>
-            </property>
-            <property name="icon">
-             <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
-              <normaloff>:/icons/restart.svg</normaloff>:/icons/restart.svg</iconset>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         <property name="spacing"><number>6</number></property></layout>
-        </widget>
-       </item>
-       <item>
         <widget class="QGroupBox" name="groupBox_Controls">
          <layout class="QHBoxLayout" name="horizontalLayout">
           <property name="leftMargin">
@@ -139,16 +81,16 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>26</height>
-             </size>
-            </property>
             <property name="minimumSize">
              <size>
               <width>0</width>
               <height>52</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>26</height>
              </size>
             </property>
             <property name="frameShape">
@@ -158,6 +100,9 @@
              <enum>QFrame::Raised</enum>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_playback">
+             <property name="spacing">
+              <number>1</number>
+             </property>
              <property name="sizeConstraint">
               <enum>QLayout::SetFixedSize</enum>
              </property>
@@ -171,9 +116,6 @@
               <number>1</number>
              </property>
              <property name="bottomMargin">
-              <number>1</number>
-             </property>
-             <property name="spacing">
               <number>1</number>
              </property>
              <item>
@@ -279,6 +221,9 @@
              <enum>QFrame::Raised</enum>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_MetaDisplay">
+             <property name="spacing">
+              <number>8</number>
+             </property>
              <property name="leftMargin">
               <number>6</number>
              </property>
@@ -290,9 +235,6 @@
              </property>
              <property name="bottomMargin">
               <number>0</number>
-             </property>
-             <property name="spacing">
-              <number>8</number>
              </property>
              <item>
               <widget class="QWidget" name="metaTimeGroup" native="true">
@@ -526,7 +468,7 @@
                 <enum>QFrame::NoFrame</enum>
                </property>
                <property name="text">
-                <string />
+                <string/>
                </property>
                <property name="pixmap">
                 <pixmap resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">:/icons/sound-low.svg</pixmap>
@@ -574,55 +516,453 @@
          </layout>
         </widget>
        </item>
-       <item><widget class="QFrame" name="frame_radioWrap"><property name="frameShape"><enum>QFrame::NoFrame</enum></property><property name="frameShadow"><enum>QFrame::Raised</enum></property><layout class="QHBoxLayout" name="horizontalLayout_radioWrap"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><property name="spacing"><number>0</number></property><item><spacer name="spacer_radio_left"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint"><size><width>12</width><height>20</height></size></property></spacer></item><item>
-        <widget class="QFrame" name="frame_3">
+       <item>
+        <widget class="QFrame" name="ButtonBox_Tools">
          <property name="frameShape">
           <enum>QFrame::NoFrame</enum>
          </property>
          <property name="frameShadow">
           <enum>QFrame::Raised</enum>
          </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <property name="spacing">
+           <number>8</number>
+          </property>
           <property name="leftMargin">
            <number>6</number>
           </property>
           <property name="topMargin">
-           <number>2</number>
+           <number>4</number>
           </property>
           <property name="rightMargin">
            <number>6</number>
           </property>
           <property name="bottomMargin">
-           <number>2</number>
+           <number>4</number>
           </property>
           <item>
-           <widget class="QRadioButton" name="radioButton_pianoNotes">
-            <property name="text">
-             <string>Notes</string>
+           <spacer name="spacer_tools_left">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
             </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>24</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QFrame" name="pillbox_SelectionTools">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_5">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <property name="leftMargin">
+              <number>2</number>
+             </property>
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <property name="rightMargin">
+              <number>2</number>
+             </property>
+             <property name="bottomMargin">
+              <number>1</number>
+             </property>
+             <item>
+              <widget class="QToolButton" name="button_select_rect">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/frame-select.svg</normaloff>:/icons/frame-select.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_select_lasso">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/lasso-select.svg</normaloff>:/icons/lasso-select.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_select_track">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/track-select.svg</normaloff>:/icons/track-select.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_select_invert">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/select-invert.svg</normaloff>:/icons/select-invert.svg</iconset>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="radioButton_pianoEvents">
-            <property name="text">
-             <string>Events</string>
+           <widget class="QFrame" name="pillbox_NoteTools">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
             </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_7">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <property name="leftMargin">
+              <number>2</number>
+             </property>
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <property name="rightMargin">
+              <number>2</number>
+             </property>
+             <property name="bottomMargin">
+              <number>1</number>
+             </property>
+             <item>
+              <widget class="QToolButton" name="button_note_add">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/music-note-plus.svg</normaloff>:/icons/music-note-plus.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_note_delete">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/music-note-minus.svg</normaloff>:/icons/music-note-minus.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="toolButton">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/expand.svg</normaloff>:/icons/expand.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_note_quantize">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/quantize.svg</normaloff>:/icons/quantize.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_note_trim">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/trim.svg</normaloff>:/icons/trim.svg</iconset>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="radioButton_pianoAll">
-            <property name="text">
-             <string>All</string>
+           <widget class="QFrame" name="pillbox_EditTools">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
             </property>
-            <property name="checked">
-             <bool>true</bool>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
             </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_4">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <property name="leftMargin">
+              <number>2</number>
+             </property>
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <property name="rightMargin">
+              <number>2</number>
+             </property>
+             <property name="bottomMargin">
+              <number>1</number>
+             </property>
+             <item>
+              <widget class="QToolButton" name="button_Cut">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/cut.svg</normaloff>:/icons/cut.svg</iconset>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
-          <property name="spacing"><number>6</number></property></layout>
+          <item>
+           <widget class="QFrame" name="pillbox_TrackTools">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <property name="leftMargin">
+              <number>2</number>
+             </property>
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <property name="rightMargin">
+              <number>2</number>
+             </property>
+             <property name="bottomMargin">
+              <number>1</number>
+             </property>
+             <item>
+              <widget class="QToolButton" name="button_tracks_merge">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/vertical-merge.svg</normaloff>:/icons/vertical-merge.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_tracks_split">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/vertical-split.svg</normaloff>:/icons/vertical-split.svg</iconset>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="pillbox_MetaTools">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <property name="leftMargin">
+              <number>2</number>
+             </property>
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <property name="rightMargin">
+              <number>2</number>
+             </property>
+             <property name="bottomMargin">
+              <number>1</number>
+             </property>
+             <item>
+              <widget class="QToolButton" name="button_meta_loop">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/restart.svg</normaloff>:/icons/restart.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_meta_program_change">
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/shuffle.svg</normaloff>:/icons/shuffle.svg</iconset>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <spacer name="spacer_tools_right">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>24</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
         </widget>
        </item>
-      <item><spacer name="spacer_radio_right"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint"><size><width>12</width><height>20</height></size></property></spacer></item></layout></widget></item></layout>
+       <item>
+        <widget class="QFrame" name="frame_radioWrap">
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_radioWrap">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <spacer name="spacer_radio_left">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>12</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QFrame" name="frame_3">
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <property name="spacing">
+              <number>6</number>
+             </property>
+             <property name="leftMargin">
+              <number>6</number>
+             </property>
+             <property name="topMargin">
+              <number>2</number>
+             </property>
+             <property name="rightMargin">
+              <number>6</number>
+             </property>
+             <property name="bottomMargin">
+              <number>2</number>
+             </property>
+             <item>
+              <widget class="QRadioButton" name="radioButton_pianoNotes">
+               <property name="text">
+                <string>Notes</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="radioButton_pianoEvents">
+               <property name="text">
+                <string>Events</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="radioButton_pianoAll">
+               <property name="text">
+                <string>All</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <spacer name="spacer_radio_right">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>12</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </item>
     <item row="0" column="2" rowspan="3">
@@ -687,14 +1027,14 @@
           </property>
           <item>
            <spacer name="spacer_songinfo_top">
-            <property name="sizeHint">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
              <size>
               <width>20</width>
               <height>10</height>
              </size>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
             </property>
            </spacer>
           </item>
@@ -702,14 +1042,14 @@
            <layout class="QHBoxLayout" name="horizontalLayout_songInfoCenter">
             <item>
              <spacer name="spacer_songinfo_left">
-              <property name="sizeHint">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>10</width>
                 <height>20</height>
                </size>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
               </property>
              </spacer>
             </item>
@@ -736,11 +1076,11 @@
               </item>
               <item row="0" column="1">
                <widget class="GTMLineEdit" name="label_SongInfoSongIdValue">
-                <property name="readOnly">
-                 <bool>true</bool>
-                </property>
                 <property name="text">
                  <string>-</string>
+                </property>
+                <property name="readOnly">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -767,11 +1107,11 @@
               </item>
               <item row="2" column="1">
                <widget class="GTMLineEdit" name="label_SongInfoPriorityValue">
-                <property name="readOnly">
-                 <bool>true</bool>
-                </property>
                 <property name="text">
                  <string>-</string>
+                </property>
+                <property name="readOnly">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -818,11 +1158,11 @@
               </item>
               <item row="5" column="1">
                <widget class="GTMLineEdit" name="label_SongInfoTPQNValue">
-                <property name="readOnly">
-                 <bool>true</bool>
-                </property>
                 <property name="text">
                  <string>-</string>
+                </property>
+                <property name="readOnly">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -849,11 +1189,11 @@
               </item>
               <item row="7" column="1">
                <widget class="GTMLineEdit" name="label_SongInfoMusicTracksValue">
-                <property name="readOnly">
-                 <bool>true</bool>
-                </property>
                 <property name="text">
                  <string>-</string>
+                </property>
+                <property name="readOnly">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -861,14 +1201,14 @@
             </item>
             <item>
              <spacer name="spacer_songinfo_right">
-              <property name="sizeHint">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>10</width>
                 <height>20</height>
                </size>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
               </property>
              </spacer>
             </item>
@@ -876,20 +1216,20 @@
           </item>
           <item>
            <spacer name="spacer_songinfo_bottom">
-            <property name="sizeHint">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
              <size>
               <width>20</width>
               <height>10</height>
              </size>
             </property>
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
            </spacer>
           </item>
          </layout>
         </widget>
-        </item>
+       </item>
        <item>
         <widget class="QGroupBox" name="groupBox_2">
          <property name="sizePolicy">
@@ -902,7 +1242,7 @@
           <string>Track Info</string>
          </property>
         </widget>
-        </item>
+       </item>
        <item>
         <widget class="QGroupBox" name="groupBox">
          <property name="sizePolicy">
@@ -917,14 +1257,14 @@
          <layout class="QVBoxLayout" name="verticalLayout_eventInfo">
           <item>
            <spacer name="spacer_eventinfo_top">
-            <property name="sizeHint">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
              <size>
               <width>20</width>
               <height>10</height>
              </size>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
             </property>
            </spacer>
           </item>
@@ -932,14 +1272,14 @@
            <layout class="QHBoxLayout" name="horizontalLayout_eventInfoCenter">
             <item>
              <spacer name="spacer_eventinfo_left">
-              <property name="sizeHint">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>10</width>
                 <height>20</height>
                </size>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
               </property>
              </spacer>
             </item>
@@ -957,24 +1297,24 @@
               <property name="bottomMargin">
                <number>4</number>
               </property>
-              <item row="0" column="0">
+              <item row="5" column="0">
                <widget class="GTMFormLabel" name="label_2">
                 <property name="text">
                  <string>Key</string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="1">
+              <item row="5" column="1">
                <widget class="MidiKeySpinBox" name="spinBox_NoteKey">
                 <property name="focusPolicy">
                  <enum>Qt::TabFocus</enum>
                 </property>
                </widget>
               </item>
-              <item row="6" column="1">
+              <item row="10" column="1">
                <widget class="QPushButton" name="pushButton_NotePlay">
                 <property name="text">
-                 <string />
+                 <string/>
                 </property>
                 <property name="icon">
                  <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
@@ -982,35 +1322,35 @@
                 </property>
                </widget>
               </item>
-              <item row="6" column="0">
+              <item row="10" column="0">
                <widget class="GTMFormLabel" name="label_3">
                 <property name="text">
                  <string>Play Sound:</string>
                 </property>
                </widget>
               </item>
-              <item row="2" column="0">
+              <item row="6" column="0">
                <widget class="GTMFormLabel" name="label_4">
                 <property name="text">
                  <string>On Tick</string>
                 </property>
                </widget>
               </item>
-              <item row="3" column="0">
+              <item row="7" column="0">
                <widget class="GTMFormLabel" name="label_5">
                 <property name="text">
                  <string>On Velocity</string>
                 </property>
                </widget>
               </item>
-              <item row="4" column="0">
+              <item row="8" column="0">
                <widget class="GTMFormLabel" name="label_6">
                 <property name="text">
                  <string>Off Tick</string>
                 </property>
                </widget>
               </item>
-              <item row="5" column="0">
+              <item row="9" column="0">
                <widget class="GTMFormLabel" name="label_7">
                 <property name="text">
                  <string>Off Velocity</string>
@@ -1031,31 +1371,99 @@
                 </property>
                </widget>
               </item>
-              <item row="2" column="1">
+              <item row="6" column="1">
                <widget class="QSpinBox" name="spinBox_NoteOnTick">
                 <property name="focusPolicy">
                  <enum>Qt::TabFocus</enum>
                 </property>
                </widget>
               </item>
-              <item row="3" column="1">
+              <item row="7" column="1">
                <widget class="QSpinBox" name="spinBox_NoteOnVelocity">
                 <property name="focusPolicy">
                  <enum>Qt::TabFocus</enum>
                 </property>
                </widget>
               </item>
-              <item row="4" column="1">
+              <item row="8" column="1">
                <widget class="QSpinBox" name="spinBox_NoteOffTick">
                 <property name="focusPolicy">
                  <enum>Qt::TabFocus</enum>
                 </property>
                </widget>
               </item>
-              <item row="5" column="1">
+              <item row="9" column="1">
                <widget class="QSpinBox" name="spinBox_NoteOffVelocity">
                 <property name="focusPolicy">
                  <enum>Qt::TabFocus</enum>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="0">
+               <widget class="GTMFormLabel" name="label_EventTrack">
+                <property name="text">
+                 <string>Track</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="GTMLineEdit" name="lineEdit_EventTrackValue">
+                <property name="text">
+                 <string>-</string>
+                </property>
+                <property name="readOnly">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="GTMFormLabel" name="label_EventProgram">
+                <property name="text">
+                 <string>Program</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="GTMLineEdit" name="lineEdit_EventProgramValue">
+                <property name="text">
+                 <string>-</string>
+                </property>
+                <property name="readOnly">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="GTMFormLabel" name="label_EventType">
+                <property name="text">
+                 <string>Playback</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="GTMLineEdit" name="lineEdit_EventTypeValue">
+                <property name="text">
+                 <string>-</string>
+                </property>
+                <property name="readOnly">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="GTMFormLabel" name="label_EventAdsr">
+                <property name="text">
+                 <string>ADSR</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="GTMLineEdit" name="lineEdit_EventAdsrValue">
+                <property name="text">
+                 <string>-</string>
+                </property>
+                <property name="readOnly">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -1063,14 +1471,14 @@
             </item>
             <item>
              <spacer name="spacer_eventinfo_right">
-              <property name="sizeHint">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>10</width>
                 <height>20</height>
                </size>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
               </property>
              </spacer>
             </item>
@@ -1078,20 +1486,20 @@
           </item>
           <item>
            <spacer name="spacer_eventinfo_bottom">
-            <property name="sizeHint">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
              <size>
               <width>20</width>
               <height>10</height>
              </size>
             </property>
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
            </spacer>
           </item>
          </layout>
         </widget>
-        </item>
+       </item>
       </layout>
      </widget>
     </item>
@@ -1115,8 +1523,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>614</width>
-          <height>248</height>
+          <width>765</width>
+          <height>286</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_2">
@@ -1146,7 +1554,7 @@
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QGraphicsView" name="view_trackRoll" />
+          <widget class="QGraphicsView" name="view_trackRoll"/>
          </item>
          <item row="1" column="0">
           <widget class="QGraphicsView" name="view_trackList">
@@ -1192,8 +1600,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>614</width>
-          <height>277</height>
+          <width>765</width>
+          <height>319</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_3">
@@ -1229,7 +1637,7 @@
           </widget>
          </item>
          <item row="2" column="2">
-          <widget class="QGraphicsView" name="view_pianoRoll" />
+          <widget class="QGraphicsView" name="view_pianoRoll"/>
          </item>
          <item row="3" column="2">
           <widget class="QScrollBar" name="hscroll_pianoRoll">
@@ -1318,7 +1726,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1111</width>
+     <width>1203</width>
      <height>24</height>
     </rect>
    </property>
@@ -1326,7 +1734,7 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="action_Open" />
+    <addaction name="action_Open"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -1342,14 +1750,14 @@
     <property name="title">
      <string>Tools</string>
     </property>
-    <addaction name="action_PreviewSound" />
+    <addaction name="action_PreviewSound"/>
    </widget>
-   <addaction name="menuFile" />
-   <addaction name="menuEdit" />
-   <addaction name="menuTools" />
-   <addaction name="menuTools_2" />
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuTools"/>
+   <addaction name="menuTools_2"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar" />
+  <widget class="QStatusBar" name="statusbar"/>
   <action name="action_PreviewSound">
    <property name="text">
     <string>Preview Sounds</string>
@@ -1365,6 +1773,11 @@
   </action>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>MidiKeySpinBox</class>
+   <extends>QSpinBox</extends>
+   <header>midispinboxes.h</header>
+  </customwidget>
   <customwidget>
    <class>GTMLineEdit</class>
    <extends>QLineEdit</extends>
@@ -1385,14 +1798,9 @@
    <extends>QLabel</extends>
    <header>customwidgets.h</header>
   </customwidget>
-  <customwidget>
-   <class>MidiKeySpinBox</class>
-   <extends>QSpinBox</extends>
-   <header>midispinboxes.h</header>
-  </customwidget>
  </customwidgets>
  <resources>
-  <include location="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc" />
+  <include location="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc"/>
  </resources>
- <connections />
+ <connections/>
 </ui>

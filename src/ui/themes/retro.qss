@@ -9,6 +9,12 @@ QFrame, QGroupBox {
     border: 1px solid {border};
     border-radius: 0px;
 }
+QFrame#ButtonBox_Tools {
+    background: {toolbox};
+    border: 1px solid {border};
+    border-radius: 0px;
+    padding: 2px 4px;
+}
 
 QGraphicsView {
     background: transparent;
@@ -33,6 +39,47 @@ QGroupBox#groupBox_Controls {
 QGroupBox#groupBox_Controls::title {
     padding: 0px;
     border: 0px;
+}
+
+QFrame#pillbox_SelectionTools,
+QFrame#pillbox_NoteTools,
+QFrame#pillbox_EditTools,
+QFrame#pillbox_MetaTools,
+QFrame#pillbox_TrackTools {
+    background: {panel_alt};
+    border: 1px solid {border};
+    border-radius: 12px;
+    padding: 1px 3px;
+}
+QFrame#pillbox_SelectionTools QToolButton,
+QFrame#pillbox_NoteTools QToolButton,
+QFrame#pillbox_EditTools QToolButton,
+QFrame#pillbox_MetaTools QToolButton,
+QFrame#pillbox_TrackTools QToolButton {
+    background: transparent;
+    border: 0px;
+    padding: 1px 4px;
+}
+QFrame#pillbox_SelectionTools QToolButton:hover,
+QFrame#pillbox_NoteTools QToolButton:hover,
+QFrame#pillbox_EditTools QToolButton:hover,
+QFrame#pillbox_MetaTools QToolButton:hover,
+QFrame#pillbox_TrackTools QToolButton:hover {
+    background: {accent_hover};
+}
+QFrame#pillbox_SelectionTools QToolButton:pressed,
+QFrame#pillbox_NoteTools QToolButton:pressed,
+QFrame#pillbox_EditTools QToolButton:pressed,
+QFrame#pillbox_MetaTools QToolButton:pressed,
+QFrame#pillbox_TrackTools QToolButton:pressed {
+    background: {accent_active};
+}
+QFrame#pillbox_SelectionTools QToolButton:checked,
+QFrame#pillbox_NoteTools QToolButton:checked,
+QFrame#pillbox_EditTools QToolButton:checked,
+QFrame#pillbox_MetaTools QToolButton:checked,
+QFrame#pillbox_TrackTools QToolButton:checked {
+    background: {accent};
 }
 
 QFrame#frame_3 {

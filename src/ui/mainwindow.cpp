@@ -23,6 +23,7 @@
 #include "trackroll.h"
 #include "graphicstrackitem.h"
 #include "previewsoundwindow.h"
+#include <limits>
 
 
 
@@ -92,6 +93,25 @@ void MainWindow::setupUi() {
         ui->verticalLayout_3->setStretch(0, 1);
         ui->verticalLayout_3->setStretch(1, 1);
         ui->verticalLayout_3->setStretch(2, 1);
+    }
+
+    if (ui->spinBox_NoteKey) {
+        ui->spinBox_NoteKey->setRange(0, 127);
+    }
+    if (ui->spinBox_NoteChannel) {
+        ui->spinBox_NoteChannel->setRange(0, 15);
+    }
+    if (ui->spinBox_NoteOnVelocity) {
+        ui->spinBox_NoteOnVelocity->setRange(0, 127);
+    }
+    if (ui->spinBox_NoteOffVelocity) {
+        ui->spinBox_NoteOffVelocity->setRange(0, 127);
+    }
+    if (ui->spinBox_NoteOnTick) {
+        ui->spinBox_NoteOnTick->setRange(0, std::numeric_limits<int>::max());
+    }
+    if (ui->spinBox_NoteOffTick) {
+        ui->spinBox_NoteOffTick->setRange(0, std::numeric_limits<int>::max());
     }
 
     if (ui->widget_minimap) {

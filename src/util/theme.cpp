@@ -8,6 +8,7 @@ static ThemePalette defaultPalette() {
     p.bg = "#272822";
     p.panel = "#2e2f29";
     p.panel_alt = "#3a3b35";
+    p.toolbox = "#2f343d";
     p.text_primary = "#f8f8f2";
     p.text_secondary = "#cfcfc2";
     p.accent = "#a6e22e";
@@ -53,6 +54,7 @@ static ThemePalette retroPalette() {
     p.bg = "#1b1f1d";
     p.panel = "#2a2f2c";
     p.panel_alt = "#343a36";
+    p.toolbox = "#d7dec8";
     p.text_primary = "#e6e1c5";
     p.text_secondary = "#b7b19a";
     p.accent = "#8fc66a";
@@ -95,6 +97,7 @@ QString renderStyleSheet(const ThemePalette &p, const QString &theme_name) {
     qss.replace("{bg}", p.bg);
     qss.replace("{panel}", p.panel);
     qss.replace("{panel_alt}", p.panel_alt);
+    qss.replace("{toolbox}", p.toolbox);
     qss.replace("{text_primary}", p.text_primary);
     qss.replace("{text_secondary}", p.text_secondary);
     qss.replace("{accent}", p.accent);

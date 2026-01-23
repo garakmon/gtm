@@ -11,6 +11,7 @@ struct ThemePalette {
     QString bg;
     QString panel;
     QString panel_alt;
+    QString toolbox;
     QString text_primary;
     QString text_secondary;
     QString accent;

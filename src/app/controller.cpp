@@ -7,6 +7,7 @@
 #include <QScrollBar>
 #include <QMessageBox>
 #include <QLabel>
+#include <limits>
 #include <cmath>
 #include <cmath>
 
@@ -24,6 +25,111 @@
 #include "songlistmodel.h"
 #include "minimapwidget.h"
 #include "meters.h"
+
+namespace {
+uint8_t programForEvent(const Song *song, const smf::MidiEvent *event) {
+    if (!song || !event) return 0;
+    const uint8_t channel = event->getChannel();
+    uint8_t program = song->getInitialPrograms()[channel];
+    const int track = event->track;
+    auto tracks = song->tracks();
+    if (track >= 0 && track < static_cast<int>(tracks.size())) {
+        smf::MidiEventList *list = tracks[track];
+        if (list) {
+            const int count = list->getEventCount();
+            for (int i = 0; i < count; ++i) {
+                smf::MidiEvent &ev = (*list)[i];
+                if (ev.tick > event->tick) break;
+                if (ev.isPatchChange() && ev.getChannel() == channel) {
+                    program = ev.getP1();
+                }
+            }
+        }
+    }
+    return program;
+}
+
+const Instrument *resolveInstrumentForEvent(const Instrument *inst,
+                                            uint8_t key,
+                                            const QMap<QString, VoiceGroup> *all_voicegroups,
+                                            const QMap<QString, KeysplitTable> *keysplit_tables) {
+    if (!inst || !all_voicegroups) return inst;
+
+    if (inst->type_id == 0x40) { // voice_keysplit
+        auto vg_it = all_voicegroups->find(inst->sample_label);
+        if (vg_it == all_voicegroups->end()) return nullptr;
+
+        int inst_index = 0;
+        if (keysplit_tables && !inst->keysplit_table.isEmpty()) {
+            auto table_it = keysplit_tables->find(inst->keysplit_table);
+            if (table_it != keysplit_tables->end()) {
+                const KeysplitTable &table = table_it.value();
+                auto note_it = table.note_map.find(key);
+                if (note_it != table.note_map.end()) {
+                    inst_index = note_it.value();
+                } else {
+                    for (auto it = table.note_map.begin(); it != table.note_map.end(); ++it) {
+                        if (it.key() <= key) {
+                            inst_index = it.value();
+                        }
+                    }
+                }
+            }
+        }
+
+        const VoiceGroup &split_vg = vg_it.value();
+        if (inst_index < 0 || inst_index >= split_vg.instruments.size()) return nullptr;
+        return resolveInstrumentForEvent(&split_vg.instruments[inst_index], key, all_voicegroups, keysplit_tables);
+    }
+
+    if (inst->type_id == 0x80) { // voice_keysplit_all (drumset)
+        auto it = all_voicegroups->find(inst->sample_label);
+        if (it == all_voicegroups->end()) return nullptr;
+
+        const VoiceGroup &drum_vg = it.value();
+        const int drum_index = key - drum_vg.offset;
+        if (drum_index < 0 || drum_index >= drum_vg.instruments.size()) return nullptr;
+        return resolveInstrumentForEvent(&drum_vg.instruments[drum_index], key, all_voicegroups, keysplit_tables);
+    }
+
+    return inst;
+}
+
+QString playbackTypeAbbrev(const Instrument *inst) {
+    if (!inst) return "-";
+
+    static const QMap<int, QString> baseType = {
+        {0x00, "PCM"}, {0x08, "PCM"}, {0x10, "PCM"},
+        {0x03, "Wave"}, {0x0B, "Wave"},
+    };
+    static const QMap<int, QString> dutyMap = {
+        {0, "12"}, {1, "25"}, {2, "50"}, {3, "75"}
+    };
+
+    const int type_id = inst->type_id;
+    if (baseType.contains(type_id)) {
+        return baseType.value(type_id);
+    }
+
+    const QString duty = dutyMap.value(inst->duty_cycle & 0x03, "50");
+
+    switch (type_id) {
+    case 0x01: // Square1 (sweep)
+    case 0x09:
+        return QString("Sq.%1S").arg(duty);
+    case 0x02: // Square2
+    case 0x0A:
+        return QString("Sq.%1").arg(duty);
+    case 0x04: // Noise
+    case 0x0C:
+        return (inst->duty_cycle & 0x1) ? "Ns.7" : "Ns.15";
+    default:
+        break;
+    }
+
+    return "-";
+}
+} // namespace
 
 
 /// controller loads the song, creates the track items, etc.
@@ -575,18 +681,64 @@ void Controller::updateSongPositionDisplay(int tick) {
 
 void Controller::displayEvent(smf::MidiEvent *event) {
     // TODO: safety checks (isNote / isNoteOn, etc)
-    qDebug() << "Controller::displayEvent";
     if (!event) {
         // error
         return;
     }
 
+    const int max_tick = (m_song_duration_ticks > 0) ? m_song_duration_ticks : std::numeric_limits<int>::max();
+    m_window->spinBox_NoteOnTick->setMaximum(max_tick);
+    m_window->spinBox_NoteOffTick->setMaximum(max_tick);
+    m_window->spinBox_NoteChannel->setValue(event->getChannel());
     m_window->spinBox_NoteKey->setValue(event->getKeyNumber());
     m_window->spinBox_NoteOnTick->setValue(event->tick);
     m_window->spinBox_NoteOnVelocity->setValue(event->getVelocity());
     if (event->hasLink()) {
         m_window->spinBox_NoteOffTick->setValue(event->getLinkedEvent()->tick);
         m_window->spinBox_NoteOffVelocity->setValue(event->getLinkedEvent()->getVelocity());
+    } else {
+        m_window->spinBox_NoteOffTick->setValue(event->tick);
+        m_window->spinBox_NoteOffVelocity->setValue(0);
+    }
+
+    if (m_window->lineEdit_EventTrackValue) {
+        int display_row = m_song ? m_song->getDisplayRow(event->track) : -1;
+        m_window->lineEdit_EventTrackValue->setText(display_row >= 0 ? QString::number(display_row) : "-");
+    }
+
+    uint8_t program = programForEvent(m_song.get(), event);
+    if (m_window->lineEdit_EventProgramValue) {
+        m_window->lineEdit_EventProgramValue->setText(QString::number(program));
+    }
+
+    const Instrument *resolved = nullptr;
+    if (m_song && m_project) {
+        const VoiceGroup *voicegroup = m_project->getVoiceGroup(m_song->getMetaInfo().voicegroup);
+        const QMap<QString, VoiceGroup> *all_voicegroups = &m_project->getVoiceGroups();
+        const QMap<QString, KeysplitTable> *keysplit_tables = &m_project->getKeysplitTables();
+        if (voicegroup && program < voicegroup->instruments.size()) {
+            const Instrument *base = &voicegroup->instruments[program];
+            resolved = resolveInstrumentForEvent(base,
+                                                 static_cast<uint8_t>(event->getKeyNumber()),
+                                                 all_voicegroups,
+                                                 keysplit_tables);
+        }
+    }
+
+    if (m_window->lineEdit_EventTypeValue) {
+        m_window->lineEdit_EventTypeValue->setText(playbackTypeAbbrev(resolved));
+    }
+    if (m_window->lineEdit_EventAdsrValue) {
+        if (resolved) {
+            m_window->lineEdit_EventAdsrValue->setText(
+                QString("%1/%2/%3/%4")
+                    .arg(resolved->attack)
+                    .arg(resolved->decay)
+                    .arg(resolved->sustain)
+                    .arg(resolved->release));
+        } else {
+            m_window->lineEdit_EventAdsrValue->setText("-");
+        }
     }
 }
 

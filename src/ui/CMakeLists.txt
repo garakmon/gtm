@@ -49,24 +49,29 @@ qt_add_resources(gtm-ui "gtm-icons"
         icons/compress-lines.svg
         icons/compress.svg
         icons/control-slider.svg
+        icons/copy.svg
         icons/cut.svg
         icons/de-compress.svg
         icons/download.svg
         icons/drag-hand-gesture.svg
-        icons/edit.svg
         icons/drag.svg
+        icons/edit.svg
+        icons/expand.svg
         icons/filter-alt.svg
         icons/filter-list-circle.svg
         icons/filter-list.svg
         icons/filter.svg
         icons/floppy-disk-arrow-in.svg
         icons/forward.svg
+        icons/frame-select.svg
         icons/horizontal-merge.svg
         icons/horizontal-split.svg
         icons/import.svg
+        icons/lasso-select.svg
         icons/more-horiz-circle.svg
         icons/music-double-note-plus.svg
         icons/music-double-note.svg
+        icons/music-note-minus.svg
         icons/music-note-plus.svg
         icons/music-note.svg
         icons/paste-clipboard.svg
@@ -75,15 +80,18 @@ qt_add_resources(gtm-ui "gtm-icons"
         icons/playlist-plus.svg
         icons/plus.svg
         icons/prohibition.svg
+        icons/quantize.svg
         icons/redo-action.svg
         icons/redo.svg
         icons/refresh-double.svg
         icons/refresh.svg
-        icons/repeat.svg
         icons/repeat-once.svg
+        icons/repeat.svg
         icons/restart.svg
         icons/rewind.svg
+        icons/select-invert.svg
         icons/settings.svg
+        icons/shuffle.svg
         icons/sidebar-collapse.svg
         icons/sidebar-expand.svg
         icons/sine-wave.svg
@@ -96,12 +104,16 @@ qt_add_resources(gtm-ui "gtm-icons"
         icons/square.svg
         icons/switch-off.svg
         icons/switch-on.svg
+        icons/timer.svg
+        icons/track-select.svg
         icons/trash.svg
+        icons/trim.svg
         icons/undo-action.svg
         icons/undo.svg
         icons/vertical-merge.svg
         icons/vertical-split.svg
         icons/voice-circle.svg
+        icons/voice-lock-circle.svg
         icons/voice.svg
         icons/warning-circle.svg
         icons/warning-triangle.svg

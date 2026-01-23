@@ -37,6 +37,7 @@ public:
     QList<smf::MidiEvent *> &getMergedEvents() { return this->m_merged_events; }
 
     std::vector<smf::MidiEventList *> tracks() { return this->m_events; }
+    std::vector<smf::MidiEventList *> tracks() const { return this->m_events; }
     bool isMetaTrack(int track) const { return m_meta_tracks.contains(track); }
     int getDisplayRow(int track) const { return m_meta_tracks.contains(0) ? track - 1 : track; }
 

@@ -3,11 +3,19 @@
 #include <QFontMetrics>
 #include <QEvent>
 
-GTMComboBox::GTMComboBox(QWidget *parent) : QComboBox(parent) {}
+GTMComboBox::GTMComboBox(QWidget *parent) : QComboBox(parent) {
+    QFont mono("IBM Plex Mono");
+    mono.setStyleHint(QFont::Monospace);
+    setFont(mono);
+}
 
 GTMLineEdit::GTMLineEdit(QWidget *parent) : QLineEdit(parent) {}
 
-GTMSpinBox::GTMSpinBox(QWidget *parent) : QSpinBox(parent) {}
+GTMSpinBox::GTMSpinBox(QWidget *parent) : QSpinBox(parent) {
+    QFont mono("IBM Plex Mono");
+    mono.setStyleHint(QFont::Monospace);
+    setFont(mono);
+}
 
 GTMFormLabel::GTMFormLabel(QWidget *parent) : QLabel(parent) {
     updateMinimumWidth();
