@@ -114,13 +114,12 @@ void MinimapWidget::rebuildCache() {
     const double scale_x = static_cast<double>(w) / static_cast<double>(m_total_ticks);
     const double scale_y = static_cast<double>(h - 1) / 127.0;
 
-    // Horizontal octave lines (subtle, alternating)
+    // Horizontal octave lines (subtle, alternating) - draw as fills (no border)
     for (int key = 0, idx = 0; key < 128; key += 12, ++idx) {
         QColor line = (idx % 2 == 0) ? ui_color_score_line_dark : ui_color_score_line_light;
-        p.setPen(QPen(line, 1));
         int y = h - 1 - static_cast<int>(key * scale_y);
         if (y >= 0 && y < h) {
-            p.drawLine(0, y, w - 1, y);
+            p.fillRect(0, y, w, 1, line);
         }
     }
 

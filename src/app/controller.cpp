@@ -8,6 +8,7 @@
 #include <QMessageBox>
 #include <QLabel>
 #include <limits>
+#include <algorithm>
 #include <cmath>
 #include <cmath>
 
@@ -18,6 +19,7 @@
 #include "measureroll.h"
 #include "constants.h"
 #include "colors.h"
+#include "util.h"
 #include "song.h"
 #include "MidiEvent.h"
 #include "project.h"
@@ -278,9 +280,48 @@ void Controller::displayRolls() {
         m_minimap->setView(m_window->view_pianoRoll);
     }
 
-    // Navigation
-    if (!m_piano_roll->keys().isEmpty()) {
-        m_window->view_piano->centerOn(m_piano_roll->keys()[g_midi_middle_c]);
+    // Navigation: center vertically on midpoint of *song's* note range
+    if (m_window->view_piano && m_window->view_pianoRoll) {
+        int min_key = 127;
+        int max_key = 0;
+        bool has_notes = false;
+        QVector<int> keys;
+        if (m_song) {
+            const auto &notes = m_song->getNotes();
+            for (const auto &pair : notes) {
+                if (m_song->isMetaTrack(pair.first)) continue;
+                if (!pair.second) continue;
+                const int key = pair.second->getKeyNumber();
+                if (key < min_key) min_key = key;
+                if (key > max_key) max_key = key;
+                keys.append(key);
+                has_notes = true;
+            }
+        }
+
+        QRectF bounds = m_piano_roll->scenePiano()->itemsBoundingRect();
+        if (bounds.isValid()) {
+            qreal target_y = bounds.center().y();
+            if (has_notes) {
+                int use_min = min_key;
+                int use_max = max_key;
+                if (keys.size() >= 8) {
+                    std::sort(keys.begin(), keys.end());
+                    const int n = keys.size();
+                    const int low_idx = std::clamp(static_cast<int>(n * 0.05), 0, n - 1);
+                    const int high_idx = std::clamp(static_cast<int>(n * 0.95), 0, n - 1);
+                    use_min = keys[low_idx];
+                    use_max = keys[high_idx];
+                }
+                const qreal min_y = scoreNotePosition(use_min).y;
+                const qreal max_y = scoreNotePosition(use_max).y;
+                target_y = (min_y + max_y) * 0.5;
+            }
+            const QPointF piano_center = m_window->view_piano->mapToScene(m_window->view_piano->viewport()->rect().center());
+            const QPointF roll_center = m_window->view_pianoRoll->mapToScene(m_window->view_pianoRoll->viewport()->rect().center());
+            m_window->view_piano->centerOn(piano_center.x(), target_y);
+            m_window->view_pianoRoll->centerOn(roll_center.x(), target_y);
+        }
     }
 
     // LCD timer removed; time display is in meta box.
