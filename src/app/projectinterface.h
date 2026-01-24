@@ -31,6 +31,7 @@ public:
     bool parseVoiceGroup(const QString &path);
     bool loadKeysplitTables();
     bool loadSongs();
+    void validateMidiFiles();
 
     void processInstrumentEntry(const QString &group_label, const QString &type, const QStringList &args);
     void parseKeysplitInstrument(const QString &name);

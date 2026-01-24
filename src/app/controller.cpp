@@ -302,7 +302,7 @@ void Controller::songListSongRequested(const QModelIndex &index) {
     m_current_song_index = index.row();
     QString title = index.data(Qt::UserRole).toString();
 
-    SongEntry entry = this->m_project->getSongEntryByTitle(title);
+    SongEntry &entry = this->m_project->getSongEntryByTitle(title);
 
     if (entry.midifile.isEmpty()) {
         QMessageBox::warning(nullptr, "Missing MIDI", QString("No MIDI file defined for %1.").arg(title));
@@ -321,6 +321,11 @@ void Controller::songListSongRequested(const QModelIndex &index) {
         smf::MidiFile midi = this->m_interface->loadMidi(title);
         if (midi.getTrackCount() == 0 || (midi.getTrackCount() > 0 && midi[0].size() == 0)) {
             QMessageBox::warning(nullptr, "Missing MIDI", QString("MIDI file for %1 could not be loaded.").arg(title));
+            entry.midifile.clear();
+            if (m_song_list_model) {
+                QModelIndex idx = m_song_list_model->index(index.row(), 0);
+                emit m_song_list_model->dataChanged(idx, idx);
+            }
             return;
         }
         this->m_project->addSong(title, midi);

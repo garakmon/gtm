@@ -10,7 +10,7 @@ QFrame, QGroupBox {
     border-radius: 6px;
 }
 QFrame#ButtonBox_Tools {
-    background: {toolbox};
+    background: {panel_alt};
     border: 1px solid {border};
     border-radius: 6px;
     padding: 2px 4px;
@@ -71,7 +71,7 @@ QFrame#pillbox_NoteTools,
 QFrame#pillbox_EditTools,
 QFrame#pillbox_MetaTools,
 QFrame#pillbox_TrackTools {
-    background: {panel_alt};
+    background: {toolbox};
     border: 1px solid {border};
     border-radius: 12px;
     padding: 1px 3px;

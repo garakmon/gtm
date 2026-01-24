@@ -532,6 +532,7 @@ bool ProjectInterface::loadSongs() {
     }
 
     this->parseMidiConfig();
+    this->validateMidiFiles();
 
     return true;
 }
@@ -597,6 +598,20 @@ void ProjectInterface::parseMidiConfig() {
     }
 
     qDebug() << "parseMidiConfig: parsed" << parsed << "song configs from midi.cfg";
+}
+
+void ProjectInterface::validateMidiFiles() {
+    if (!m_project) return;
+    for (auto it = m_project->m_song_entries.begin(); it != m_project->m_song_entries.end(); ++it) {
+        SongEntry &entry = it.value();
+        if (entry.midifile.isEmpty()) {
+            continue;
+        }
+        const QString path = this->concatPaths(this->m_root, "sound/songs/midi/" + entry.midifile);
+        if (!QFile::exists(path)) {
+            entry.midifile.clear();
+        }
+    }
 }
 
 smf::MidiFile ProjectInterface::loadMidi(const QString &title) {
