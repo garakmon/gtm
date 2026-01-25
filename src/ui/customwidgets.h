@@ -8,6 +8,8 @@
 #include <QSpinBox>
 #include <QLabel>
 
+class QSvgRenderer;
+
 class GTMComboBox : public QComboBox {
     Q_OBJECT
 
@@ -22,6 +24,21 @@ class GTMLineEdit : public QLineEdit {
 
 public:
     explicit GTMLineEdit(QWidget *parent = nullptr);
+
+    void setLeadingSvg(const QString &path, int size = 14);
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+    void changeEvent(QEvent *event) override;
+
+private:
+    void updateLeadingMargins();
+
+    QString m_leading_svg_path;
+    int m_leading_svg_size = 14;
+    QMargins m_base_margins;
+    bool m_base_margins_set = false;
+    class QSvgRenderer *m_leading_svg = nullptr;
 };
 
 

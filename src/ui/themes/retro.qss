@@ -100,6 +100,14 @@ QGroupBox QLabel {
     border: 0px;
     background: transparent;
 }
+QLabel#label_SongList {
+    border: 0px;
+    background: transparent;
+}
+QFrame#frame_SongList_label_searchbar {
+    border: 0px;
+    background: transparent;
+}
 QGroupBox::title {
     subcontrol-origin: margin;
     subcontrol-position: top left;

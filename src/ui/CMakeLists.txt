@@ -26,6 +26,7 @@ target_link_libraries(gtm-ui PUBLIC
     midifile
     Qt6::Core
     Qt6::Widgets
+    Qt6::Svg
 )
 
 target_include_directories(gtm-ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -91,6 +92,7 @@ qt_add_resources(gtm-ui "gtm-icons"
         icons/rewind.svg
         icons/select-invert.svg
         icons/settings.svg
+        icons/search-engine.svg
         icons/shuffle.svg
         icons/sidebar-collapse.svg
         icons/sidebar-expand.svg

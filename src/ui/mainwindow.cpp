@@ -24,6 +24,7 @@
 #include "graphicstrackitem.h"
 #include "previewsoundwindow.h"
 #include <limits>
+#include "customwidgets.h"
 
 
 
@@ -148,6 +149,10 @@ void MainWindow::setupUi() {
             ui->label_volume->setPixmap(pix.scaledToHeight(16, Qt::SmoothTransformation));
         }
         ui->label_volume->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
+    }
+
+    if (auto *search = qobject_cast<GTMLineEdit *>(ui->lineEdit_SongList_search)) {
+        search->setLeadingSvg(":/icons/search-engine.svg", 14);
     }
 
     if (ui->Button_Play) ui->Button_Play->setCheckable(true);
