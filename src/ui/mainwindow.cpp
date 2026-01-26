@@ -11,7 +11,6 @@
 #include <QSlider>
 #include <QFontMetrics>
 #include <QSplitter>
-#include <QPixmap>
 #include <QFontDatabase>
 
 #include "constants.h"
@@ -142,13 +141,28 @@ void MainWindow::setupUi() {
         }
     }
 
-    if (ui->label_volume) {
-        ui->label_volume->setFixedHeight(16);
-        const QPixmap pix = ui->label_volume->pixmap();
-        if (!pix.isNull()) {
-            ui->label_volume->setPixmap(pix.scaledToHeight(16, Qt::SmoothTransformation));
+    if (auto *icon = qobject_cast<GTMSvgIconWidget *>(ui->label_volume)) {
+        icon->setFixedSize(16, 16);
+        icon->setUseTextColor(false);
+
+        auto updateIcon = [icon](int value) {
+            const char *path = ":/icons/sound-high.svg";
+            if (value <= 0) {
+                path = ":/icons/sound-off.svg";
+            } else if (value <= 20) {
+                path = ":/icons/sound-min.svg";
+            } else if (value <= 60) {
+                path = ":/icons/sound-low.svg";
+            }
+            icon->setSvgPath(path);
+        };
+
+        if (m_master_meter && m_master_meter->slider()) {
+            connect(m_master_meter->slider(), &QSlider::valueChanged, icon, updateIcon);
+            updateIcon(m_master_meter->slider()->value());
+        } else {
+            updateIcon(0);
         }
-        ui->label_volume->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
     }
 
     if (auto *search = qobject_cast<GTMLineEdit *>(ui->lineEdit_SongList_search)) {

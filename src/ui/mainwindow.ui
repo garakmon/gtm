@@ -463,15 +463,18 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QLabel" name="label_volume">
-               <property name="frameShape">
-                <enum>QFrame::NoFrame</enum>
+              <widget class="GTMSvgIconWidget" name="label_volume">
+               <property name="minimumSize">
+                <size>
+                 <width>16</width>
+                 <height>16</height>
+                </size>
                </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">:/icons/sound-low.svg</pixmap>
+               <property name="maximumSize">
+                <size>
+                 <width>16</width>
+                 <height>16</height>
+                </size>
                </property>
               </widget>
              </item>
@@ -1895,6 +1898,11 @@
   <customwidget>
    <class>GTMFormLabel</class>
    <extends>QLabel</extends>
+   <header>customwidgets.h</header>
+  </customwidget>
+  <customwidget>
+   <class>GTMSvgIconWidget</class>
+   <extends>QWidget</extends>
    <header>customwidgets.h</header>
   </customwidget>
  </customwidgets>
