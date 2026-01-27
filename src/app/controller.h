@@ -92,6 +92,8 @@ private:
     int m_meter_frame = 0;
     int m_scroll_frame = 0;
     int m_last_meta_tick = -1;
+    int m_last_play_tick = -1;
+    bool m_force_scroll_to_playhead = false;
     double m_scroll_pos = 0.0;
     bool m_scroll_pos_valid = false;
     bool m_autoscroll_prev = true;

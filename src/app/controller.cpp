@@ -395,6 +395,19 @@ void Controller::syncRolls() {
 
     int current_tick = this->m_song->getTickFromTime(current_seconds);
 
+    if (m_player_timer.isActive()) {
+        if (m_last_play_tick >= 0 && current_tick < m_last_play_tick) {
+            // Loop or backward jump: force autoscroll to resume.
+            m_autoscroll_enabled = true;
+            m_scroll_pos_valid = false;
+            m_scroll_debounce.stop();
+            m_force_scroll_to_playhead = true;
+        }
+        m_last_play_tick = current_tick;
+    } else {
+        m_last_play_tick = current_tick;
+    }
+
     this->m_measure_roll->updatePlaybackGuide(current_tick);
     this->m_measure_roll->setTick(current_tick);
     this->updateSongPositionDisplay(current_tick);
@@ -423,10 +436,20 @@ void Controller::syncRolls() {
             return;
         }
         int target = playhead_x - viewport_width / 4;
+        if (target < 0) target = 0;
         int current = this->m_window->hscroll_pianoRoll->value();
-        if (target < current) target = current; // never scroll backwards during autoscroll
+        if (m_force_scroll_to_playhead) {
+            m_force_scroll_to_playhead = false;
+            m_scroll_pos = static_cast<double>(target);
+            m_scroll_pos_valid = true;
+            if (current != target) {
+                this->m_window->hscroll_pianoRoll->setValue(target);
+            }
+        } else if (target < current) {
+            target = current; // never scroll backwards during autoscroll
+        }
         if (!m_scroll_pos_valid) {
-            m_scroll_pos = static_cast<double>(current);
+            m_scroll_pos = static_cast<double>(m_force_scroll_to_playhead ? target : current);
             m_scroll_pos_valid = true;
         }
         const double alpha = 0.75;
@@ -442,6 +465,7 @@ void Controller::syncRolls() {
         if (m_window->Button_Play) m_window->Button_Play->setChecked(false);
         if (m_window->Button_Pause) m_window->Button_Pause->setChecked(false);
         if (m_window->Button_Stop) m_window->Button_Stop->setChecked(true);
+        if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(true);
     }
 
     // Update meters at UI tick rate
@@ -810,30 +834,39 @@ void Controller::play() {
 
     m_autoscroll_enabled = true;
     m_scroll_pos_valid = false;
+    m_last_play_tick = -1;
+    m_force_scroll_to_playhead = true;
     m_player->play();
 
     m_player_elapsed.start();
     m_player_timer.start(16);
+    if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(false);
 }
 
 void Controller::stop() {
     m_player->stop();
     m_player_timer.stop();
+    m_last_play_tick = -1;
+    m_force_scroll_to_playhead = false;
     m_track_roll->clearAllPlayingInfo();
     m_track_roll->clearAllMeters();
     if (m_master_meter) {
         m_master_meter->setLevels(0.0f, 0.0f);
     }
+    if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(true);
 }
 
 void Controller::pause() {
     m_player->stop();
     m_player_timer.stop();
+    m_last_play_tick = -1;
+    m_force_scroll_to_playhead = false;
     m_track_roll->clearAllPlayingInfo();
     m_track_roll->clearAllMeters();
     if (m_master_meter) {
         m_master_meter->setLevels(0.0f, 0.0f);
     }
+    if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(true);
 }
 
 void Controller::onTrackMuteToggled(int channel, bool muted) {
@@ -897,6 +930,8 @@ void Controller::seekToTick(int tick) {
         m_player_elapsed.restart();
     }
     m_scroll_pos_valid = false;
+    m_last_play_tick = tick;
+    m_force_scroll_to_playhead = true;
 }
 
 void Controller::seekToStart() {
