@@ -12,6 +12,7 @@
 #include <QFontMetrics>
 #include <QSplitter>
 #include <QFontDatabase>
+#include <QButtonGroup>
 
 #include "constants.h"
 #include "colors.h"
@@ -167,6 +168,19 @@ void MainWindow::setupUi() {
 
     if (auto *search = qobject_cast<GTMLineEdit *>(ui->lineEdit_SongList_search)) {
         search->setLeadingSvg(":/icons/search-engine.svg", 14);
+    }
+
+    if (ui->ButtonBox_Tools) {
+        auto *tool_group = new QButtonGroup(this);
+        tool_group->setExclusive(true);
+        const auto tool_buttons = ui->ButtonBox_Tools->findChildren<QToolButton *>();
+        for (auto *button : tool_buttons) {
+            button->setCheckable(true);
+            tool_group->addButton(button);
+        }
+        if (ui->button_select_rect) {
+            ui->button_select_rect->setChecked(true);
+        }
     }
 
     if (ui->Button_Play) ui->Button_Play->setCheckable(true);
