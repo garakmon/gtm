@@ -13,6 +13,8 @@ public:
 
 public:
     QString most_recent_project;
+    QString recent_song;
+    int master_volume = 25;
     QString palette = "default";
     QString theme = "default";
     QString window_geometry;

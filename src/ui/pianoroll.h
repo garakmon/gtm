@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QGraphicsScene>
 #include <QGraphicsPixmapItem>
+#include <QMap>
 #include <memory>
 
 #include "graphicspianokeyitem.h"
@@ -26,6 +27,24 @@ class Song;
 class GraphicsScoreNoteItem;
 namespace smf { class MidiEvent; }
 
+class TrackNoteGroup : public QGraphicsObject {
+    Q_OBJECT
+
+public:
+    explicit TrackNoteGroup(int track, QGraphicsItem *parent = nullptr)
+        : QGraphicsObject(parent), m_track(track) {}
+
+    int track() const { return m_track; }
+    QRectF boundingRect() const override { return childrenBoundingRect(); }
+    void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget *) override {}
+    void addNote(class GraphicsScoreNoteItem *note) { m_notes.append(note); }
+    const QVector<class GraphicsScoreNoteItem *> &notes() const { return m_notes; }
+
+private:
+    int m_track = 0;
+    QVector<class GraphicsScoreNoteItem *> m_notes;
+};
+
 class PianoRoll : public QObject {
     Q_OBJECT
     // QGraphicsScene *scene_score = nullptr;
@@ -41,6 +60,7 @@ public:
     void setSong(std::shared_ptr<Song> song) {
         this->m_score_bg = nullptr;
         this->m_scene_roll.clear();
+        this->m_track_note_groups.clear();
         //this->m_scene_piano.clear();
         //this->m_piano_keys.clear();
 
@@ -57,6 +77,9 @@ public:
         this->drawScoreArea();
         this->drawScoreNotes();
     }
+
+    void setNotesInteractive(bool enabled);
+    void selectNotesForTrack(int track, bool clearOthers = true);
 
 signals:
     void eventItemSelected(smf::MidiEvent *event);
@@ -77,4 +100,5 @@ private:
     QGraphicsPixmapItem *m_score_bg = nullptr;
 
     std::shared_ptr<Song> m_active_song;
+    QMap<int, TrackNoteGroup *> m_track_note_groups;
 };

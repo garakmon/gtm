@@ -142,6 +142,7 @@ Controller::Controller(MainWindow *window) : QObject(window) {
     this->m_track_roll = new TrackRoll(this);
     connect(this->m_track_roll, &TrackRoll::trackMuteToggled, this, &Controller::onTrackMuteToggled);
     connect(this->m_track_roll, &TrackRoll::trackSoloToggled, this, &Controller::onTrackSoloToggled);
+    connect(this->m_track_roll, &TrackRoll::trackSelected, this, &Controller::onTrackSelected);
     this->m_measure_roll = new MeasureRoll(this);
 
     this->m_player = std::make_unique<Player>();
@@ -342,6 +343,7 @@ void Controller::connectSignals() {
 void Controller::songListSongRequested(const QModelIndex &index) {
     m_current_song_index = index.row();
     QString title = index.data(Qt::UserRole).toString();
+    emit songSelected(title);
 
     SongEntry &entry = this->m_project->getSongEntryByTitle(title);
 
@@ -466,6 +468,7 @@ void Controller::syncRolls() {
         if (m_window->Button_Pause) m_window->Button_Pause->setChecked(false);
         if (m_window->Button_Stop) m_window->Button_Stop->setChecked(true);
         if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(true);
+        if (m_piano_roll) m_piano_roll->setNotesInteractive(true);
     }
 
     // Update meters at UI tick rate
@@ -841,6 +844,7 @@ void Controller::play() {
     m_player_elapsed.start();
     m_player_timer.start(16);
     if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(false);
+    if (m_piano_roll) m_piano_roll->setNotesInteractive(false);
 }
 
 void Controller::stop() {
@@ -854,6 +858,7 @@ void Controller::stop() {
         m_master_meter->setLevels(0.0f, 0.0f);
     }
     if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(true);
+    if (m_piano_roll) m_piano_roll->setNotesInteractive(true);
 }
 
 void Controller::pause() {
@@ -867,6 +872,7 @@ void Controller::pause() {
         m_master_meter->setLevels(0.0f, 0.0f);
     }
     if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(true);
+    if (m_piano_roll) m_piano_roll->setNotesInteractive(true);
 }
 
 void Controller::onTrackMuteToggled(int channel, bool muted) {
@@ -900,6 +906,12 @@ void Controller::onTrackSoloToggled(int channel, bool soloed) {
             m_track_roll->setTrackMuted(ch, false);
             m_player->getMixer()->setChannelMute(ch, false);
         }
+    }
+}
+
+void Controller::onTrackSelected(int track) {
+    if (m_piano_roll) {
+        m_piano_roll->selectNotesForTrack(track, true);
     }
 }
 
@@ -968,6 +980,27 @@ bool Controller::selectSongByIndex(int index) {
     m_current_song_index = index;
     songListSongRequested(next);
     return true;
+}
+
+bool Controller::selectSongByTitle(const QString &title) {
+    if (!m_window || !m_window->listView_songTable) return false;
+    if (title.isEmpty()) return false;
+    auto *view = m_window->listView_songTable;
+    auto *model = view->model();
+    if (!model) return false;
+    const int rows = model->rowCount();
+    for (int row = 0; row < rows; ++row) {
+        QModelIndex idx = model->index(row, 0);
+        if (!idx.isValid()) continue;
+        const QString item_title = idx.data(Qt::UserRole).toString();
+        if (item_title == title && (model->flags(idx) & Qt::ItemIsEnabled)) {
+            view->setCurrentIndex(idx);
+            m_current_song_index = row;
+            songListSongRequested(idx);
+            return true;
+        }
+    }
+    return false;
 }
 
 bool Controller::eventFilter(QObject *watched, QEvent *event) {

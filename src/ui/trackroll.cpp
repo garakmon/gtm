@@ -36,6 +36,7 @@ void TrackRoll::drawTracks() {
         // Connect mute signal
         connect(track_item, &GraphicsTrackItem::muteToggled, this, &TrackRoll::trackMuteToggled);
         connect(track_item, &GraphicsTrackItem::soloToggled, this, &TrackRoll::trackSoloToggled);
+        connect(track_item, &GraphicsTrackItem::trackClicked, this, &TrackRoll::trackSelected);
 
         // Store by display row (which maps to MIDI channel for typical GBA music)
         m_track_items[display_row] = track_item;
@@ -93,4 +94,10 @@ bool TrackRoll::hasSoloed() const {
         if (item->isSoloed()) return true;
     }
     return false;
+}
+
+void TrackRoll::setTracksInteractive(bool enabled) {
+    for (auto item : m_track_items) {
+        if (item) item->setControlsEnabled(enabled);
+    }
 }

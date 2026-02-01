@@ -100,6 +100,11 @@ void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
 }
 
 void GraphicsTrackItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+    if (event && event->button() == Qt::LeftButton) {
+        emit trackClicked(m_track);
+        event->accept();
+        return;
+    }
     QGraphicsObject::mousePressEvent(event);
 }
 
@@ -167,6 +172,17 @@ void GraphicsTrackItem::buttonToggled(bool isMuteButton, bool checked) {
     }
 }
 
+void GraphicsTrackItem::setControlsEnabled(bool enabled) {
+    if (m_mute_button) {
+        m_mute_button->setEnabled(enabled);
+        m_mute_button->setAcceptedMouseButtons(enabled ? Qt::LeftButton : Qt::NoButton);
+    }
+    if (m_solo_button) {
+        m_solo_button->setEnabled(enabled);
+        m_solo_button->setAcceptedMouseButtons(enabled ? Qt::LeftButton : Qt::NoButton);
+    }
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -177,6 +193,9 @@ GraphicsTrackMetaEventItem::GraphicsTrackMetaEventItem(smf::MidiEvent *event, Gr
   : QGraphicsItem(parent_track) {
     this->m_parent_track = parent_track;
     this->m_event = event;
+    setAcceptedMouseButtons(Qt::NoButton);
+    setFlag(QGraphicsItem::ItemIsSelectable, false);
+    setFlag(QGraphicsItem::ItemIsMovable, false);
 
     // Build label text based on event type
     if (event->isPatchChange()) {

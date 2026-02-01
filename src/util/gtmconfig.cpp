@@ -44,6 +44,14 @@ GtmConfig GtmConfig::loadFromFile(const QString &path, bool *ok) {
     if (it_recent != obj.end() && it_recent->second.is_string()) {
         cfg.most_recent_project = it_recent->second.string_value();
     }
+    auto it_recent_song = obj.find("recent_song");
+    if (it_recent_song != obj.end() && it_recent_song->second.is_string()) {
+        cfg.recent_song = it_recent_song->second.string_value();
+    }
+    auto it_master = obj.find("master_volume");
+    if (it_master != obj.end() && it_master->second.is_number()) {
+        cfg.master_volume = static_cast<int>(it_master->second.number_value());
+    }
     auto it_palette = obj.find("palette");
     if (it_palette != obj.end() && it_palette->second.is_string()) {
         cfg.palette = it_palette->second.string_value();
@@ -66,6 +74,8 @@ GtmConfig GtmConfig::loadFromFile(const QString &path, bool *ok) {
 bool GtmConfig::saveToFile(const QString &path) const {
     orderedjson::Json::object obj;
     obj["most_recent_project"] = most_recent_project;
+    obj["recent_song"] = recent_song;
+    obj["master_volume"] = master_volume;
     obj["palette"] = palette.isEmpty() ? "default" : palette;
     obj["theme"] = theme.isEmpty() ? "default" : theme;
     obj["window_geometry"] = window_geometry;

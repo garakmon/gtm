@@ -41,10 +41,12 @@ public:
     void clearAllMeters();
     void clearAllSoloed();
     bool hasSoloed() const;
+    void setTracksInteractive(bool enabled);
 
 signals:
     void trackMuteToggled(int channel, bool muted);
     void trackSoloToggled(int channel, bool soloed);
+    void trackSelected(int track);
 
 private:
     void drawTracks();

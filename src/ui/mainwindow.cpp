@@ -59,6 +59,7 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::setupUi() {
+    //! TODO: break into multiple functions
     // alloc new scenes
     // m_piano_roll = new PianoRoll(this);
     // this->ui->view_piano->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -88,6 +89,9 @@ void MainWindow::setupUi() {
     // this->ui->view_tracklist->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 
     m_controller = std::make_unique<Controller>(this);
+    connect(m_controller.get(), &Controller::songSelected, this, [this](const QString &title) {
+        setRecentSongTitle(title);
+    });
 
     // Ensure Song/Track/Event groupboxes share vertical space evenly.
     if (ui->verticalLayout_3) {
@@ -139,6 +143,11 @@ void MainWindow::setupUi() {
             m_controller->setMasterMeter(m_master_meter);
             connect(m_master_meter->slider(), &QSlider::valueChanged, m_controller.get(), &Controller::setMasterVolume);
             m_controller->setMasterVolume(m_master_meter->slider()->value());
+        }
+        if (m_master_meter->slider()) {
+            connect(m_master_meter->slider(), &QSlider::valueChanged, this, [this](int value) {
+                m_config.master_volume = value;
+            });
         }
     }
 
@@ -270,6 +279,11 @@ void MainWindow::loadProject() {
         m_project_root = root;
     }
 
+    if (m_master_meter && m_master_meter->slider()) {
+        int volume = qBound(0, m_config.master_volume, 100);
+        m_master_meter->slider()->setValue(volume);
+    }
+
     //this->ui->listView_songTable->addItems()
 }
 
@@ -388,10 +402,21 @@ void MainWindow::on_Button_Skip_clicked() {
 void MainWindow::closeEvent(QCloseEvent *event) {
     if (!m_project_root.isEmpty()) {
         m_config.most_recent_project = m_project_root;
-        if (m_config.palette.isEmpty()) m_config.palette = "default";
-        if (m_config.theme.isEmpty()) m_config.theme = "default";
-        m_config.window_geometry = QString::fromUtf8(saveGeometry().toBase64());
-        m_config.saveToFile(GtmConfig::defaultPath());
     }
+    if (m_config.palette.isEmpty()) m_config.palette = "default";
+    if (m_config.theme.isEmpty()) m_config.theme = "default";
+    m_config.window_geometry = QString::fromUtf8(saveGeometry().toBase64());
+    m_config.saveToFile(GtmConfig::defaultPath());
     QMainWindow::closeEvent(event);
+}
+
+void MainWindow::showEvent(QShowEvent *event) {
+    QMainWindow::showEvent(event);
+    if (m_controller && !m_config.recent_song.isEmpty()) {
+        m_controller->selectSongByTitle(m_config.recent_song);
+    }
+}
+
+void MainWindow::setRecentSongTitle(const QString &title) {
+    m_config.recent_song = title;
 }

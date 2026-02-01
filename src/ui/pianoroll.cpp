@@ -145,7 +145,46 @@ void PianoRoll::drawScoreNotes() {
 }
 
 GraphicsScoreNoteItem *PianoRoll::addNote(int track, int row, smf::MidiEvent *event) {
+    TrackNoteGroup *group = nullptr;
+    if (m_track_note_groups.contains(track)) {
+        group = m_track_note_groups.value(track);
+    } else {
+        group = new TrackNoteGroup(track);
+        group->setPos(0, 0);
+        m_scene_roll.addItem(group);
+        m_track_note_groups.insert(track, group);
+    }
+
     GraphicsScoreNoteItem *item = new GraphicsScoreNoteItem(this, track, row, event, event->getLinkedEvent());
-    m_scene_roll.addItem(item);
+    item->setParentItem(group);
+    group->addNote(item);
     return item;
+}
+
+void PianoRoll::setNotesInteractive(bool enabled) {
+    for (auto *item : m_scene_roll.items()) {
+        if (auto *note = qgraphicsitem_cast<GraphicsScoreNoteItem *>(item)) {
+            note->setFlag(QGraphicsItem::ItemIsSelectable, enabled);
+            note->setAcceptedMouseButtons(enabled ? Qt::LeftButton : Qt::NoButton);
+        }
+    }
+    m_scene_roll.clearSelection();
+    m_scene_roll.invalidate();
+    m_scene_roll.update();
+}
+
+void PianoRoll::selectNotesForTrack(int track, bool clearOthers) {
+    if (clearOthers) {
+        m_scene_roll.clearSelection();
+    }
+    auto it = m_track_note_groups.find(track);
+    if (it == m_track_note_groups.end() || !it.value()) {
+        return;
+    }
+    for (auto *note : it.value()->notes()) {
+        if (note && note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
+            note->setSelected(true);
+        }
+    }
+    m_scene_roll.update();
 }

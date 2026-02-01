@@ -55,6 +55,7 @@ public:
     int currentTick() const;
     int currentSongIndex() const;
     bool selectSongByIndex(int index);
+    bool selectSongByTitle(const QString &title);
     void setMinimap(MinimapWidget *minimap);
     void setMasterMeter(MasterMeterWidget *meter);
     void setMasterVolume(int value);
@@ -62,11 +63,15 @@ public:
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
 
+signals:
+    void songSelected(const QString &title);
+
 private slots:
     void displayEvent(smf::MidiEvent *event);
     void songListSongRequested(const QModelIndex &index);
     void onTrackMuteToggled(int channel, bool muted);
     void onTrackSoloToggled(int channel, bool soloed);
+    void onTrackSelected(int track);
 
 private:
     void updateSongMetaDisplay();

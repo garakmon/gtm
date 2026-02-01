@@ -30,6 +30,7 @@ class MainWindow : public QMainWindow {
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void setRecentSongTitle(const QString &title);
 
 friend class Controller;
 private:
@@ -59,6 +60,7 @@ private:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 private slots:
     void on_action_Open_triggered();

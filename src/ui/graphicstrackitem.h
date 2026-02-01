@@ -50,10 +50,12 @@ public:
     void setSoloed(bool soloed);
     void setMeterLevels(float left, float right);
     void buttonToggled(bool isMuteButton, bool checked);
+    void setControlsEnabled(bool enabled);
 
 signals:
     void muteToggled(int channel, bool muted);
     void soloToggled(int channel, bool soloed);
+    void trackClicked(int track);
 
 private:
     QColor m_color;
