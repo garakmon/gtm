@@ -468,7 +468,8 @@ void Controller::syncRolls() {
         if (m_window->Button_Pause) m_window->Button_Pause->setChecked(false);
         if (m_window->Button_Stop) m_window->Button_Stop->setChecked(true);
         if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(true);
-        if (m_piano_roll) m_piano_roll->setNotesInteractive(true);
+        m_edits_enabled = true;
+        if (m_piano_roll) m_piano_roll->setEditsEnabled(true);
     }
 
     // Update meters at UI tick rate
@@ -839,12 +840,13 @@ void Controller::play() {
     m_scroll_pos_valid = false;
     m_last_play_tick = -1;
     m_force_scroll_to_playhead = true;
+    m_edits_enabled = false;
     m_player->play();
 
     m_player_elapsed.start();
     m_player_timer.start(16);
     if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(false);
-    if (m_piano_roll) m_piano_roll->setNotesInteractive(false);
+    if (m_piano_roll) m_piano_roll->setEditsEnabled(false);
 }
 
 void Controller::stop() {
@@ -852,13 +854,14 @@ void Controller::stop() {
     m_player_timer.stop();
     m_last_play_tick = -1;
     m_force_scroll_to_playhead = false;
+    m_edits_enabled = true;
     m_track_roll->clearAllPlayingInfo();
     m_track_roll->clearAllMeters();
     if (m_master_meter) {
         m_master_meter->setLevels(0.0f, 0.0f);
     }
     if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(true);
-    if (m_piano_roll) m_piano_roll->setNotesInteractive(true);
+    if (m_piano_roll) m_piano_roll->setEditsEnabled(true);
 }
 
 void Controller::pause() {
@@ -866,13 +869,14 @@ void Controller::pause() {
     m_player_timer.stop();
     m_last_play_tick = -1;
     m_force_scroll_to_playhead = false;
+    m_edits_enabled = true;
     m_track_roll->clearAllPlayingInfo();
     m_track_roll->clearAllMeters();
     if (m_master_meter) {
         m_master_meter->setLevels(0.0f, 0.0f);
     }
     if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(true);
-    if (m_piano_roll) m_piano_roll->setNotesInteractive(true);
+    if (m_piano_roll) m_piano_roll->setEditsEnabled(true);
 }
 
 void Controller::onTrackMuteToggled(int channel, bool muted) {

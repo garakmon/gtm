@@ -78,7 +78,7 @@ public:
         this->drawScoreNotes();
     }
 
-    void setNotesInteractive(bool enabled);
+    void setEditsEnabled(bool enabled);
     void selectNotesForTrack(int track, bool clearOthers = true);
 
 signals:
@@ -101,4 +101,5 @@ private:
 
     std::shared_ptr<Song> m_active_song;
     QMap<int, TrackNoteGroup *> m_track_note_groups;
+    bool m_edits_enabled = true;
 };

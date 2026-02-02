@@ -157,13 +157,19 @@ GraphicsScoreNoteItem *PianoRoll::addNote(int track, int row, smf::MidiEvent *ev
 
     GraphicsScoreNoteItem *item = new GraphicsScoreNoteItem(this, track, row, event, event->getLinkedEvent());
     item->setParentItem(group);
+    item->setFlag(QGraphicsItem::ItemIsSelectable, m_edits_enabled);
+    item->setAcceptedMouseButtons(m_edits_enabled ? Qt::LeftButton : Qt::NoButton);
     group->addNote(item);
     return item;
 }
 
-void PianoRoll::setNotesInteractive(bool enabled) {
-    for (auto *item : m_scene_roll.items()) {
-        if (auto *note = qgraphicsitem_cast<GraphicsScoreNoteItem *>(item)) {
+void PianoRoll::setEditsEnabled(bool enabled) {
+    m_edits_enabled = enabled;
+    for (auto group_it = m_track_note_groups.begin(); group_it != m_track_note_groups.end(); ++group_it) {
+        TrackNoteGroup *group = group_it.value();
+        if (!group) continue;
+        for (auto *note : group->notes()) {
+            if (!note) continue;
             note->setFlag(QGraphicsItem::ItemIsSelectable, enabled);
             note->setAcceptedMouseButtons(enabled ? Qt::LeftButton : Qt::NoButton);
         }
