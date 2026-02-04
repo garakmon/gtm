@@ -341,8 +341,33 @@ void Controller::connectSignals() {
 }
 
 void Controller::songListSongRequested(const QModelIndex &index) {
-    m_current_song_index = index.row();
     QString title = index.data(Qt::UserRole).toString();
+    if (title.isEmpty()) {
+        return;
+    }
+
+    if (m_window && m_window->listView_songTable && m_window->listView_songTable->model()) {
+        auto *view = m_window->listView_songTable;
+        auto *model = view->model();
+        bool matched = false;
+        const int rows = model->rowCount();
+        for (int row = 0; row < rows; ++row) {
+            QModelIndex idx = model->index(row, 0);
+            if (!idx.isValid()) continue;
+            if (idx.data(Qt::UserRole).toString() == title) {
+                view->setCurrentIndex(idx);
+                m_current_song_index = row;
+                matched = true;
+                break;
+            }
+        }
+        if (!matched) {
+            m_current_song_index = index.row();
+        }
+    } else {
+        m_current_song_index = index.row();
+    }
+
     emit songSelected(title);
 
     SongEntry &entry = this->m_project->getSongEntryByTitle(title);
@@ -377,7 +402,11 @@ void Controller::songListSongRequested(const QModelIndex &index) {
     //std::shared_ptr<Song> song = this->m_project->getSong(title);
     this->m_project->setActiveSong(title);
 
-    this->loadSong();
+    if (this->loadSong()) {
+        if (auto *main_window = qobject_cast<MainWindow *>(parent())) {
+            main_window->setWindowTitle(QString("gtm - %1").arg(title));
+        }
+    }
 
     // steps: load song into project, set it active, call loadSong()
 }

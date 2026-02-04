@@ -7,6 +7,7 @@
 #include <QCloseEvent>
 #include <QVector>
 #include <memory>
+class QSortFilterProxyModel;
 
 #include "../app/project.h"
 #include "../app/controller.h"
@@ -44,6 +45,7 @@ private:
     QString m_project_root;
     GtmConfig m_config;
     QVector<int> m_splitter_sizes;
+    QSortFilterProxyModel *m_song_filter = nullptr;
 
     // PianoRoll *m_piano_roll = nullptr; // TODO: unique_ptr? maybe break with ownership of qobjects
     // TrackRoll *m_track_roll = nullptr;
@@ -51,6 +53,7 @@ private:
 private:
     void setupUi();
     void loadProject();
+    void syncSongListSelectionToOpenSong(bool scroll_to_center);
 
     void loadSong();
 

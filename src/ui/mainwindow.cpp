@@ -13,6 +13,8 @@
 #include <QSplitter>
 #include <QFontDatabase>
 #include <QButtonGroup>
+#include <QSortFilterProxyModel>
+#include <QRegularExpression>
 
 #include "constants.h"
 #include "colors.h"
@@ -91,6 +93,7 @@ void MainWindow::setupUi() {
     m_controller = std::make_unique<Controller>(this);
     connect(m_controller.get(), &Controller::songSelected, this, [this](const QString &title) {
         setRecentSongTitle(title);
+        syncSongListSelectionToOpenSong(false);
     });
 
     // Ensure Song/Track/Event groupboxes share vertical space evenly.
@@ -177,6 +180,16 @@ void MainWindow::setupUi() {
 
     if (auto *search = qobject_cast<GTMLineEdit *>(ui->lineEdit_SongList_search)) {
         search->setLeadingSvg(":/icons/search-engine.svg", 14);
+        connect(search, &QLineEdit::textChanged, this, [this](const QString &text) {
+            if (!m_song_filter) return;
+            if (text.trimmed().isEmpty()) {
+                m_song_filter->setFilterRegularExpression(QRegularExpression());
+                syncSongListSelectionToOpenSong(true);
+                return;
+            }
+            QRegularExpression re(QRegularExpression::escape(text), QRegularExpression::CaseInsensitiveOption);
+            m_song_filter->setFilterRegularExpression(re);
+        });
     }
 
     if (ui->ButtonBox_Tools) {
@@ -279,6 +292,20 @@ void MainWindow::loadProject() {
         m_project_root = root;
     }
 
+    if (ui->listView_songTable) {
+        auto *model = ui->listView_songTable->model();
+        if (model) {
+            if (!m_song_filter) {
+                m_song_filter = new QSortFilterProxyModel(this);
+                m_song_filter->setFilterKeyColumn(0);
+                m_song_filter->setFilterRole(Qt::UserRole);
+                m_song_filter->setDynamicSortFilter(true);
+            }
+            m_song_filter->setSourceModel(model);
+            ui->listView_songTable->setModel(m_song_filter);
+        }
+    }
+
     if (m_master_meter && m_master_meter->slider()) {
         int volume = qBound(0, m_config.master_volume, 100);
         m_master_meter->slider()->setValue(volume);
@@ -301,6 +328,25 @@ void MainWindow::loadSong() {
     //         this->m_controller->displayRolls();
     //     }
     // }
+}
+
+void MainWindow::syncSongListSelectionToOpenSong(bool scroll_to_center) {
+    if (!ui || !ui->listView_songTable) return;
+    auto *model = ui->listView_songTable->model();
+    if (!model || m_config.recent_song.isEmpty()) return;
+
+    const int rows = model->rowCount();
+    for (int row = 0; row < rows; ++row) {
+        QModelIndex idx = model->index(row, 0);
+        if (!idx.isValid()) continue;
+        if (idx.data(Qt::UserRole).toString() == m_config.recent_song) {
+            ui->listView_songTable->setCurrentIndex(idx);
+            if (scroll_to_center) {
+                ui->listView_songTable->scrollTo(idx, QAbstractItemView::PositionAtCenter);
+            }
+            return;
+        }
+    }
 }
 
 void MainWindow::drawTrackList() {
