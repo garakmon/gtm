@@ -566,6 +566,9 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
     // reset playhead to start
     this->m_measure_roll->setTick(0);
     this->m_measure_roll->updatePlaybackGuide(0);
+    if (m_window && m_window->hscroll_pianoRoll) {
+        m_window->hscroll_pianoRoll->setValue(0);
+    }
     if (m_window->label_MetaTimeValue) {
         m_window->label_MetaTimeValue->setText("00:00.000");
     }
