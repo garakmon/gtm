@@ -99,6 +99,10 @@ qt_add_resources(gtm-ui "gtm-icons"
         icons/sine-wave.svg
         icons/skip-next.svg
         icons/skip-prev.svg
+        icons/song-editing.svg
+        icons/song-loaded.svg
+        icons/song-unsaved.svg
+        icons/song.svg
         icons/sound-high.svg
         icons/sound-low.svg
         icons/sound-min.svg

@@ -1,6 +1,7 @@
 #include "songlistmodel.h"
 
 #include <QColor>
+#include <QIcon>
 
 #include "../app/project.h"
 
@@ -39,6 +40,28 @@ QVariant SongListModel::data(const QModelIndex &index, int role) const {
         return QColor(0xffffff);
     }
 
+    if (role == Qt::DecorationRole) {
+        static const QIcon s_song_icon_default(":/icons/song.svg");
+        static const QIcon s_song_icon_loaded(":/icons/song-loaded.svg");
+        static const QIcon s_song_icon_editing(":/icons/song-editing.svg");
+        static const QIcon s_song_icon_unsaved(":/icons/song-unsaved.svg");
+
+        const bool loaded = m_project->songLoaded(title);
+        if (loaded) {
+            auto song = m_project->getSong(title);
+            auto active = m_project->activeSong();
+            if (song == active) {
+                return s_song_icon_editing;
+            }
+            else if (!song->isClean()) {
+                return s_song_icon_unsaved;
+            }
+            return s_song_icon_loaded;
+        }
+
+        return s_song_icon_default;
+    }
+
     return QVariant();
 }
 
@@ -55,4 +78,12 @@ Qt::ItemFlags SongListModel::flags(const QModelIndex &index) const {
     }
 
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+}
+
+void SongListModel::refreshAll() {
+    const int rows = rowCount();
+    if (rows <= 0) return;
+    const QModelIndex first = index(0, 0);
+    const QModelIndex last = index(rows - 1, 0);
+    emit dataChanged(first, last, {Qt::DecorationRole});
 }

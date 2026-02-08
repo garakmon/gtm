@@ -463,7 +463,7 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="GTMSvgIconWidget" name="label_volume">
+              <widget class="GTMSvgIconWidget" name="label_volume" native="true">
                <property name="minimumSize">
                 <size>
                  <width>16</width>
@@ -1568,7 +1568,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>765</width>
+          <width>757</width>
           <height>286</height>
          </rect>
         </property>
@@ -1645,7 +1645,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>765</width>
+          <width>757</width>
           <height>319</height>
          </rect>
         </property>
@@ -1745,7 +1745,7 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <property name="spacing">
-        <number>0</number>
+        <number>-1</number>
        </property>
        <item>
         <widget class="QFrame" name="frame_SongList_label_searchbar">

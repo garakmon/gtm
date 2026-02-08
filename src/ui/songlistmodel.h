@@ -21,6 +21,7 @@ public:
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
+    void refreshAll();
 
 private:
     Project *m_project; // make sure the model is deleted if ever other projects are allowed to be opened

@@ -93,7 +93,7 @@ void MainWindow::setupUi() {
     m_controller = std::make_unique<Controller>(this);
     connect(m_controller.get(), &Controller::songSelected, this, [this](const QString &title) {
         setRecentSongTitle(title);
-        syncSongListSelectionToOpenSong(false);
+        syncSongListSelectionToOpenSong(true);
     });
 
     // Ensure Song/Track/Event groupboxes share vertical space evenly.

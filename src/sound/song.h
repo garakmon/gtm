@@ -56,6 +56,9 @@ public:
         int16_t pitch_bend = 0;    // center = 0 (raw value 8192)
     };
     const InitialChannelState *getInitialChannelStates() const { return m_initial_channel_states; }
+    bool isClean() const { return m_clean; }
+    void setClean(bool clean = true) { m_clean = clean; }
+    void markDirty() { m_clean = false; }
 
 private:
     void extractInitialState();
@@ -73,6 +76,7 @@ private:
     // Initial state per channel (extracted from track headers)
     uint8_t m_initial_programs[16] = {0};
     InitialChannelState m_initial_channel_states[16];
+    bool m_clean = true;
 };
 
 #endif // SONG_H

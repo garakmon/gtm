@@ -397,10 +397,16 @@ void Controller::songListSongRequested(const QModelIndex &index) {
             return;
         }
         this->m_project->addSong(title, midi);
+        if (m_song_list_model) {
+            m_song_list_model->refreshAll();
+        }
     }
 
     //std::shared_ptr<Song> song = this->m_project->getSong(title);
     this->m_project->setActiveSong(title);
+    if (m_song_list_model) {
+        m_song_list_model->refreshAll();
+    }
 
     if (this->loadSong()) {
         if (auto *main_window = qobject_cast<MainWindow *>(parent())) {

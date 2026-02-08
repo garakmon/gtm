@@ -165,6 +165,50 @@ QFrame#frame_MetaDisplay QLabel#label_MetaTimeValue {
 
 QListView#listView_songTable {
     font: 10pt "IBM Plex Mono";
+    background: {panel_alt};
+    color: {text_primary};
+    border: 1px solid {border};
+    border-radius: 6px;
+    outline: 0;
+}
+QListView#listView_songTable::item {
+    padding: 3px 6px;
+    border: 0px;
+}
+QListView#listView_songTable::item:hover {
+    background: {panel};
+    color: {text_primary};
+}
+QListView#listView_songTable::item:selected {
+    background: {panel};
+    color: {text_primary};
+    font-weight: 600;
+}
+QListView#listView_songTable::item:selected:active,
+QListView#listView_songTable::item:selected:!active {
+    background: {panel};
+    color: {text_primary};
+    font-weight: 600;
+}
+
+QLineEdit#lineEdit_SongList_search {
+    background: {panel};
+    color: {text_primary};
+    border: 1px solid {border};
+    border-radius: 6px;
+    padding: 4px 8px;
+    selection-background-color: {accent};
+    selection-color: {text_primary};
+}
+QLineEdit#lineEdit_SongList_search:focus {
+    border: 1px solid {accent};
+}
+QLineEdit#lineEdit_SongList_search::placeholder {
+    color: {text_secondary};
+}
+
+QLabel#label_SongList {
+    color: {text_primary};
 }
 
 QGroupBox {
@@ -191,6 +235,7 @@ QLabel#label_SongList {
 QFrame#frame_SongList_label_searchbar {
     border: 0px;
     background: transparent;
+    border-radius: 6px;
 }
 QGroupBox::title {
     subcontrol-origin: margin;
