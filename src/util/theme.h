@@ -32,6 +32,12 @@ struct ThemePalette {
     QString meta_tempo;
     QString meta_keysignature;
     QString meta_marker;
+    QString event_program;
+    QString event_volume;
+    QString event_pan;
+    QString event_expression;
+    QString event_pitch;
+    QString event_control_other;
 };
 
 ThemePalette paletteByName(const QString &name);

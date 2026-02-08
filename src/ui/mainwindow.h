@@ -8,9 +8,12 @@
 #include <QVector>
 #include <memory>
 class QSortFilterProxyModel;
+class QToolButton;
+class QComboBox;
 
 #include "../app/project.h"
 #include "../app/controller.h"
+#include "graphicstrackitem.h"
 #include "../util/gtmconfig.h"
 
 
@@ -46,6 +49,9 @@ private:
     GtmConfig m_config;
     QVector<int> m_splitter_sizes;
     QSortFilterProxyModel *m_song_filter = nullptr;
+    QVector<QToolButton *> m_track_event_filter_buttons;
+    uint32_t m_track_event_mask_ui = kTrackEventView_All;
+    QComboBox *m_track_event_preset_combo = nullptr;
 
     // PianoRoll *m_piano_roll = nullptr; // TODO: unique_ptr? maybe break with ownership of qobjects
     // TrackRoll *m_track_roll = nullptr;
@@ -54,6 +60,8 @@ private:
     void setupUi();
     void loadProject();
     void syncSongListSelectionToOpenSong(bool scroll_to_center);
+    void setupTrackMetaControls();
+    void applyTrackMetaMaskFromUi();
 
     void loadSong();
 

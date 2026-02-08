@@ -41,6 +41,12 @@ QColor ui_meta_event_timesignature = QColor(0xff00ff);
 QColor ui_meta_event_tempo = QColor(0x00ffff);
 QColor ui_meta_event_keysignature = QColor(0x1a1a1a);
 QColor ui_meta_event_marker = QColor(0xffff00);
+QColor ui_event_program = QColor(0x66d9ef);
+QColor ui_event_volume = QColor(0xa6e22e);
+QColor ui_event_pan = QColor(0xfd971f);
+QColor ui_event_expression = QColor(0xe6db74);
+QColor ui_event_pitch = QColor(0xf92672);
+QColor ui_event_control_other = QColor(0xb6b6ad);
 
 void applyThemeColors(const ThemePalette &palette) {
     for (int i = 0; i < g_max_num_tracks; i++) {
@@ -59,4 +65,10 @@ void applyThemeColors(const ThemePalette &palette) {
     ui_meta_event_tempo = QColor(palette.meta_tempo);
     ui_meta_event_keysignature = QColor(palette.meta_keysignature);
     ui_meta_event_marker = QColor(palette.meta_marker);
+    ui_event_program = QColor(palette.event_program);
+    ui_event_volume = QColor(palette.event_volume);
+    ui_event_pan = QColor(palette.event_pan);
+    ui_event_expression = QColor(palette.event_expression);
+    ui_event_pitch = QColor(palette.event_pitch);
+    ui_event_control_other = QColor(palette.event_control_other);
 }

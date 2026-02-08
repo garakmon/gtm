@@ -7,15 +7,25 @@
 #include <QMap>
 #include <memory>
 
+#include "graphicstrackitem.h"
 
 
 class Song;
 class GraphicsTrackItem;
+class GraphicsTrackRollManager;
 
 class TrackRoll : public QObject {
     Q_OBJECT
 
 public:
+    enum class TrackEventPreset {
+        All,
+        Mix,
+        Timbre,
+        Other,
+        Custom
+    };
+
     TrackRoll(QObject *parent = nullptr);
 
     QGraphicsScene *sceneRoll() { return &this->m_scene_roll; };
@@ -25,6 +35,8 @@ public:
         this->m_scene_roll.clear();
         this->m_scene_track_list.clear();
         this->m_track_items.clear();
+        this->m_roll_managers.clear();
+        this->m_expanded_row = -1;
 
         this->m_active_song = song;
         this->drawTracks();
@@ -42,16 +54,25 @@ public:
     void clearAllSoloed();
     bool hasSoloed() const;
     void setTracksInteractive(bool enabled);
+    void toggleTrackExpansion(int display_row);
+    void setEventViewMask(TrackEventViewMask mask);
+    TrackEventViewMask eventViewMask() const { return m_event_view_mask; }
+    void setEventPreset(TrackEventPreset preset);
+    TrackEventPreset eventPreset() const { return m_event_preset; }
 
 signals:
     void trackMuteToggled(int channel, bool muted);
     void trackSoloToggled(int channel, bool soloed);
     void trackSelected(int track);
+    void layoutChanged();
+
+private slots:
+    void onTrackClicked(int track);
 
 private:
     void drawTracks();
+    void relayout();
 
-private:
     // vert scrolls the same
     QGraphicsScene m_scene_roll;
     QGraphicsScene m_scene_track_list;
@@ -60,6 +81,10 @@ private:
 
     // Map channel to track item for playback info display
     QMap<int, GraphicsTrackItem *> m_track_items;
+    QMap<int, GraphicsTrackRollManager *> m_roll_managers;
+    int m_expanded_row = -1;
+    TrackEventViewMask m_event_view_mask = kTrackEventView_All;
+    TrackEventPreset m_event_preset = TrackEventPreset::All;
 };
 
 

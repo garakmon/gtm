@@ -143,6 +143,17 @@ Controller::Controller(MainWindow *window) : QObject(window) {
     connect(this->m_track_roll, &TrackRoll::trackMuteToggled, this, &Controller::onTrackMuteToggled);
     connect(this->m_track_roll, &TrackRoll::trackSoloToggled, this, &Controller::onTrackSoloToggled);
     connect(this->m_track_roll, &TrackRoll::trackSelected, this, &Controller::onTrackSelected);
+    connect(this->m_track_roll, &TrackRoll::layoutChanged, this, [this]() {
+        if (!m_window || !m_track_roll) return;
+        if (m_window->view_trackRoll) {
+            const QRectF roll_rect = m_track_roll->sceneRoll()->sceneRect();
+            m_window->view_trackRoll->setSceneRect(0.0, 0.0, roll_rect.width(), roll_rect.height());
+        }
+        if (m_window->view_trackList) {
+            const QRectF list_rect = m_track_roll->sceneTracks()->sceneRect();
+            m_window->view_trackList->setSceneRect(0.0, 0.0, list_rect.width(), list_rect.height());
+        }
+    });
     this->m_measure_roll = new MeasureRoll(this);
 
     this->m_player = std::make_unique<Player>();
@@ -969,6 +980,31 @@ void Controller::setMasterVolume(int value) {
     if (!m_player) return;
     float volume = static_cast<float>(value) / 100.0f;
     m_player->getMixer()->setMasterVolume(volume);
+}
+
+void Controller::setTrackEventViewMask(uint32_t mask) {
+    if (!m_track_roll) return;
+    m_track_roll->setEventViewMask(static_cast<TrackEventViewMask>(mask));
+}
+
+void Controller::setTrackEventPreset(int preset_index) {
+    if (!m_track_roll) return;
+    switch (preset_index) {
+    case 0:
+        m_track_roll->setEventPreset(TrackRoll::TrackEventPreset::All);
+        break;
+    case 1:
+        m_track_roll->setEventPreset(TrackRoll::TrackEventPreset::Mix);
+        break;
+    case 2:
+        m_track_roll->setEventPreset(TrackRoll::TrackEventPreset::Timbre);
+        break;
+    case 3:
+        m_track_roll->setEventPreset(TrackRoll::TrackEventPreset::Other);
+        break;
+    default:
+        break;
+    }
 }
 
 void Controller::seekToTick(int tick) {

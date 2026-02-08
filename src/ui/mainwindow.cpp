@@ -15,6 +15,10 @@
 #include <QButtonGroup>
 #include <QSortFilterProxyModel>
 #include <QRegularExpression>
+#include <QToolButton>
+#include <QSignalBlocker>
+#include <QComboBox>
+#include <QVBoxLayout>
 
 #include "constants.h"
 #include "colors.h"
@@ -28,6 +32,36 @@
 #include <limits>
 #include "customwidgets.h"
 
+namespace {
+constexpr int kPresetAll = 0;
+constexpr int kPresetMix = 1;
+constexpr int kPresetTimbre = 2;
+constexpr int kPresetOther = 3;
+constexpr int kPresetCustom = 4;
+
+TrackEventViewMask presetMaskForIndex(int idx) {
+    switch (idx) {
+    case kPresetAll:
+        return kTrackEventView_All;
+    case kPresetMix:
+        return TrackEventView_Volume | TrackEventView_Expression | TrackEventView_Pan;
+    case kPresetTimbre:
+        return TrackEventView_Program;
+    case kPresetOther:
+        return TrackEventView_ControlOther;
+    default:
+        return 0;
+    }
+}
+
+int presetIndexForMask(TrackEventViewMask mask) {
+    if (mask == kTrackEventView_All) return kPresetAll;
+    if (mask == (TrackEventView_Volume | TrackEventView_Expression | TrackEventView_Pan)) return kPresetMix;
+    if (mask == TrackEventView_Program) return kPresetTimbre;
+    if (mask == TrackEventView_ControlOther) return kPresetOther;
+    return kPresetCustom;
+}
+} // namespace
 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainWindow) {
@@ -93,8 +127,9 @@ void MainWindow::setupUi() {
     m_controller = std::make_unique<Controller>(this);
     connect(m_controller.get(), &Controller::songSelected, this, [this](const QString &title) {
         setRecentSongTitle(title);
-        syncSongListSelectionToOpenSong(true);
+        syncSongListSelectionToOpenSong(false);
     });
+    setupTrackMetaControls();
 
     // Ensure Song/Track/Event groupboxes share vertical space evenly.
     if (ui->verticalLayout_3) {
@@ -328,6 +363,129 @@ void MainWindow::loadSong() {
     //         this->m_controller->displayRolls();
     //     }
     // }
+}
+
+void MainWindow::setupTrackMetaControls() {
+    if (!ui || !ui->frame_TrackMetaControls) return;
+
+    if (auto *old_layout = ui->frame_TrackMetaControls->layout()) {
+        QLayoutItem *child = nullptr;
+        while ((child = old_layout->takeAt(0)) != nullptr) {
+            delete child->widget();
+            delete child;
+        }
+        delete old_layout;
+    }
+
+    auto *root_layout = new QVBoxLayout(ui->frame_TrackMetaControls);
+    root_layout->setContentsMargins(1, 1, 1, 1);
+    root_layout->setSpacing(1);
+
+    m_track_event_preset_combo = new GTMComboBox(ui->frame_TrackMetaControls);
+    m_track_event_preset_combo->addItem("All");
+    m_track_event_preset_combo->addItem("Mix");
+    m_track_event_preset_combo->addItem("Timbre");
+    m_track_event_preset_combo->addItem("Other");
+    m_track_event_preset_combo->addItem("Custom");
+    m_track_event_preset_combo->setCurrentIndex(kPresetAll);
+    m_track_event_preset_combo->setMinimumHeight(16);
+    m_track_event_preset_combo->setMaximumHeight(16);
+    root_layout->addWidget(m_track_event_preset_combo);
+
+    auto *button_row_layout = new QGridLayout();
+    button_row_layout->setContentsMargins(0, 0, 0, 0);
+    button_row_layout->setHorizontalSpacing(1);
+    button_row_layout->setVerticalSpacing(0);
+    root_layout->addLayout(button_row_layout);
+
+    auto addFilterButton = [this, button_row_layout](int col, const QString &text, TrackEventViewMask flag, const QString &tooltip) {
+        auto *btn = new QToolButton(ui->frame_TrackMetaControls);
+        btn->setText(text);
+        btn->setCheckable(true);
+        btn->setChecked((m_track_event_mask_ui & flag) != 0);
+        btn->setToolTip(QString("%1\nRight-click: solo this event type").arg(tooltip));
+        btn->setAutoRaise(false);
+        btn->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        btn->setFixedSize(15, 15);
+        QFont f = btn->font();
+        f.setFamily("IBM Plex Mono");
+        f.setPixelSize(9);
+        f.setBold(true);
+        btn->setFont(f);
+        btn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        btn->setProperty("trackMetaFilter", true);
+        btn->setProperty("trackEventFlag", static_cast<qulonglong>(flag));
+        button_row_layout->addWidget(btn, 0, col);
+        m_track_event_filter_buttons.append(btn);
+        connect(btn, &QToolButton::toggled, this, [this](bool) {
+            applyTrackMetaMaskFromUi();
+        });
+        btn->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(btn, &QToolButton::customContextMenuRequested, this, [this, btn](const QPoint &) {
+            for (auto *other : m_track_event_filter_buttons) {
+                if (!other) continue;
+                const QSignalBlocker blocker(other);
+                other->setChecked(other == btn);
+            }
+            applyTrackMetaMaskFromUi();
+        });
+    };
+
+    // 1x6 compact row
+    addFilterButton(0, "P", TrackEventView_Program, "Program change markers");
+    addFilterButton(1, "V", TrackEventView_Volume, "Volume controller (CC7)");
+    addFilterButton(2, "E", TrackEventView_Expression, "Expression controller (CC11)");
+    addFilterButton(3, "N", TrackEventView_Pan, "Pan controller (CC10)");
+    addFilterButton(4, "B", TrackEventView_Pitch, "Pitch bend");
+    addFilterButton(5, "C", TrackEventView_ControlOther, "Other controller events");
+
+    connect(m_track_event_preset_combo, &QComboBox::currentIndexChanged, this, [this](int idx) {
+        TrackEventViewMask preset_mask = presetMaskForIndex(idx);
+        if (preset_mask == 0) return;
+        for (auto *btn : m_track_event_filter_buttons) {
+            if (!btn) continue;
+            const TrackEventViewMask flag = static_cast<TrackEventViewMask>(btn->property("trackEventFlag").toULongLong());
+            const QSignalBlocker blocker(btn);
+            btn->setChecked((preset_mask & flag) != 0);
+        }
+        m_track_event_mask_ui = preset_mask;
+        if (m_controller) {
+            m_controller->setTrackEventPreset(idx);
+        }
+    });
+
+    applyTrackMetaMaskFromUi();
+}
+
+void MainWindow::applyTrackMetaMaskFromUi() {
+    if (m_track_event_filter_buttons.isEmpty()) return;
+
+    TrackEventViewMask mask = 0;
+    for (auto *btn : m_track_event_filter_buttons) {
+        if (!btn) continue;
+        if (!btn->isChecked()) continue;
+        mask |= static_cast<TrackEventViewMask>(btn->property("trackEventFlag").toULongLong());
+    }
+
+    // Keep at least one filter active.
+    if (mask == 0) {
+        mask = kTrackEventView_All;
+        for (auto *btn : m_track_event_filter_buttons) {
+            if (!btn) continue;
+            const QSignalBlocker blocker(btn);
+            btn->setChecked(true);
+        }
+    }
+
+    m_track_event_mask_ui = mask;
+    if (m_track_event_preset_combo) {
+        const int preset_idx = presetIndexForMask(mask);
+        const QSignalBlocker blocker(m_track_event_preset_combo);
+        m_track_event_preset_combo->setCurrentIndex(preset_idx);
+    }
+    if (m_controller) {
+        m_controller->setTrackEventViewMask(static_cast<uint32_t>(mask));
+    }
 }
 
 void MainWindow::syncSongListSelectionToOpenSong(bool scroll_to_center) {

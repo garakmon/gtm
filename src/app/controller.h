@@ -6,6 +6,7 @@
 #include <QPointer>
 #include <QTimer>
 #include <QElapsedTimer>
+#include <cstdint>
 
 #include "project.h"
 #include "projectinterface.h"
@@ -59,6 +60,8 @@ public:
     void setMinimap(MinimapWidget *minimap);
     void setMasterMeter(MasterMeterWidget *meter);
     void setMasterVolume(int value);
+    void setTrackEventViewMask(uint32_t mask);
+    void setTrackEventPreset(int preset_index);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;

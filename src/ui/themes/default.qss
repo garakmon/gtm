@@ -144,6 +144,45 @@ QFrame#frame_radioWrap {
     background: transparent;
     border: 0px;
 }
+
+QFrame#frame_TrackMetaControls {
+    background: {panel_alt};
+    border: 1px solid {border};
+    border-radius: 4px;
+}
+QFrame#frame_TrackMetaControls QComboBox {
+    background: {panel};
+    border: 1px solid {border};
+    border-radius: 3px;
+    padding: 0px 4px;
+    color: {text_primary};
+    font: 8pt "IBM Plex Mono";
+}
+QFrame#frame_TrackMetaControls QToolButton[trackMetaFilter="true"] {
+    background: {panel};
+    border: 1px solid {border};
+    border-radius: 2px;
+    color: {text_secondary};
+    padding: 0px;
+}
+QFrame#frame_TrackMetaControls QToolButton[trackMetaFilter="true"]:hover {
+    background: {accent_hover};
+    color: {text_primary};
+}
+QFrame#frame_TrackMetaControls QToolButton[trackMetaFilter="true"]:checked:hover {
+    background: {accent_active};
+    border-color: {accent};
+    color: {text_primary};
+}
+QFrame#frame_TrackMetaControls QToolButton[trackMetaFilter="true"]:pressed {
+    background: {accent_active};
+    color: {text_primary};
+}
+QFrame#frame_TrackMetaControls QToolButton[trackMetaFilter="true"]:checked {
+    background: {accent};
+    border-color: {accent_active};
+    color: {bg};
+}
 QFrame#frame_MetaDisplay QLabel {
     color: {text_secondary};
     background: transparent;

@@ -31,6 +31,12 @@ extern QColor ui_meta_event_timesignature;
 extern QColor ui_meta_event_tempo;
 extern QColor ui_meta_event_keysignature;
 extern QColor ui_meta_event_marker;
+extern QColor ui_event_program;
+extern QColor ui_event_volume;
+extern QColor ui_event_pan;
+extern QColor ui_event_expression;
+extern QColor ui_event_pitch;
+extern QColor ui_event_control_other;
 
 void applyThemeColors(const ThemePalette &palette);
 

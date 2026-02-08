@@ -46,6 +46,12 @@ static ThemePalette defaultPalette() {
     p.meta_tempo = "#00ffff";
     p.meta_keysignature = "#1a1a1a";
     p.meta_marker = "#ffff00";
+    p.event_program = "#66d9ef";
+    p.event_volume = "#a6e22e";
+    p.event_pan = "#fd971f";
+    p.event_expression = "#e6db74";
+    p.event_pitch = "#f92672";
+    p.event_control_other = "#b6b6ad";
     return p;
 }
 

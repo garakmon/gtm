@@ -41,6 +41,10 @@ const int ui_piano_key_black_width = 60;
 const int ui_track_item_height = 30;
 const int ui_track_item_width = 98;
 
+const int ui_automation_lane_height = 18;
+const int ui_automation_lane_count = 4;  // Volume, Expression, Pan, Pitch Bend
+const int ui_automation_total_height = ui_automation_lane_count * ui_automation_lane_height;
+
 const int ui_tick_x_scale = 2;
 
 const int ui_measure_info_height = 30;
