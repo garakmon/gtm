@@ -64,7 +64,8 @@ void TrackRoll::drawTracks() {
         // Pass initial channel state for step graph data
         int ch = display_row < 16 ? display_row : 0;
         auto *manager = new GraphicsTrackRollManager(track, track_item,
-            states[ch].volume, states[ch].pan, states[ch].expression, states[ch].pitch_bend);
+            states[ch].volume, states[ch].pan, states[ch].expression, states[ch].pitch_bend,
+            m_song_voicegroup, m_all_voicegroups, m_keysplit_tables);
         manager->setEventViewMask(m_event_view_mask);
         this->m_scene_roll.addItem(manager);
         m_roll_managers[display_row] = manager;
@@ -174,6 +175,14 @@ void TrackRoll::setEventPreset(TrackEventPreset preset) {
     if (preset == TrackEventPreset::Custom) return;
     const TrackEventViewMask mask = presetToMask(preset);
     setEventViewMask(mask);
+}
+
+void TrackRoll::setInstrumentContext(const VoiceGroup *song_voicegroup,
+                                     const QMap<QString, VoiceGroup> *all_voicegroups,
+                                     const QMap<QString, KeysplitTable> *keysplit_tables) {
+    m_song_voicegroup = song_voicegroup;
+    m_all_voicegroups = all_voicegroups;
+    m_keysplit_tables = keysplit_tables;
 }
 
 void TrackRoll::relayout() {

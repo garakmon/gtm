@@ -59,6 +59,9 @@ public:
     TrackEventViewMask eventViewMask() const { return m_event_view_mask; }
     void setEventPreset(TrackEventPreset preset);
     TrackEventPreset eventPreset() const { return m_event_preset; }
+    void setInstrumentContext(const VoiceGroup *song_voicegroup,
+                              const QMap<QString, VoiceGroup> *all_voicegroups,
+                              const QMap<QString, KeysplitTable> *keysplit_tables);
 
 signals:
     void trackMuteToggled(int channel, bool muted);
@@ -85,6 +88,9 @@ private:
     int m_expanded_row = -1;
     TrackEventViewMask m_event_view_mask = kTrackEventView_All;
     TrackEventPreset m_event_preset = TrackEventPreset::All;
+    const VoiceGroup *m_song_voicegroup = nullptr;
+    const QMap<QString, VoiceGroup> *m_all_voicegroups = nullptr;
+    const QMap<QString, KeysplitTable> *m_keysplit_tables = nullptr;
 };
 
 

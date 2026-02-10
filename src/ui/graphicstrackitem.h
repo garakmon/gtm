@@ -33,6 +33,9 @@ constexpr TrackEventViewMask kTrackEventView_All =
 
 class GraphicsTrackMeterItem;
 class GraphicsTrackButtonItem;
+struct VoiceGroup;
+struct KeysplitTable;
+struct Instrument;
 
 
 class GraphicsScoreItem;
@@ -118,7 +121,10 @@ public:
         ControlOther
     };
 
-    GraphicsTrackMetaEventItem(smf::MidiEvent *event, GraphicsTrackItem *parent_track);
+    GraphicsTrackMetaEventItem(smf::MidiEvent *event, GraphicsTrackItem *parent_track,
+                               const VoiceGroup *song_voicegroup = nullptr,
+                               const QMap<QString, VoiceGroup> *all_voicegroups = nullptr,
+                               const QMap<QString, KeysplitTable> *keysplit_tables = nullptr);
 
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
@@ -138,9 +144,15 @@ private:
     static EventType detectType(const smf::MidiEvent *event);
     QColor eventColor() const;
     QString hoverText() const;
+    QString buildProgramHoverText() const;
+    const Instrument *resolveInstrument(const Instrument *inst, uint8_t key) const;
 
     GraphicsTrackItem *m_parent_track = nullptr;
     smf::MidiEvent *m_event = nullptr;
+    const VoiceGroup *m_song_voicegroup = nullptr;
+    const QMap<QString, VoiceGroup> *m_all_voicegroups = nullptr;
+    const QMap<QString, KeysplitTable> *m_keysplit_tables = nullptr;
+    QString m_program_hover_text;
     EventType m_type = EventType::ControlOther;
     bool m_hovered = false;
     int m_bucket_count = 1;
@@ -158,7 +170,10 @@ public:
     struct CCPoint { int tick; int value; };
 
     GraphicsTrackRollManager(smf::MidiEventList *event_list, GraphicsTrackItem *parent_track,
-                             int initial_vol, int initial_pan, int initial_expr, int initial_bend);
+                             int initial_vol, int initial_pan, int initial_expr, int initial_bend,
+                             const VoiceGroup *song_voicegroup = nullptr,
+                             const QMap<QString, VoiceGroup> *all_voicegroups = nullptr,
+                             const QMap<QString, KeysplitTable> *keysplit_tables = nullptr);
 
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
@@ -186,6 +201,9 @@ private:
     QVector<CCPoint> m_cc_expression;
     QVector<CCPoint> m_cc_pan;
     QVector<CCPoint> m_cc_pitch;
+    const VoiceGroup *m_song_voicegroup = nullptr;
+    const QMap<QString, VoiceGroup> *m_all_voicegroups = nullptr;
+    const QMap<QString, KeysplitTable> *m_keysplit_tables = nullptr;
 };
 
 #endif // GRAPHICSTRACKITEM_H

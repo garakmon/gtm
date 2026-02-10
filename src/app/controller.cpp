@@ -573,6 +573,12 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
     this->m_song = song;
     m_song_duration_ticks = m_song ? m_song->durationInTicks() : 0;
 
+    if (m_track_roll && m_project && m_song) {
+        const SongEntry &meta = m_song->getMetaInfo();
+        const VoiceGroup *song_vg = m_project->getVoiceGroup(meta.voicegroup);
+        m_track_roll->setInstrumentContext(song_vg, &m_project->getVoiceGroups(), &m_project->getKeysplitTables());
+    }
+
     this->m_track_roll->setSong(song);
     this->m_piano_roll->setSong(song);
     this->m_measure_roll->setSong(song);

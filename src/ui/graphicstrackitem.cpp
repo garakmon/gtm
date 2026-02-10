@@ -14,6 +14,7 @@
 #include "trackbuttonitem.h"
 #include "MidiEventList.h"
 #include "MidiEvent.h"
+#include "soundtypes.h"
 
 namespace {
 TrackEventViewMask viewFlagForType(GraphicsTrackMetaEventItem::EventType type) {
@@ -26,6 +27,39 @@ TrackEventViewMask viewFlagForType(GraphicsTrackMetaEventItem::EventType type) {
     case GraphicsTrackMetaEventItem::EventType::ControlOther:
     default:
         return TrackEventView_ControlOther;
+    }
+}
+
+QString instrumentTypeAbbrev(const Instrument *inst) {
+    if (!inst) return "-";
+
+    static const QMap<int, QString> baseType = {
+        {0x00, "PCM"}, {0x08, "PCM"}, {0x10, "PCM"},
+        {0x03, "Wave"}, {0x0B, "Wave"},
+    };
+    static const QMap<int, QString> dutyMap = {
+        {0, "12"}, {1, "25"}, {2, "50"}, {3, "75"}
+    };
+
+    if (baseType.contains(inst->type_id)) {
+        return baseType.value(inst->type_id);
+    }
+    switch (inst->type_id) {
+    case 0x01:
+    case 0x09:
+        return QString("Sq.%1S").arg(dutyMap.value(inst->duty_cycle & 0x03, "50"));
+    case 0x02:
+    case 0x0A:
+        return QString("Sq.%1").arg(dutyMap.value(inst->duty_cycle & 0x03, "50"));
+    case 0x04:
+    case 0x0C:
+        return (inst->duty_cycle & 0x1) ? "Ns.7" : "Ns.15";
+    case 0x40:
+        return "Split";
+    case 0x80:
+        return "Drum";
+    default:
+        return "-";
     }
 }
 } // namespace
@@ -260,11 +294,20 @@ int GraphicsTrackItem::totalHeight() const {
 
 
 
-GraphicsTrackMetaEventItem::GraphicsTrackMetaEventItem(smf::MidiEvent *event, GraphicsTrackItem *parent_track)
+GraphicsTrackMetaEventItem::GraphicsTrackMetaEventItem(smf::MidiEvent *event, GraphicsTrackItem *parent_track,
+                                                       const VoiceGroup *song_voicegroup,
+                                                       const QMap<QString, VoiceGroup> *all_voicegroups,
+                                                       const QMap<QString, KeysplitTable> *keysplit_tables)
   : QGraphicsItem(parent_track) {
     this->m_parent_track = parent_track;
     this->m_event = event;
+    this->m_song_voicegroup = song_voicegroup;
+    this->m_all_voicegroups = all_voicegroups;
+    this->m_keysplit_tables = keysplit_tables;
     m_type = detectType(event);
+    if (m_type == EventType::Program) {
+        m_program_hover_text = buildProgramHoverText();
+    }
 
     setAcceptHoverEvents(true);
     setAcceptedMouseButtons(Qt::LeftButton);
@@ -275,16 +318,24 @@ GraphicsTrackMetaEventItem::GraphicsTrackMetaEventItem(smf::MidiEvent *event, Gr
 }
 
 QRectF GraphicsTrackMetaEventItem::boundingRect() const {
+    QFont hover_font("IBM Plex Mono", 0);
+    hover_font.setPixelSize(9);
+    hover_font.setStyleHint(QFont::TypeWriter);
+    hover_font.setFixedPitch(true);
+    const QFontMetrics hover_fm(hover_font);
+    const int text_w = qMax(0, hover_fm.horizontalAdvance(hoverText()) + 18);
+    const qreal width = qMax<qreal>(84.0, static_cast<qreal>(text_w));
+
     if (m_type == EventType::Program) {
         // Full-height vertical line from top of track to bottom
         int track_h = ui_track_item_height;
         if (m_parent_track && m_parent_track->isExpanded())
             track_h = m_parent_track->totalHeight();
         qreal line_top = -(ui_track_item_height - 3.0);
-        return QRectF(-6.0, line_top, 84.0, track_h + 6.0);
+        return QRectF(-6.0, line_top, width, track_h + 6.0);
     }
     // Keep a generous local rect for hover chip and minimum hit target.
-    return QRectF(-6.0, -20.0, 84.0, 32.0);
+    return QRectF(-6.0, -20.0, width, 32.0);
 }
 
 QPainterPath GraphicsTrackMetaEventItem::shape() const {
@@ -322,6 +373,9 @@ QColor GraphicsTrackMetaEventItem::eventColor() const {
 
 QString GraphicsTrackMetaEventItem::hoverText() const {
     if (!m_event) return QString();
+    if (m_type == EventType::Program && !m_program_hover_text.isEmpty()) {
+        return m_program_hover_text;
+    }
     if (m_event->isPatchChange()) {
         return QString("Prog %1").arg(m_event->getP1());
     }
@@ -338,6 +392,76 @@ QString GraphicsTrackMetaEventItem::hoverText() const {
         return QString("Bend %1").arg(bend - 8192);
     }
     return QString();
+}
+
+const Instrument *GraphicsTrackMetaEventItem::resolveInstrument(const Instrument *inst, uint8_t key) const {
+    if (!inst || !m_all_voicegroups) return inst;
+
+    if (inst->type_id == 0x40) { // voice_keysplit
+        auto vg_it = m_all_voicegroups->find(inst->sample_label);
+        if (vg_it == m_all_voicegroups->end()) return nullptr;
+
+        int inst_index = 0;
+        if (m_keysplit_tables && !inst->keysplit_table.isEmpty()) {
+            auto table_it = m_keysplit_tables->find(inst->keysplit_table);
+            if (table_it != m_keysplit_tables->end()) {
+                const KeysplitTable &table = table_it.value();
+                auto note_it = table.note_map.find(key);
+                if (note_it != table.note_map.end()) {
+                    inst_index = note_it.value();
+                } else {
+                    for (auto it = table.note_map.begin(); it != table.note_map.end(); ++it) {
+                        if (it.key() <= key) {
+                            inst_index = it.value();
+                        }
+                    }
+                }
+            }
+        }
+
+        const VoiceGroup &split_vg = vg_it.value();
+        if (inst_index < 0 || inst_index >= split_vg.instruments.size()) return nullptr;
+        return resolveInstrument(&split_vg.instruments[inst_index], key);
+    }
+
+    if (inst->type_id == 0x80) { // voice_keysplit_all
+        auto it = m_all_voicegroups->find(inst->sample_label);
+        if (it == m_all_voicegroups->end()) return nullptr;
+        const VoiceGroup &drum_vg = it.value();
+        const int drum_index = key - drum_vg.offset;
+        if (drum_index < 0 || drum_index >= drum_vg.instruments.size()) return nullptr;
+        return resolveInstrument(&drum_vg.instruments[drum_index], key);
+    }
+
+    return inst;
+}
+
+QString GraphicsTrackMetaEventItem::buildProgramHoverText() const {
+    if (!m_event) return QString();
+    const int program = m_event->getP1();
+    if (!m_song_voicegroup) {
+        return QString("Prog %1").arg(program);
+    }
+    if (program < 0 || program >= m_song_voicegroup->instruments.size()) {
+        return QString("Prog %1").arg(program);
+    }
+
+    const Instrument *inst = &m_song_voicegroup->instruments[program];
+    const Instrument *resolved = resolveInstrument(inst, static_cast<uint8_t>(inst->base_key));
+    const Instrument *display = resolved ? resolved : inst;
+
+    const QString type = instrumentTypeAbbrev(display);
+    QString source;
+    if (display->type_id == 0x40 || display->type_id == 0x80) {
+        source = display->sample_label;
+    } else if (!display->sample_label.isEmpty()) {
+        source = display->sample_label;
+    }
+
+    if (!source.isEmpty()) {
+        return QString("P%1 %2 %3").arg(program).arg(type).arg(source);
+    }
+    return QString("P%1 %2").arg(program).arg(type);
 }
 
 void GraphicsTrackMetaEventItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
@@ -374,6 +498,8 @@ void GraphicsTrackMetaEventItem::paint(QPainter *painter, const QStyleOptionGrap
         QString label = QString("P%1").arg(m_event ? m_event->getP1() : 0);
         QFont f("IBM Plex Mono", 0);
         f.setPixelSize(7);
+        f.setStyleHint(QFont::TypeWriter);
+        f.setFixedPitch(true);
         painter->setFont(f);
         QFontMetrics fm(f);
         int w = fm.horizontalAdvance(label) + 4;
@@ -404,6 +530,8 @@ void GraphicsTrackMetaEventItem::paint(QPainter *painter, const QStyleOptionGrap
         QFont f = painter->font();
         f.setFamily("IBM Plex Mono");
         f.setPixelSize(8);
+        f.setStyleHint(QFont::TypeWriter);
+        f.setFixedPitch(true);
         painter->setFont(f);
         const QFontMetrics fm(f);
         const int w = fm.horizontalAdvance(badge) + 6;
@@ -421,6 +549,8 @@ void GraphicsTrackMetaEventItem::paint(QPainter *painter, const QStyleOptionGrap
             QFont f = painter->font();
             f.setFamily("IBM Plex Mono");
             f.setPixelSize(9);
+            f.setStyleHint(QFont::TypeWriter);
+            f.setFixedPitch(true);
             painter->setFont(f);
             const QFontMetrics fm(f);
             const int w = fm.horizontalAdvance(text) + 8;
@@ -466,10 +596,16 @@ void GraphicsTrackMetaEventItem::mousePressEvent(QGraphicsSceneMouseEvent *event
 
 GraphicsTrackRollManager::GraphicsTrackRollManager(
     smf::MidiEventList *event_list, GraphicsTrackItem *parent_track,
-    int initial_vol, int initial_pan, int initial_expr, int initial_bend)
+    int initial_vol, int initial_pan, int initial_expr, int initial_bend,
+    const VoiceGroup *song_voicegroup,
+    const QMap<QString, VoiceGroup> *all_voicegroups,
+    const QMap<QString, KeysplitTable> *keysplit_tables)
   : QGraphicsItem(parent_track) {
     this->m_parent_track = parent_track;
     this->m_event_list = event_list;
+    this->m_song_voicegroup = song_voicegroup;
+    this->m_all_voicegroups = all_voicegroups;
+    this->m_keysplit_tables = keysplit_tables;
     setZValue(0.5);
     if (m_parent_track) {
         setPos(0.0, ui_track_item_height * m_parent_track->row());
@@ -493,7 +629,10 @@ GraphicsTrackRollManager::GraphicsTrackRollManager(
         }
 
         if (event->isPatchChange() || event->isController() || event->isPitchbend()) {
-            auto *item = new GraphicsTrackMetaEventItem(event, parent_track);
+            auto *item = new GraphicsTrackMetaEventItem(event, parent_track,
+                                                        m_song_voicegroup,
+                                                        m_all_voicegroups,
+                                                        m_keysplit_tables);
             item->setParentItem(this);
             const int lane = laneForType(item->eventType());
             item->setLane(lane);
