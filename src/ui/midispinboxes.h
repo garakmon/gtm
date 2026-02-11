@@ -1,3 +1,4 @@
+#pragma once
 #ifndef MIDIKEYSPINBOX_H
 #define MIDIKEYSPINBOX_H
 

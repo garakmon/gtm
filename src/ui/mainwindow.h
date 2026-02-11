@@ -1,32 +1,29 @@
+#pragma once
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
-#include <QGraphicsScene>
-#include <QFileDialog>
-#include <QCloseEvent>
-#include <QVector>
 #include <memory>
-class QSortFilterProxyModel;
-class QToolButton;
-class QComboBox;
+#include <QCloseEvent>
+#include <QMainWindow>
+#include <QPointer>
+#include <QVector>
 
-#include "../app/project.h"
-#include "../app/controller.h"
-#include "graphicstrackitem.h"
-#include "../util/gtmconfig.h"
-
-
+#include "ui/graphicstrackitem.h"
+#include "util/gtmconfig.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
+class Controller;
 class PianoRoll;
 class TrackRoll;
 class PreviewSoundWindow;
 class MinimapWidget;
 class MasterMeterWidget;
+class QComboBox;
+class QSortFilterProxyModel;
+class QToolButton;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -36,7 +33,7 @@ public:
     ~MainWindow();
     void setRecentSongTitle(const QString &title);
 
-friend class Controller;
+    friend class Controller;
 private:
     Ui::MainWindow *ui;
 

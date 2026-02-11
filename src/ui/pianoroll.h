@@ -1,12 +1,14 @@
 #pragma once
+#ifndef PIANOROLL_H
+#define PIANOROLL_H
 
-#include <QObject>
-#include <QGraphicsScene>
-#include <QGraphicsPixmapItem>
-#include <QMap>
 #include <memory>
+#include <QGraphicsPixmapItem>
+#include <QGraphicsScene>
+#include <QMap>
+#include <QObject>
 
-#include "graphicspianokeyitem.h"
+#include "ui/graphicspianokeyitem.h"
 
 
 
@@ -103,3 +105,5 @@ private:
     QMap<int, TrackNoteGroup *> m_track_note_groups;
     bool m_edits_enabled = true;
 };
+
+#endif // PIANOROLL_H

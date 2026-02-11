@@ -3,11 +3,12 @@
 #include <QColor>
 #include <QIcon>
 
-#include "../app/project.h"
+#include "app/project.h"
 
 
 
 int SongListModel::rowCount(const QModelIndex &parent) const {
+    Q_UNUSED(parent);
     return this->m_project->getNumSongsInTable();
 }
 
@@ -81,9 +82,9 @@ Qt::ItemFlags SongListModel::flags(const QModelIndex &index) const {
 }
 
 void SongListModel::refreshAll() {
-    const int rows = rowCount();
+    const int rows = this->rowCount();
     if (rows <= 0) return;
-    const QModelIndex first = index(0, 0);
-    const QModelIndex last = index(rows - 1, 0);
+    const QModelIndex first = this->index(0, 0);
+    const QModelIndex last = this->index(rows - 1, 0);
     emit dataChanged(first, last, {Qt::DecorationRole});
 }

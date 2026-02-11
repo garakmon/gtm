@@ -33,24 +33,24 @@ TrackEventViewMask viewFlagForType(GraphicsTrackMetaEventItem::EventType type) {
 QString instrumentTypeAbbrev(const Instrument *inst) {
     if (!inst) return "-";
 
-    static const QMap<int, QString> baseType = {
+    static const QMap<int, QString> s_base_type = {
         {0x00, "PCM"}, {0x08, "PCM"}, {0x10, "PCM"},
         {0x03, "Wave"}, {0x0B, "Wave"},
     };
-    static const QMap<int, QString> dutyMap = {
+    static const QMap<int, QString> s_duty_map = {
         {0, "12"}, {1, "25"}, {2, "50"}, {3, "75"}
     };
 
-    if (baseType.contains(inst->type_id)) {
-        return baseType.value(inst->type_id);
+    if (s_base_type.contains(inst->type_id)) {
+        return s_base_type.value(inst->type_id);
     }
     switch (inst->type_id) {
     case 0x01:
     case 0x09:
-        return QString("Sq.%1S").arg(dutyMap.value(inst->duty_cycle & 0x03, "50"));
+        return QString("Sq.%1S").arg(s_duty_map.value(inst->duty_cycle & 0x03, "50"));
     case 0x02:
     case 0x0A:
-        return QString("Sq.%1").arg(dutyMap.value(inst->duty_cycle & 0x03, "50"));
+        return QString("Sq.%1").arg(s_duty_map.value(inst->duty_cycle & 0x03, "50"));
     case 0x04:
     case 0x0C:
         return (inst->duty_cycle & 0x1) ? "Ns.7" : "Ns.15";

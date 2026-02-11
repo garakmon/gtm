@@ -1,32 +1,32 @@
 #include "controller.h"
 
-#include <QMouseEvent>
-#include <QWheelEvent>
-#include <QFrame>
-#include <QGraphicsView>
-#include <QScrollBar>
-#include <QMessageBox>
-#include <QLabel>
-#include <limits>
 #include <algorithm>
 #include <cmath>
-#include <cmath>
+#include <limits>
 
-#include "../ui/ui_mainwindow.h"
-#include "mainwindow.h"
-#include "pianoroll.h"
-#include "trackroll.h"
-#include "measureroll.h"
-#include "constants.h"
-#include "colors.h"
-#include "util.h"
-#include "song.h"
+#include <QFrame>
+#include <QGraphicsView>
+#include <QLabel>
+#include <QMessageBox>
+#include <QMouseEvent>
+#include <QScrollBar>
+#include <QWheelEvent>
+
+#include "app/project.h"
+#include "app/projectinterface.h"
+#include "ui/songlistmodel.h"
 #include "MidiEvent.h"
-#include "project.h"
-#include "projectinterface.h"
-#include "songlistmodel.h"
-#include "minimapwidget.h"
-#include "meters.h"
+#include "sound/song.h"
+#include "ui/colors.h"
+#include "ui/mainwindow.h"
+#include "ui/measureroll.h"
+#include "ui/meters.h"
+#include "ui/minimapwidget.h"
+#include "ui/pianoroll.h"
+#include "ui/trackroll.h"
+#include "ui_mainwindow.h"
+#include "util/constants.h"
+#include "util/util.h"
 
 namespace {
 uint8_t programForEvent(const Song *song, const smf::MidiEvent *event) {
@@ -100,20 +100,20 @@ const Instrument *resolveInstrumentForEvent(const Instrument *inst,
 QString playbackTypeAbbrev(const Instrument *inst) {
     if (!inst) return "-";
 
-    static const QMap<int, QString> baseType = {
+    static const QMap<int, QString> s_base_type = {
         {0x00, "PCM"}, {0x08, "PCM"}, {0x10, "PCM"},
         {0x03, "Wave"}, {0x0B, "Wave"},
     };
-    static const QMap<int, QString> dutyMap = {
+    static const QMap<int, QString> s_duty_map = {
         {0, "12"}, {1, "25"}, {2, "50"}, {3, "75"}
     };
 
     const int type_id = inst->type_id;
-    if (baseType.contains(type_id)) {
-        return baseType.value(type_id);
+    if (s_base_type.contains(type_id)) {
+        return s_base_type.value(type_id);
     }
 
-    const QString duty = dutyMap.value(inst->duty_cycle & 0x03, "50");
+    const QString duty = s_duty_map.value(inst->duty_cycle & 0x03, "50");
 
     switch (type_id) {
     case 0x01: // Square1 (sweep)

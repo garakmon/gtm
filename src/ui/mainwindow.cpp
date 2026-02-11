@@ -1,36 +1,38 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include <QGraphicsEllipseItem>
-#include <QStandardPaths>
-#include <QLoggingCategory>
+#include <limits>
+
+#include <QButtonGroup>
+#include <QComboBox>
 #include <QDebug>
 #include <QDir>
+#include <QFileDialog>
+#include <QFontDatabase>
+#include <QFontMetrics>
+#include <QGraphicsEllipseItem>
 #include <QGridLayout>
 #include <QHBoxLayout>
-#include <QSlider>
-#include <QFontMetrics>
-#include <QSplitter>
-#include <QFontDatabase>
-#include <QButtonGroup>
-#include <QSortFilterProxyModel>
+#include <QLoggingCategory>
 #include <QRegularExpression>
-#include <QToolButton>
 #include <QSignalBlocker>
-#include <QComboBox>
+#include <QSlider>
+#include <QSortFilterProxyModel>
+#include <QSplitter>
+#include <QToolButton>
 #include <QVBoxLayout>
 
-#include "constants.h"
-#include "colors.h"
-#include "theme.h"
-#include "minimapwidget.h"
-#include "meters.h"
-#include "pianoroll.h"
-#include "trackroll.h"
-#include "graphicstrackitem.h"
-#include "previewsoundwindow.h"
-#include <limits>
-#include "customwidgets.h"
+#include "app/controller.h"
+#include "ui/colors.h"
+#include "ui/customwidgets.h"
+#include "ui/graphicstrackitem.h"
+#include "ui/meters.h"
+#include "ui/minimapwidget.h"
+#include "ui/pianoroll.h"
+#include "ui/previewsoundwindow.h"
+#include "ui/trackroll.h"
+#include "util/constants.h"
+#include "util/theme.h"
 
 namespace {
 constexpr int kPresetAll = 0;
@@ -84,7 +86,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     }
 
     // TODO: temp
-    loadProject();
+    this->loadProject();
     //loadSong();
 }
 
@@ -126,10 +128,10 @@ void MainWindow::setupUi() {
 
     m_controller = std::make_unique<Controller>(this);
     connect(m_controller.get(), &Controller::songSelected, this, [this](const QString &title) {
-        setRecentSongTitle(title);
-        syncSongListSelectionToOpenSong(false);
+        this->setRecentSongTitle(title);
+        this->syncSongListSelectionToOpenSong(false);
     });
-    setupTrackMetaControls();
+    this->setupTrackMetaControls();
 
     // Ensure Song/Track/Event groupboxes share vertical space evenly.
     if (ui->verticalLayout_3) {
@@ -219,7 +221,7 @@ void MainWindow::setupUi() {
             if (!m_song_filter) return;
             if (text.trimmed().isEmpty()) {
                 m_song_filter->setFilterRegularExpression(QRegularExpression());
-                syncSongListSelectionToOpenSong(true);
+                this->syncSongListSelectionToOpenSong(true);
                 return;
             }
             QRegularExpression re(QRegularExpression::escape(text), QRegularExpression::CaseInsensitiveOption);
@@ -418,7 +420,7 @@ void MainWindow::setupTrackMetaControls() {
         button_row_layout->addWidget(btn, 0, col);
         m_track_event_filter_buttons.append(btn);
         connect(btn, &QToolButton::toggled, this, [this](bool) {
-            applyTrackMetaMaskFromUi();
+            this->applyTrackMetaMaskFromUi();
         });
         btn->setContextMenuPolicy(Qt::CustomContextMenu);
         connect(btn, &QToolButton::customContextMenuRequested, this, [this, btn](const QPoint &) {
@@ -427,7 +429,7 @@ void MainWindow::setupTrackMetaControls() {
                 const QSignalBlocker blocker(other);
                 other->setChecked(other == btn);
             }
-            applyTrackMetaMaskFromUi();
+            this->applyTrackMetaMaskFromUi();
         });
     };
 
@@ -454,7 +456,7 @@ void MainWindow::setupTrackMetaControls() {
         }
     });
 
-    applyTrackMetaMaskFromUi();
+    this->applyTrackMetaMaskFromUi();
 }
 
 void MainWindow::applyTrackMetaMaskFromUi() {
