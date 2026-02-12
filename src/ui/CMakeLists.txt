@@ -29,7 +29,10 @@ target_link_libraries(gtm-ui PUBLIC
     Qt6::Svg
 )
 
-target_include_directories(gtm-ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(gtm-ui PUBLIC
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
 # CMAKE_CURRENT_SOURCE_DIR
 #target_include_directories(gtm-ui PUBLIC ${CMAKE_SOURCE_DIR}/src/ui)
 

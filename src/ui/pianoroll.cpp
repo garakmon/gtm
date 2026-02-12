@@ -1,4 +1,4 @@
-#include "pianoroll.h"
+#include "ui/pianoroll.h"
 
 #include <QGraphicsView>
 #include <QGraphicsLineItem>
@@ -8,11 +8,11 @@
 #include <QPainter>
 #include <cmath>
 
-#include "graphicsscorenoteitem.h"
-#include "song.h"
-#include "constants.h"
-#include "colors.h"
-#include "util.h"
+#include "ui/graphicsscorenoteitem.h"
+#include "sound/song.h"
+#include "util/constants.h"
+#include "ui/colors.h"
+#include "util/util.h"
 
 
 

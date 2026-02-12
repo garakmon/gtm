@@ -5,7 +5,7 @@
 #include <QString>
 #include <QVector>
 
-#include "constants.h"
+#include "util/constants.h"
 
 struct ThemePalette {
     QString bg;

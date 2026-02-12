@@ -7,7 +7,7 @@
 #include <QMap>
 #include <memory>
 
-#include "graphicstrackitem.h"
+#include "ui/graphicstrackitem.h"
 
 
 class Song;

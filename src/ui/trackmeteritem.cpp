@@ -1,4 +1,4 @@
-#include "trackmeteritem.h"
+#include "ui/trackmeteritem.h"
 
 #include <QPainter>
 #include <QtMath>

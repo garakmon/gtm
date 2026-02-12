@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "MidiFile.h"
-#include "soundtypes.h"
+#include "sound/soundtypes.h"
 
 
 

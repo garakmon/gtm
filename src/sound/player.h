@@ -6,8 +6,8 @@ extern "C" {
     #include "portaudio.h"
 }
 
-#include "mixer.h"
-#include "sequencer.h"
+#include "sound/mixer.h"
+#include "sound/sequencer.h"
 
 class Song;
 

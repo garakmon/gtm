@@ -1,11 +1,11 @@
-#include "graphicsmetaeventitem.h"
+#include "ui/graphicsmetaeventitem.h"
 
 #include <cmath>
 #include <QPainter>
 #include <QGraphicsSceneMouseEvent>
 
-#include "constants.h"
-#include "colors.h"
+#include "util/constants.h"
+#include "ui/colors.h"
 #include "MidiEvent.h"
 
 GraphicsMetaEventItem::GraphicsMetaEventItem(smf::MidiEvent *event, MetaType type, QGraphicsItem *parent)

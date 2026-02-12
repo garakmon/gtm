@@ -1,4 +1,4 @@
-#include "meters.h"
+#include "ui/meters.h"
 
 #include <QPainter>
 #include <QSlider>

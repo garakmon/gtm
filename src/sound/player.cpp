@@ -1,5 +1,5 @@
-#include "player.h"
-#include "song.h"
+#include "sound/player.h"
+#include "sound/song.h"
 
 
 

@@ -1,4 +1,4 @@
-#include "projectinterface.h"
+#include "app/projectinterface.h"
 
 #include <QFile>
 #include <QDir>
@@ -6,8 +6,8 @@
 #include <QTextStream>
 #include <QRegularExpression>
 
-#include "project.h"
-#include "soundtypes.h"
+#include "app/project.h"
+#include "sound/soundtypes.h"
 
 
 

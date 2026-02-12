@@ -5,8 +5,8 @@
 #include <QMap>
 #include <memory>
 
-#include "song.h"
-#include "soundtypes.h"
+#include "sound/song.h"
+#include "sound/soundtypes.h"
 
 
 

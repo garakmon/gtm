@@ -1,14 +1,14 @@
-#include "trackroll.h"
+#include "ui/trackroll.h"
 
 #include <QGraphicsView>
 #include <QEvent>
 #include <QWheelEvent>
 
-#include "graphicstrackitem.h"
-#include "song.h"
-#include "constants.h"
-#include "colors.h"
-#include "util.h"
+#include "ui/graphicstrackitem.h"
+#include "sound/song.h"
+#include "util/constants.h"
+#include "ui/colors.h"
+#include "util/util.h"
 
 namespace {
 TrackEventViewMask presetToMask(TrackRoll::TrackEventPreset preset) {

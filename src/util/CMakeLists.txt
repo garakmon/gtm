@@ -11,5 +11,6 @@ target_link_libraries(gtm-util PUBLIC
 )
 
 target_include_directories(gtm-util PUBLIC
+    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}
 )

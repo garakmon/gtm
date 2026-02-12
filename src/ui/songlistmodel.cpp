@@ -1,4 +1,4 @@
-#include "songlistmodel.h"
+#include "ui/songlistmodel.h"
 
 #include <QColor>
 #include <QIcon>

@@ -1,14 +1,14 @@
-#include "minimapwidget.h"
+#include "ui/minimapwidget.h"
 
 #include <QPainter>
 #include <QMouseEvent>
 #include <QScrollBar>
 #include <QGraphicsView>
 
-#include "song.h"
+#include "sound/song.h"
 #include "MidiEvent.h"
-#include "colors.h"
-#include "constants.h"
+#include "ui/colors.h"
+#include "util/constants.h"
 
 MinimapWidget::MinimapWidget(QWidget *parent)
     : QWidget(parent) {

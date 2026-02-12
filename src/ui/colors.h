@@ -4,8 +4,8 @@
 
 #include <QColor>
 
-#include "constants.h"
-#include "theme.h"
+#include "util/constants.h"
+#include "util/theme.h"
 
 
 

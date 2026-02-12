@@ -9,8 +9,8 @@ extern "C" {
 #include <QMap>
 #include <array>
 #include <atomic>
-#include "soundtypes.h"
-#include "constants.h"
+#include "sound/soundtypes.h"
+#include "util/constants.h"
 
 class Mixer {
 public:

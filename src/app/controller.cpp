@@ -1,4 +1,4 @@
-#include "controller.h"
+#include "app/controller.h"
 
 #include <algorithm>
 #include <cmath>
@@ -165,7 +165,7 @@ Controller::Controller(MainWindow *window) : QObject(window) {
 
     this->setupRolls();
     if (window) {
-        setMinimap(window->m_minimap);
+        this->setMinimap(window->m_minimap);
     }
 }
 
@@ -1031,7 +1031,7 @@ void Controller::seekToTick(int tick) {
 }
 
 void Controller::seekToStart() {
-    seekToTick(0);
+    this->seekToTick(0);
 }
 
 int Controller::currentTick() const {
@@ -1110,7 +1110,7 @@ bool Controller::eventFilter(QObject *watched, QEvent *event) {
             if (end_tick <= 0 && m_song) end_tick = m_song->durationInTicks();
             snapped_tick = qBound(0, snapped_tick, end_tick);
 
-            seekToTick(snapped_tick);
+            this->seekToTick(snapped_tick);
             return true;
         }
     }

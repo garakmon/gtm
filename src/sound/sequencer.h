@@ -2,7 +2,7 @@
 #ifndef SEQUENCER_H
 #define SEQUENCER_H
 
-#include "song.h"
+#include "sound/song.h"
 
 class Mixer;
 

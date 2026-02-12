@@ -25,6 +25,7 @@ target_link_libraries(gtm-sound PUBLIC
 )
 
 target_include_directories(gtm-sound INTERFACE
+    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/src/util
     ${CMAKE_SOURCE_DIR}/src/deps/portaudio/include

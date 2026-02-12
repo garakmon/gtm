@@ -1,4 +1,4 @@
-#include "graphicstrackitem.h"
+#include "ui/graphicstrackitem.h"
 
 #include <QPainter>
 #include <QFontMetrics>
@@ -7,14 +7,14 @@
 #include <QGraphicsSceneHoverEvent>
 #include <QStyleOptionGraphicsItem>
 
-#include "graphicsscorenoteitem.h"
-#include "constants.h"
-#include "colors.h"
-#include "trackmeteritem.h"
-#include "trackbuttonitem.h"
+#include "ui/graphicsscorenoteitem.h"
+#include "util/constants.h"
+#include "ui/colors.h"
+#include "ui/trackmeteritem.h"
+#include "ui/trackbuttonitem.h"
 #include "MidiEventList.h"
 #include "MidiEvent.h"
-#include "soundtypes.h"
+#include "sound/soundtypes.h"
 
 namespace {
 TrackEventViewMask viewFlagForType(GraphicsTrackMetaEventItem::EventType type) {

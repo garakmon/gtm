@@ -1,13 +1,13 @@
-#include "graphicsscorenoteitem.h"
+#include "ui/graphicsscorenoteitem.h"
 
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
-#include "colors.h"
-#include "constants.h"
-#include "util.h"
+#include "ui/colors.h"
+#include "util/constants.h"
+#include "util/util.h"
 #include "MidiEvent.h"
-#include "pianoroll.h"
+#include "ui/pianoroll.h"
 
 
 

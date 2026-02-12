@@ -1,10 +1,10 @@
-#include "trackbuttonitem.h"
+#include "ui/trackbuttonitem.h"
 
 #include <QPainter>
 #include <QGraphicsSceneMouseEvent>
 #include <QIcon>
 
-#include "graphicstrackitem.h"
+#include "ui/graphicstrackitem.h"
 
 GraphicsTrackButtonItem::GraphicsTrackButtonItem(Type type, GraphicsTrackItem *owner)
     : QGraphicsItem(owner), m_type(type), m_owner(owner) {

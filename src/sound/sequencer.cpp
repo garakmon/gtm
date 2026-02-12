@@ -1,8 +1,8 @@
 
-#include "sequencer.h"
+#include "sound/sequencer.h"
 
-#include "mixer.h"
-#include "constants.h"
+#include "sound/mixer.h"
+#include "util/constants.h"
 
 #include <cstring>
 #include <cmath>

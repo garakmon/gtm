@@ -1,4 +1,4 @@
-#include "customwidgets.h"
+#include "ui/customwidgets.h"
 
 #include <QFontMetrics>
 #include <QEvent>

@@ -1,4 +1,4 @@
-#include "gtmconfig.h"
+#include "util/gtmconfig.h"
 
 #include <QFile>
 #include <QStandardPaths>

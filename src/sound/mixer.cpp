@@ -1,5 +1,5 @@
 
-#include "mixer.h"
+#include "sound/mixer.h"
 
 #include <cmath>
 #include <algorithm>
@@ -7,26 +7,26 @@
 
 
 // Duty cycle thresholds for square waves (12.5%, 25%, 50%, 75%)
-static const double duty_thresholds[4] = {0.125, 0.25, 0.5, 0.75};
+static const double k_duty_thresholds[4] = {0.125, 0.25, 0.5, 0.75};
 
 // Helper to get voice type abbreviation (agbplay-style, pokeemerald-relevant)
 static QString voiceTypeAbbrev(const Instrument *inst) {
     if (!inst) return "-";
 
-    static const QMap<int, QString> baseType = {
+    static const QMap<int, QString> s_base_type = {
         {0x00, "PCM"}, {0x08, "PCM"}, {0x10, "PCM"},
         {0x03, "Wave"}, {0x0B, "Wave"},
     };
-    static const QMap<int, QString> dutyMap = {
+    static const QMap<int, QString> s_duty_map = {
         {0, "12"}, {1, "25"}, {2, "50"}, {3, "75"}
     };
 
     const int type_id = inst->type_id;
-    if (baseType.contains(type_id)) {
-        return baseType.value(type_id);
+    if (s_base_type.contains(type_id)) {
+        return s_base_type.value(type_id);
     }
 
-    const QString duty = dutyMap.value(inst->duty_cycle & 0x03, "50");
+    const QString duty = s_duty_map.value(inst->duty_cycle & 0x03, "50");
 
     switch (type_id) {
     case 0x01: // Square1 (sweep)
@@ -90,7 +90,7 @@ float Voice::getNextSample(float pitch_bend_multiplier) {
     case 0x02:  // Square2
     case 0x0A:  // Square2 (alt)
         {
-            double threshold = duty_thresholds[duty_cycle & 0x03];
+            double threshold = k_duty_thresholds[duty_cycle & 0x03];
             sample = (phase < threshold) ? 0.5f : -0.5f;
 
             phase += phase_inc * pitch_bend_multiplier;
@@ -600,8 +600,8 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
     }
 
     if (program == 56) {
-        static int dbg_prog56 = 0;
-        if (dbg_prog56++ < 20) {
+        static int s_dbg_prog56 = 0;
+        if (s_dbg_prog56++ < 20) {
             qDebug() << "noteOn prog56 ch" << channel << "key" << key
                      << "base" << base_inst->type << base_inst->sample_label
                      << "keysplit" << base_inst->keysplit_table

@@ -1,4 +1,4 @@
-#include "project.h"
+#include "app/project.h"
 
 #include <QDebug>
 #include <QFile>
@@ -6,7 +6,7 @@
 //#include <sstringstream>
 
 #include "MidiFile.h"
-#include "projectinterface.h"
+#include "app/projectinterface.h"
 
 
 

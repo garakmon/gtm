@@ -1,4 +1,4 @@
-#include "measureroll.h"
+#include "ui/measureroll.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -6,10 +6,10 @@
 #include <QGraphicsLineItem>
 #include <QGraphicsPolygonItem>
 
-#include "colors.h"
-#include "constants.h"
-#include "graphicsmetaeventitem.h"
-#include "song.h"
+#include "ui/colors.h"
+#include "util/constants.h"
+#include "ui/graphicsmetaeventitem.h"
+#include "sound/song.h"
 
 
 
