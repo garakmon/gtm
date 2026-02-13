@@ -4,9 +4,9 @@
 #include <QPainter>
 #include <QGraphicsSceneMouseEvent>
 
-#include "util/constants.h"
 #include "ui/colors.h"
-#include "MidiEvent.h"
+#include "util/constants.h"
+#include "deps/midifile/MidiEvent.h"
 
 GraphicsMetaEventItem::GraphicsMetaEventItem(smf::MidiEvent *event, MetaType type, QGraphicsItem *parent)
     : QGraphicsItem(parent), m_event(event), m_type(type) {

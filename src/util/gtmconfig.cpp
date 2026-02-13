@@ -1,9 +1,10 @@
 #include "util/gtmconfig.h"
 
+#include <QDir>
 #include <QFile>
 #include <QStandardPaths>
-#include <QDir>
-#include "orderedjson.h"
+
+#include "deps/json/orderedjson.h"
 
 QString GtmConfig::fileName() {
     return "gtm.config";

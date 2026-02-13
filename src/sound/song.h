@@ -7,8 +7,8 @@
 #include <QSet>
 #include <memory>
 
-#include "MidiFile.h"
 #include "sound/soundtypes.h"
+#include "deps/midifile/MidiFile.h"
 
 
 

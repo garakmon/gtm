@@ -2,11 +2,11 @@
 #ifndef PROJECTINTERFACE_H
 #define PROJECTINTERFACE_H
 
-#include <QString>
-#include <QDir>
 #include <memory>
+#include <QDir>
+#include <QString>
 
-#include "MidiFile.h"
+#include "deps/midifile/MidiFile.h"
 #include "sound/soundtypes.h"
 
 class Project;

@@ -5,9 +5,9 @@
 #include <QFontDatabase>
 #include <limits>
 
-#include "util/util.h"
 #include "util/constants.h"
-#include "MidiEvent.h"
+#include "util/util.h"
+#include "deps/midifile/MidiEvent.h"
 
 
 

@@ -5,8 +5,8 @@
 #include <sstream>
 //#include <sstringstream>
 
-#include "MidiFile.h"
 #include "app/projectinterface.h"
+#include "deps/midifile/MidiFile.h"
 
 
 

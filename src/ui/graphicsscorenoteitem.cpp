@@ -4,10 +4,10 @@
 #include <QStyleOptionGraphicsItem>
 
 #include "ui/colors.h"
+#include "ui/pianoroll.h"
 #include "util/constants.h"
 #include "util/util.h"
-#include "MidiEvent.h"
-#include "ui/pianoroll.h"
+#include "deps/midifile/MidiEvent.h"
 
 
 

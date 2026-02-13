@@ -7,14 +7,14 @@
 #include <QGraphicsSceneHoverEvent>
 #include <QStyleOptionGraphicsItem>
 
-#include "ui/graphicsscorenoteitem.h"
-#include "util/constants.h"
 #include "ui/colors.h"
-#include "ui/trackmeteritem.h"
+#include "ui/graphicsscorenoteitem.h"
 #include "ui/trackbuttonitem.h"
-#include "MidiEventList.h"
-#include "MidiEvent.h"
+#include "ui/trackmeteritem.h"
 #include "sound/soundtypes.h"
+#include "util/constants.h"
+#include "deps/midifile/MidiEvent.h"
+#include "deps/midifile/MidiEventList.h"
 
 namespace {
 TrackEventViewMask viewFlagForType(GraphicsTrackMetaEventItem::EventType type) {
@@ -65,9 +65,6 @@ QString instrumentTypeAbbrev(const Instrument *inst) {
 } // namespace
 
 
-// ui_track_color_array
-// const int ui_track_item_height = 30;
-// const int ui_track_item_width = 300;
 
 GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent) : QGraphicsObject(parent) {
     this->m_track = track;
@@ -97,7 +94,7 @@ GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent) 
     m_solo_button->setPos(buttons_x, buttons_y + button_h + button_gap);
     m_solo_button->setZValue(2);
 
-    // Centered stereo meter (agbplay-like), lightweight graphics item
+    // Centered stereo meter
     constexpr bool k_enable_track_meters = true;
     if (k_enable_track_meters) {
         int meter_x = buttons_x + 16 + 6;

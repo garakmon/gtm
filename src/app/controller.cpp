@@ -14,19 +14,19 @@
 
 #include "app/project.h"
 #include "app/projectinterface.h"
-#include "ui/songlistmodel.h"
-#include "MidiEvent.h"
-#include "sound/song.h"
 #include "ui/colors.h"
 #include "ui/mainwindow.h"
 #include "ui/measureroll.h"
 #include "ui/meters.h"
 #include "ui/minimapwidget.h"
 #include "ui/pianoroll.h"
+#include "ui/songlistmodel.h"
 #include "ui/trackroll.h"
 #include "ui_mainwindow.h"
+#include "sound/song.h"
 #include "util/constants.h"
 #include "util/util.h"
+#include "deps/midifile/MidiEvent.h"
 
 namespace {
 uint8_t programForEvent(const Song *song, const smf::MidiEvent *event) {

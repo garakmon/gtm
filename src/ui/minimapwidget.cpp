@@ -5,10 +5,10 @@
 #include <QScrollBar>
 #include <QGraphicsView>
 
-#include "sound/song.h"
-#include "MidiEvent.h"
 #include "ui/colors.h"
+#include "sound/song.h"
 #include "util/constants.h"
+#include "deps/midifile/MidiEvent.h"
 
 MinimapWidget::MinimapWidget(QWidget *parent)
     : QWidget(parent) {
