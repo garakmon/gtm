@@ -14,6 +14,7 @@ struct NotePos {
 bool isNoteWhite(int note);
 bool isNoteC(int note);
 QString noteValueToString(int note);
+QString noteValueToString(int note, int sharps_flats, bool is_minor);
 int countSetBits(int num);
 int whiteNoteToY(int note);
 int blackNoteToY(int note);

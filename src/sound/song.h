@@ -30,11 +30,17 @@ public:
 
     // reference so no copy wasting time
     QList<QPair<int, smf::MidiEvent *>> &getNotes() { return this->m_notes; }
+    const QList<QPair<int, smf::MidiEvent *>> &getNotes() const { return this->m_notes; }
     QMap<int, smf::MidiEvent *> &getTimeSignatures() { return this->m_time_signatures; }
+    const QMap<int, smf::MidiEvent *> &getTimeSignatures() const { return this->m_time_signatures; }
     QMap<int, smf::MidiEvent *> &getTempoChanges() { return this->m_tempo_changes; }
+    const QMap<int, smf::MidiEvent *> &getTempoChanges() const { return this->m_tempo_changes; }
     QMap<int, smf::MidiEvent *> &getKeySignatures() { return this->m_key_signatures; }
+    const QMap<int, smf::MidiEvent *> &getKeySignatures() const { return this->m_key_signatures; }
     QList<smf::MidiEvent *> &getMarkers() { return this->m_markers; }
+    const QList<smf::MidiEvent *> &getMarkers() const { return this->m_markers; }
     QList<smf::MidiEvent *> &getMergedEvents() { return this->m_merged_events; }
+    const QList<smf::MidiEvent *> &getMergedEvents() const { return this->m_merged_events; }
 
     std::vector<smf::MidiEventList *> tracks() { return this->m_events; }
     std::vector<smf::MidiEventList *> tracks() const { return this->m_events; }

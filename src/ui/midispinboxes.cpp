@@ -36,8 +36,16 @@ MidiKeySpinBox::MidiKeySpinBox(QWidget *parent) : MidiSpinBox(parent) {
     this->setRange(0, g_num_notes_piano - 1);
 }
 
+void MidiKeySpinBox::setKeySignature(int sharps_flats, bool is_minor) {
+    m_key_signature_sf = sharps_flats;
+    m_key_signature_minor = is_minor;
+}
+
 QString MidiKeySpinBox::textFromValue(int value) const {
-    return QString("%1 [%2%3]").arg(value).arg(noteValueToString(value)).arg(value / 12 - 1);
+    return QString("%1 [%2%3]")
+        .arg(value)
+        .arg(noteValueToString(value, m_key_signature_sf, m_key_signature_minor))
+        .arg(value / 12 - 1);
 }
 
 

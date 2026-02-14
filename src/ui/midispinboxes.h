@@ -23,9 +23,14 @@ class MidiKeySpinBox : public MidiSpinBox {
 
 public:
     MidiKeySpinBox(QWidget *parent = nullptr);
+    void setKeySignature(int sharps_flats, bool is_minor);
 
 protected:
     QString textFromValue(int value) const override;
+
+private:
+    int m_key_signature_sf = 0;
+    bool m_key_signature_minor = false;
 };
 
 

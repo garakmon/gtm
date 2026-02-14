@@ -44,13 +44,31 @@ bool isNoteC(int note) {
     return !(note % 12);
 }
 
-// TODO: use flats where appropriate for key signatures
-static QString s_note_strings[g_num_notes_per_octave] = {
+static QString s_note_strings_sharp[g_num_notes_per_octave] = {
     "C", QString::fromUtf8("C\u266F"), "D", QString::fromUtf8("D\u266F"), "E",
     "F", QString::fromUtf8("F\u266F"), "G", QString::fromUtf8("G\u266F"), "A", QString::fromUtf8("A\u266F"), "B"
 };
 
+static QString s_note_strings_flat[g_num_notes_per_octave] = {
+    "C", QString::fromUtf8("D\u266D"), "D", QString::fromUtf8("E\u266D"), "E",
+    "F", QString::fromUtf8("G\u266D"), "G", QString::fromUtf8("A\u266D"), "A", QString::fromUtf8("B\u266D"), "B"
+};
+
+static int pitchClassFromValue(int value) {
+    int pc = value % g_num_notes_per_octave;
+    if (pc < 0) pc += g_num_notes_per_octave;
+    return pc;
+}
+
+QString noteValueToString(int value, int sharps_flats, bool is_minor) {
+    Q_UNUSED(is_minor);
+    const int pitch_class = pitchClassFromValue(value);
+    if (sharps_flats < 0) {
+        return s_note_strings_flat[pitch_class];
+    }
+    return s_note_strings_sharp[pitch_class];
+}
+
 QString noteValueToString(int value) {
-    // TODO: key signatures
-    return s_note_strings[value % g_num_notes_per_octave];
+    return noteValueToString(value, 0, false);
 }

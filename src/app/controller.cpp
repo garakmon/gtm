@@ -10,6 +10,7 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QScrollBar>
+#include <QVector>
 #include <QWheelEvent>
 
 #include "app/project.h"
@@ -18,6 +19,7 @@
 #include "ui/mainwindow.h"
 #include "ui/measureroll.h"
 #include "ui/meters.h"
+#include "ui/midispinboxes.h"
 #include "ui/minimapwidget.h"
 #include "ui/pianoroll.h"
 #include "ui/songlistmodel.h"
@@ -28,7 +30,15 @@
 #include "util/util.h"
 #include "deps/midifile/MidiEvent.h"
 
+
+
 namespace {
+struct KeySignatureState {
+    int sharps_flats = 0;
+    bool is_minor = false;
+    bool has_meta_signature = false;
+};
+
 uint8_t programForEvent(const Song *song, const smf::MidiEvent *event) {
     if (!song || !event) return 0;
     const uint8_t channel = event->getChannel();
@@ -130,6 +140,130 @@ QString playbackTypeAbbrev(const Instrument *inst) {
     }
 
     return "-";
+}
+
+QPair<int, bool> keySignatureAtTick(const Song *song, int tick) {
+    if (!song) return {0, false};
+    const auto &keys = song->getKeySignatures();
+    if (keys.isEmpty()) return {0, false};
+
+    auto it = keys.upperBound(tick);
+    if (it == keys.begin()) return {0, false};
+    --it;
+    smf::MidiEvent *ev = it.value();
+    if (!ev || ev->size() < 5) return {0, false};
+    return {static_cast<int8_t>((*ev)[3]), ((*ev)[4] != 0)};
+}
+
+QVector<bool> majorScaleForTonic(int tonic_pc) {
+    QVector<bool> scale(12, false);
+    const QVector<int> degrees = {0, 2, 4, 5, 7, 9, 11};
+    for (int d : degrees) {
+        scale[(tonic_pc + d) % 12] = true;
+    }
+    return scale;
+}
+
+QVector<bool> minorScaleForTonic(int tonic_pc) {
+    QVector<bool> scale(12, false);
+    const QVector<int> degrees = {0, 2, 3, 5, 7, 8, 10};
+    for (int d : degrees) {
+        scale[(tonic_pc + d) % 12] = true;
+    }
+    return scale;
+}
+
+KeySignatureState inferKeySignatureFromContext(const Song *song, int tick, int focus_track) {
+    KeySignatureState out;
+    if (!song) return out;
+
+    const int tpqn = song->getTicksPerQuarterNote();
+    const int window = (tpqn > 0) ? (tpqn * 4) : 480;
+    const int tick_min = tick - window;
+    const int tick_max = tick + window;
+
+    QVector<double> histogram(12, 0.0);
+    bool has_notes = false;
+
+    const auto &notes = song->getNotes();
+    for (const auto &pair : notes) {
+        const int track = pair.first;
+        if (song->isMetaTrack(track)) continue;
+        smf::MidiEvent *ev = pair.second;
+        if (!ev || !ev->isNoteOn()) continue;
+        if (ev->tick < tick_min || ev->tick > tick_max) continue;
+
+        int pc = ev->getKeyNumber() % 12;
+        if (pc < 0) pc += 12;
+
+        const double weight = (track == focus_track) ? 2.0 : 1.0;
+        histogram[pc] += weight;
+        has_notes = true;
+    }
+
+    if (!has_notes) {
+        return out;
+    }
+
+    struct Candidate {
+        int sf;
+        bool is_minor;
+        int tonic_pc;
+    };
+
+    static const QVector<Candidate> s_major_candidates = {
+        {-7, false, 11}, {-6, false, 6}, {-5, false, 1}, {-4, false, 8}, {-3, false, 3},
+        {-2, false, 10}, {-1, false, 5}, {0, false, 0}, {1, false, 7}, {2, false, 2},
+        {3, false, 9}, {4, false, 4}, {5, false, 11}, {6, false, 6}, {7, false, 1}
+    };
+
+    static const QVector<Candidate> s_minor_candidates = {
+        {-7, true, 8}, {-6, true, 3}, {-5, true, 10}, {-4, true, 5}, {-3, true, 0},
+        {-2, true, 7}, {-1, true, 2}, {0, true, 9}, {1, true, 4}, {2, true, 11},
+        {3, true, 6}, {4, true, 1}, {5, true, 8}, {6, true, 3}, {7, true, 10}
+    };
+
+    double best_score = -1.0;
+    int best_sf = 0;
+    bool best_minor = false;
+
+    auto scoreCandidate = [&](const Candidate &cand) {
+        const QVector<bool> scale = cand.is_minor ? minorScaleForTonic(cand.tonic_pc)
+                                                   : majorScaleForTonic(cand.tonic_pc);
+        double score = 0.0;
+        for (int pc = 0; pc < 12; ++pc) {
+            if (scale[pc]) score += histogram[pc];
+        }
+        const int tonic = cand.tonic_pc % 12;
+        const int dominant = (cand.tonic_pc + 7) % 12;
+        score += histogram[tonic] * 0.25;
+        score += histogram[dominant] * 0.10;
+        return score;
+    };
+
+    auto updateBest = [&](const Candidate &cand) {
+        const double score = scoreCandidate(cand);
+        if (score > best_score) {
+            best_score = score;
+            best_sf = cand.sf;
+            best_minor = cand.is_minor;
+            return;
+        }
+        if (std::abs(score - best_score) < 1e-9) {
+            if (std::abs(cand.sf) < std::abs(best_sf)) {
+                best_sf = cand.sf;
+                best_minor = cand.is_minor;
+            }
+        }
+    };
+
+    for (const auto &cand : s_major_candidates) updateBest(cand);
+    for (const auto &cand : s_minor_candidates) updateBest(cand);
+
+    out.sharps_flats = best_sf;
+    out.is_minor = best_minor;
+    out.has_meta_signature = false;
+    return out;
 }
 } // namespace
 
@@ -818,6 +952,18 @@ void Controller::displayEvent(smf::MidiEvent *event) {
     const int max_tick = (m_song_duration_ticks > 0) ? m_song_duration_ticks : std::numeric_limits<int>::max();
     m_window->spinBox_NoteOnTick->setMaximum(max_tick);
     m_window->spinBox_NoteOffTick->setMaximum(max_tick);
+    if (auto *key_box = qobject_cast<MidiKeySpinBox *>(m_window->spinBox_NoteKey)) {
+        KeySignatureState key_sig;
+        const auto from_meta = keySignatureAtTick(m_song.get(), event->tick);
+        if (m_song && !m_song->getKeySignatures().isEmpty()) {
+            key_sig.sharps_flats = from_meta.first;
+            key_sig.is_minor = from_meta.second;
+            key_sig.has_meta_signature = true;
+        } else {
+            key_sig = inferKeySignatureFromContext(m_song.get(), event->tick, event->track);
+        }
+        key_box->setKeySignature(key_sig.sharps_flats, key_sig.is_minor);
+    }
     m_window->spinBox_NoteChannel->setValue(event->getChannel());
     m_window->spinBox_NoteKey->setValue(event->getKeyNumber());
     m_window->spinBox_NoteOnTick->setValue(event->tick);
