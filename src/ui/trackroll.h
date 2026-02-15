@@ -58,6 +58,7 @@ public:
     void setEventViewMask(TrackEventViewMask mask);
     TrackEventViewMask eventViewMask() const { return m_event_view_mask; }
     void setEventPreset(TrackEventPreset preset);
+    void setEventPreset(int preset_index);
     TrackEventPreset eventPreset() const { return m_event_preset; }
     void setInstrumentContext(const VoiceGroup *song_voicegroup,
                               const QMap<QString, VoiceGroup> *all_voicegroups,

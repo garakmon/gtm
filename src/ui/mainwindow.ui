@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1220</width>
+    <width>1225</width>
     <height>811</height>
    </rect>
   </property>
@@ -398,6 +398,41 @@
                  <widget class="QLabel" name="label_MetaTimeSig">
                   <property name="text">
                    <string>Time Sig</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QWidget" name="metaKeySignatureGroup" native="true">
+               <layout class="QVBoxLayout" name="verticalLayout_metaKeySignature">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>0</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="label_MetaKeyValue">
+                  <property name="text">
+                   <string>C</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="label_MetaKey">
+                  <property name="text">
+                   <string>Key Sig</string>
                   </property>
                  </widget>
                 </item>
@@ -1568,7 +1603,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>757</width>
+          <width>787</width>
           <height>286</height>
          </rect>
         </property>
@@ -1655,7 +1690,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>757</width>
+          <width>787</width>
           <height>319</height>
          </rect>
         </property>
@@ -1838,7 +1873,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1220</width>
+     <width>1225</width>
      <height>24</height>
     </rect>
    </property>

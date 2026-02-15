@@ -192,7 +192,8 @@ QFrame#frame_MetaDisplay QLabel#label_MetaTickValue,
 QFrame#frame_MetaDisplay QLabel#label_MetaTimeValue,
 QFrame#frame_MetaDisplay QLabel#label_MetaMeasureBeatValue,
 QFrame#frame_MetaDisplay QLabel#label_MetaTempoValue,
-QFrame#frame_MetaDisplay QLabel#label_MetaTimeSigValue {
+QFrame#frame_MetaDisplay QLabel#label_MetaTimeSigValue,
+QFrame#frame_MetaDisplay QLabel#label_MetaKeyValue {
     color: {text_primary};
     background: transparent;
     border: 0px;

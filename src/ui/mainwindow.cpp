@@ -263,6 +263,7 @@ void MainWindow::setupUi() {
     setFixedLabelWidth(ui->label_MetaMeasureBeatValue, "123.16");
     setFixedLabelWidth(ui->label_MetaTempoValue, "240.0 BPM");
     setFixedLabelWidth(ui->label_MetaTimeSigValue, "12/16");
+    setFixedLabelWidth(ui->label_MetaKeyValue, "Key Sig");
 
     auto updateSplitterVisibility = [this]() {
         if (!ui->splitter || !ui->scrollArea || !ui->scroll_pianoArea) return;
@@ -558,7 +559,6 @@ void MainWindow::on_Button_Stop_clicked() {
     if (ui->Button_Pause) ui->Button_Pause->setChecked(false);
     if (ui->Button_Stop) ui->Button_Stop->setChecked(true);
     this->m_controller->stop();
-    this->m_controller->seekToStart();
 }
 
 void MainWindow::on_Button_Previous_clicked() {
@@ -619,7 +619,9 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 void MainWindow::showEvent(QShowEvent *event) {
     QMainWindow::showEvent(event);
     if (m_controller && !m_config.recent_song.isEmpty()) {
-        m_controller->selectSongByTitle(m_config.recent_song);
+        if (m_controller->selectSongByTitle(m_config.recent_song)) {
+            this->syncSongListSelectionToOpenSong(true);
+        }
     }
 }
 

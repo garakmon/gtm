@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <QElapsedTimer>
+#include <QMap>
 #include <QObject>
 #include <QPointer>
 #include <QTimer>
@@ -25,46 +26,64 @@ class MinimapWidget;
 class MasterMeterWidget;
 namespace smf { class MidiEvent; }
 
-/*
- *  Controls playing of music from Player, scrolling of rolls, interaction between them
- */
+///
+/// The Controller is the main class responsible for coordinating the app, ui, audio
+/// engine, and project. It owns the Project (as m_project) and Player (as m_player).
+/// Additionally, the Controller manages the playback state.
+///
 class Controller : public QObject {
     Q_OBJECT
 
 public:
-    //
-    Controller(MainWindow *window = nullptr);
+    Controller(MainWindow *window = nullptr); // constructor
 
+    // disable copy and move ops
+    Controller(const Controller &) = delete;
+    Controller &operator=(const Controller &) = delete;
+    Controller(Controller &&) = delete;
+    Controller &operator=(Controller &&) = delete;
+
+    // project + interface / loading + saving
     bool loadProject(const QString &root);
     bool loadSong();
-    bool loadSong(std::shared_ptr<Song> song); // TODO: should project::loadSong return shared_ptr<Song>?
-    void displayRolls(); // put onto views
-    void displayProject();
+    bool loadSong(std::shared_ptr<Song> song); // !TODO: return shared_ptr<Song>?
 
-    void setupRolls(); // one time actions
+    // ui coordination
+    void setupRolls();     // one time actions
+    void displayRolls();   // put onto views
+    void displayProject(); // set up project-level ui
+    void connectSignals(); // once per project signal initialization
 
-    void syncRolls();
-    void connectSignals();
+    void syncRolls();                           // update ui state to match playback state
+    void setMinimap(MinimapWidget *minimap);    // attach minimap from MainWindow
+    void setTrackEventViewMask(uint32_t mask);  // sets track-meta event type visiblity
+    void setTrackEventPreset(int preset_index); // applies a preset view mask
 
-    void readTracks();
+    int currentSongIndex() const;                 // get the index of the current song
+    bool selectSongByIndex(int index);            // load a song by its index in song list
+    bool selectSongByTitle(const QString &title); // load a song by its title
 
-    void play();
-    void stop();
-    void pause();
-    void seekToTick(int tick);
-    void seekToStart();
-    int currentTick() const;
-    int currentSongIndex() const;
-    bool selectSongByIndex(int index);
-    bool selectSongByTitle(const QString &title);
-    void setMinimap(MinimapWidget *minimap);
-    void setMasterMeter(MasterMeterWidget *meter);
-    void setMasterVolume(int value);
-    void setTrackEventViewMask(uint32_t mask);
-    void setTrackEventPreset(int preset_index);
+    // song playback
+    void play();  // start playback from current playhead position
+    void stop();  // end playback and set playhead to start of song
+    void pause(); // end playback but keep playhead position
+
+    int currentTick() const;         // get the tick position
+    void seekToTick(int tick);       // jump to a specific tick
+    void seekToStart();              // jump to tick 0
+    void setMasterVolume(int value); // set a master volume for the Mixer
+
+    // song visualization
+    void setMasterMeter(MasterMeterWidget *meter); // attach ui master meter
+
+private:
+    void updateSongMetaDisplay();
+    void updateSongPositionDisplay(int tick);
+    void rebuildInferredKeySignatureCache();
+    QPair<int, bool> keySignatureForTick(int tick) const;
 
 protected:
-    bool eventFilter(QObject *watched, QEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override; // user scroll override
 
 signals:
     void songSelected(const QString &title);
@@ -75,17 +94,19 @@ private slots:
     void onTrackMuteToggled(int channel, bool muted);
     void onTrackSoloToggled(int channel, bool soloed);
     void onTrackSelected(int track);
+    void onTrackLayoutChanged();
 
 private:
-    void updateSongMetaDisplay();
-    void updateSongPositionDisplay(int tick);
-
+    // owned objects
     std::unique_ptr<Project> m_project;
     std::unique_ptr<ProjectInterface> m_interface;
+    std::unique_ptr<Player> m_player;
 
-    // m_song, items lists?, send item edits to midifile edits
+    // non-owning references
     Ui::MainWindow *m_window = nullptr;
     std::shared_ptr<Song> m_song;
+
+    // ui objects
     QPointer<PianoRoll> m_piano_roll;
     QPointer<TrackRoll> m_track_roll;
     QPointer<MeasureRoll> m_measure_roll;
@@ -96,24 +117,28 @@ private:
     // playback stuff
     QTimer m_player_timer;
     QElapsedTimer m_player_elapsed;
-    int m_playback_start_tick = 0;
     int m_meter_frame = 0;
-    int m_scroll_frame = 0;
-    int m_last_meta_tick = -1;
-    int m_last_play_tick = -1;
-    bool m_force_scroll_to_playhead = false;
-    bool m_edits_enabled = true;
-    double m_scroll_pos = 0.0;
-    bool m_scroll_pos_valid = false;
-    bool m_autoscroll_prev = true;
-    int m_current_song_index = -1;
-    int m_song_duration_ticks = 0;
 
-    // scroll state
-    QTimer m_scroll_debounce;
-    bool m_autoscroll_enabled = true;
+    struct PlaybackState {
+        int playback_start_tick = 0;
+        int last_play_tick = -1;
+        int last_meta_tick = -1;
+        int song_duration_ticks = 0;
+        int current_song_index = -1;
+        bool force_scroll_to_playhead = false;
+        bool edits_enabled = true;
+    } m_playback_state;
 
-    std::unique_ptr<Player> m_player;
+    struct ScrollState {
+        bool autoscroll_enabled = true;
+        double scroll_pos = 0.0;
+        bool scroll_pos_valid = false;
+        bool autoscroll_prev = true;
+        int scroll_frame = 0;
+        QTimer scroll_debounce;
+    } m_scroll_state;
+
+    QMap<int, QPair<int, bool>> m_inferred_key_by_tick;
 };
 
 #endif // CONTROLLER_H

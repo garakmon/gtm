@@ -177,6 +177,14 @@ void TrackRoll::setEventPreset(TrackEventPreset preset) {
     setEventViewMask(mask);
 }
 
+void TrackRoll::setEventPreset(int preset_index) {
+    if (preset_index < static_cast<int>(TrackEventPreset::All) ||
+        preset_index > static_cast<int>(TrackEventPreset::Other)) {
+        return;
+    }
+    setEventPreset(static_cast<TrackEventPreset>(preset_index));
+}
+
 void TrackRoll::setInstrumentContext(const VoiceGroup *song_voicegroup,
                                      const QMap<QString, VoiceGroup> *all_voicegroups,
                                      const QMap<QString, KeysplitTable> *keysplit_tables) {
