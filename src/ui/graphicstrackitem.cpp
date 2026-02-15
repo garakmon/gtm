@@ -119,6 +119,8 @@ QRectF GraphicsTrackItem::boundingRect() const {
 
 void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
     QRectF rect = this->boundingRect();
+    const qreal header_y = rect.y();
+    const qreal header_h = ui_track_item_height;
 
     painter->setBrush(this->m_color);
     painter->drawRoundedRect(rect, 5, 5);
@@ -144,7 +146,9 @@ void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
         const int meter_x = buttons_x + 16 + 6;
         const int meter_w = 44;
 
-        QRectF textRect(meter_x, rect.y() + 2, meter_w, (rect.height() / 2) - 2);
+        const qreal text_top = header_y + 1.0;
+        const qreal text_h = (header_h * 0.45) - 1.0;
+        QRectF textRect(meter_x, text_top, meter_w, text_h);
         painter->drawText(textRect, Qt::AlignCenter, info);
     }
 
