@@ -715,7 +715,7 @@ void GraphicsTrackRollManager::setExpanded(bool expanded) {
 }
 
 void GraphicsTrackRollManager::setEventViewMask(TrackEventViewMask mask) {
-    const TrackEventViewMask normalized = (mask == 0) ? kTrackEventView_All : mask;
+    const TrackEventViewMask normalized = (mask == 0) ? TrackEventView_All : mask;
     if (m_event_view_mask == normalized) return;
     m_event_view_mask = normalized;
 

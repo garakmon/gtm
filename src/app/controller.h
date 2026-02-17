@@ -26,11 +26,13 @@ class MinimapWidget;
 class MasterMeterWidget;
 namespace smf { class MidiEvent; }
 
+//////////////////////////////////////////////////////////////////////////////////////////
 ///
 /// The Controller is the main class responsible for coordinating the app, ui, audio
 /// engine, and project. It owns the Project (as m_project) and Player (as m_player).
 /// Additionally, the Controller manages the playback state.
 ///
+//////////////////////////////////////////////////////////////////////////////////////////
 class Controller : public QObject {
     Q_OBJECT
 
@@ -45,6 +47,7 @@ public:
 
     // project + interface / loading + saving
     bool loadProject(const QString &root);
+    const QString &projectRoot() const;
     bool loadSong();
     bool loadSong(std::shared_ptr<Song> song); // !TODO: return shared_ptr<Song>?
 

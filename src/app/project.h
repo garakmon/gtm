@@ -24,6 +24,8 @@ public:
 
     std::shared_ptr<Song> activeSong() { return this->m_active_song; }
     void setActiveSong(const QString &title) { this->m_active_song = this->getSong(title); }
+    void setRootPath(const QString &path) { m_root_path = path; }
+    const QString &rootPath() const { return m_root_path; }
 
     // direct_sound_data.inc mappings
     void addSampleMapping(const QString &label, const QString &path);
@@ -62,6 +64,7 @@ private:
     QMap<QString, SongEntry> m_song_entries; // song titles and filenames
     QStringList m_song_table_order; // just titles in order read !TODO: rename? (m_song_titles?)
     QMap<QString, std::shared_ptr<Song>> m_song_table; // loaded songs
+    QString m_root_path;
 
     friend class ProjectInterface;
 };

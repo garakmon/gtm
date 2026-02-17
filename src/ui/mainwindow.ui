@@ -514,7 +514,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QWidget" name="widget_masterMeter" native="true">
+              <widget class="MasterMeterWidget" name="widget_masterMeter" native="true">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -1065,7 +1065,7 @@
       <property name="frameShadow">
        <enum>QFrame::Raised</enum>
       </property>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
+      <layout class="QVBoxLayout" name="verticalLayout_InfoPanels">
        <property name="spacing">
         <number>-1</number>
        </property>
@@ -1737,7 +1737,7 @@
           </widget>
          </item>
          <item row="4" column="2">
-          <widget class="QWidget" name="widget_minimap" native="true">
+          <widget class="MinimapWidget" name="widget_minimap" native="true">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -1949,6 +1949,16 @@
    <class>GTMSvgIconWidget</class>
    <extends>QWidget</extends>
    <header>customwidgets.h</header>
+  </customwidget>
+  <customwidget>
+   <class>MasterMeterWidget</class>
+   <extends>QWidget</extends>
+   <header>meters.h</header>
+  </customwidget>
+  <customwidget>
+   <class>MinimapWidget</class>
+   <extends>QWidget</extends>
+   <header>minimapwidget.h</header>
   </customwidget>
  </customwidgets>
  <resources>

@@ -340,11 +340,19 @@ bool Controller::loadProject(const QString &root) {
     }
 
     if (m_interface->loadProject(root)) {
+        if (m_project) {
+            m_project->setRootPath(root);
+        }
         // display the project values in the ui
         this->displayProject();
         return true;
     }
     return false;
+}
+
+const QString &Controller::projectRoot() const {
+    static const QString s_empty;
+    return m_project ? m_project->rootPath() : s_empty;
 }
 
 /**
@@ -1298,7 +1306,8 @@ void Controller::displayEvent(smf::MidiEvent *event) {
     m_window->spinBox_NoteOffTick->setMaximum(max_tick);
 
     // update note-name key signature context
-    if (auto *key_box = qobject_cast<MidiKeySpinBox *>(m_window->spinBox_NoteKey)) {
+    if (m_window->spinBox_NoteKey) {
+        MidiKeySpinBox *key_box = m_window->spinBox_NoteKey;
         KeySignatureState key_sig;
         const auto from_meta = keySignatureAtTick(m_song.get(), event->tick);
         if (m_song && !m_song->getKeySignatures().isEmpty()) {
@@ -1421,7 +1430,7 @@ void Controller::songListSongRequested(const QModelIndex &index) {
 
     // abort if this entry has no midi path
     if (entry.midifile.isEmpty()) {
-        qDebug << QString("No MIDI file defined for %1.").arg(title);
+        qDebug() << QString("No MIDI file defined for %1.").arg(title);
         return;
     }
 

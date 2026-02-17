@@ -87,7 +87,7 @@ private:
     QMap<int, GraphicsTrackItem *> m_track_items;
     QMap<int, GraphicsTrackRollManager *> m_roll_managers;
     int m_expanded_row = -1;
-    TrackEventViewMask m_event_view_mask = kTrackEventView_All;
+    TrackEventViewMask m_event_view_mask = TrackEventView_All;
     TrackEventPreset m_event_preset = TrackEventPreset::All;
     const VoiceGroup *m_song_voicegroup = nullptr;
     const QMap<QString, VoiceGroup> *m_all_voicegroups = nullptr;

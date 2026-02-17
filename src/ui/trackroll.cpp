@@ -14,7 +14,7 @@ namespace {
 TrackEventViewMask presetToMask(TrackRoll::TrackEventPreset preset) {
     switch (preset) {
     case TrackRoll::TrackEventPreset::All:
-        return kTrackEventView_All;
+        return TrackEventView_All;
     case TrackRoll::TrackEventPreset::Mix:
         return TrackEventView_Volume | TrackEventView_Expression | TrackEventView_Pan;
     case TrackRoll::TrackEventPreset::Timbre:
@@ -28,7 +28,7 @@ TrackEventViewMask presetToMask(TrackRoll::TrackEventPreset preset) {
 }
 
 TrackRoll::TrackEventPreset maskToPreset(TrackEventViewMask mask) {
-    if (mask == kTrackEventView_All) return TrackRoll::TrackEventPreset::All;
+    if (mask == TrackEventView_All) return TrackRoll::TrackEventPreset::All;
     if (mask == (TrackEventView_Volume | TrackEventView_Expression | TrackEventView_Pan)) return TrackRoll::TrackEventPreset::Mix;
     if (mask == TrackEventView_Program) return TrackRoll::TrackEventPreset::Timbre;
     if (mask == TrackEventView_ControlOther) return TrackRoll::TrackEventPreset::Other;
@@ -162,7 +162,7 @@ void TrackRoll::toggleTrackExpansion(int display_row) {
 }
 
 void TrackRoll::setEventViewMask(TrackEventViewMask mask) {
-    const TrackEventViewMask normalized = (mask == 0) ? kTrackEventView_All : mask;
+    const TrackEventViewMask normalized = (mask == 0) ? TrackEventView_All : mask;
     if (m_event_view_mask == normalized) return;
     m_event_view_mask = normalized;
     m_event_preset = maskToPreset(normalized);

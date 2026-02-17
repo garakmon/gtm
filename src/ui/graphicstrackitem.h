@@ -19,15 +19,15 @@
 using TrackEventViewMask = uint32_t;
 
 enum TrackEventViewFlag : TrackEventViewMask {
-    TrackEventView_Program      = 1u << 0,
-    TrackEventView_Volume       = 1u << 1,
-    TrackEventView_Expression   = 1u << 2,
-    TrackEventView_Pan          = 1u << 3,
-    TrackEventView_Pitch        = 1u << 4,
-    TrackEventView_ControlOther = 1u << 5,
+    TrackEventView_Program      = 1 << 0,
+    TrackEventView_Volume       = 1 << 1,
+    TrackEventView_Expression   = 1 << 2,
+    TrackEventView_Pan          = 1 << 3,
+    TrackEventView_Pitch        = 1 << 4,
+    TrackEventView_ControlOther = 1 << 5,
 };
 
-constexpr TrackEventViewMask kTrackEventView_All =
+constexpr TrackEventViewMask TrackEventView_All =
     TrackEventView_Program | TrackEventView_Volume | TrackEventView_Expression |
     TrackEventView_Pan | TrackEventView_Pitch | TrackEventView_ControlOther;
 
@@ -195,7 +195,7 @@ private:
     smf::MidiEventList *m_event_list = nullptr;
     int m_width = 0;
     bool m_expanded = false;
-    TrackEventViewMask m_event_view_mask = kTrackEventView_All;
+    TrackEventViewMask m_event_view_mask = TrackEventView_All;
     QList<GraphicsTrackMetaEventItem *> m_items;
     QVector<CCPoint> m_cc_volume;
     QVector<CCPoint> m_cc_expression;
