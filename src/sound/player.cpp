@@ -12,16 +12,19 @@ Player::~Player() {
     Pa_Terminate();
 }
 
+/**
+ * Initialize PortAudio, opening the default stereo output stream with the given settings.
+ */
 bool Player::initializeAudio() {
     if (Pa_Initialize() != paNoError) return false;
 
     PaError err = Pa_OpenDefaultStream(
         &m_audio_stream,
-        0,               // No input
-        2,               // Stereo output
-        paFloat32,       // 32-bit floating point
-        44100,           // Sample rate
-        512,             // Buffer size
+        0,         // No input
+        2,         // Stereo output
+        paFloat32, // 32-bit floating point
+        44100,     // Sample rate
+        512,       // Buffer size
         &Player::paStaticCallback,
         this
     );
@@ -32,6 +35,13 @@ bool Player::initializeAudio() {
     return true;
 }
 
+/**
+ * PortAudio-compatible C callback that converts user_data back into a Player,
+ * forwards to the Player method audioCallback(), and returns paContinue.
+ * 
+ * PortAudio uses a "pull" mechanism to call this function every time an audio
+ * buffer empties, and needs more sound data to fill it.
+ */
 int Player::paStaticCallback(const void *input, void *output,
                              unsigned long frame_count,
                              const PaStreamCallbackTimeInfo *time_info,
@@ -46,16 +56,24 @@ int Player::paStaticCallback(const void *input, void *output,
     return paContinue;
 }
 
+/**
+ * Ask the sequencer to fill the next audio buffer, which is where playback advances.
+ */
 void Player::audioCallback(float *out_buffer, unsigned long frame_count) {
     m_sequencer.fillAudio(out_buffer, frame_count);
 }
 
+/**
+ * Push all resolved instrument + sample data into the Mixer, applying song-level volume
+ * and reverb from Song metadata, binding the current Song and Mixer into the sequencer,
+ * and resetting the sequencer to a clean playback state.
+ */
 void Player::loadSong(Song *song, const VoiceGroup *vg,
-                      const QMap<QString, VoiceGroup> *all_vg,
+                      const QMap<QString, VoiceGroup> *all_vgs,
                       const QMap<QString, Sample> *samples,
                       const QMap<QString, QByteArray> *pcm_data,
                       const QMap<QString, KeysplitTable> *keysplit_tables) {
-    m_mixer.setInstrumentData(vg, all_vg, samples, pcm_data, keysplit_tables);
+    m_mixer.setInstrumentData(vg, all_vgs, samples, pcm_data, keysplit_tables);
     m_mixer.setSongVolume(song->getMetaInfo().volume);
     m_mixer.setReverbLevel(song->getMetaInfo().reverb);
     m_sequencer.setSong(song);
