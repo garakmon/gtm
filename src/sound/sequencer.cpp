@@ -1,4 +1,3 @@
-
 #include "sound/sequencer.h"
 
 #include "sound/mixer.h"
@@ -7,6 +6,8 @@
 #include <cstring>
 #include <cmath>
 #include <cstdint>
+
+
 
 void Sequencer::setSong(Song *song) {
     m_song = song;
@@ -24,6 +25,10 @@ void Sequencer::stop() {
     m_is_playing = false;
 }
 
+/**
+ * Reset playback position, loop state, event index, and channel program state to the
+ * start of the song, then reapplies the song’s initial channel settings and LFO rate.
+ */
 void Sequencer::reset() {
     m_current_time = 0.0;
     m_current_sample = 0;
@@ -31,7 +36,7 @@ void Sequencer::reset() {
     m_loop_begin_index = -1;
     m_is_playing = false;
 
-    // Use initial state extracted from track headers by the Song
+    // use initial state extracted from track headers by the Song
     if (m_song && m_mixer) {
         const uint8_t *initial_programs = m_song->getInitialPrograms();
         const Song::InitialChannelState *initial_states = m_song->getInitialChannelStates();
@@ -44,12 +49,11 @@ void Sequencer::reset() {
             m_mixer->setChannelPitchBend(i, initial_states[i].pitch_bend + 8192);
         }
 
-        // Set initial LFO tick rate from song tempo
+        // set initial LFO tick rate from song tempo
         int tpqn = m_song->getTicksPerQuarterNote();
         if (tpqn > 0) {
-            // Default MIDI tempo: 120 BPM = 500000 us/quarter
-            double spt = 0.5 / static_cast<double>(tpqn);
-            // Check for tempo at tick 0
+            double spt = 0.5 / static_cast<double>(tpqn); // default = 500000 us/quarter
+            // check for tempo at tick 0
             auto &tempo_changes = m_song->getTempoChanges();
             if (!tempo_changes.isEmpty()) {
                 auto it = tempo_changes.begin();
@@ -67,6 +71,10 @@ void Sequencer::reset() {
     }
 }
 
+/**
+ * Convert a target tick to absolute time, move playback to that point, restore initial
+ * channel states, and replay prior state-changing events to seek position.
+ */
 void Sequencer::seekToTick(int tick) {
     if (!m_song) {
         m_current_time = 0.0;
@@ -77,7 +85,7 @@ void Sequencer::seekToTick(int tick) {
     }
 
     m_current_time = m_song->getTimeInSeconds(tick);
-    m_current_sample = static_cast<int64_t>(std::llround(m_current_time * g_sample_rate));
+    m_current_sample = static_cast<int64_t>(std::floor(m_current_time * g_sample_rate));
 
     auto &events = m_song->getMergedEvents();
 
@@ -94,7 +102,7 @@ void Sequencer::seekToTick(int tick) {
 
     m_loop_begin_index = -1;
 
-    // Start with initial state extracted from track headers
+    // start with initial state extracted from track headers
     const uint8_t *initial_programs = m_song->getInitialPrograms();
     const Song::InitialChannelState *initial_states = m_song->getInitialChannelStates();
 
@@ -108,7 +116,7 @@ void Sequencer::seekToTick(int tick) {
         }
     }
 
-    // Apply changes up to seek point
+    // apply changes up to seek point
     for (int i = 0; i < m_event_index; ++i) {
         if (events[i]->isText() || events[i]->isMarkerText()) {
             if (events[i]->getMetaContent() == "[") {
@@ -124,7 +132,7 @@ void Sequencer::seekToTick(int tick) {
             uint8_t cc = events[i]->getP1();
             uint8_t value = events[i]->getP2();
 
-            if (cc == 1) m_mixer->setChannelMod(ch, value);
+            if      (cc == 1) m_mixer->setChannelMod(ch, value);
             else if (cc == 7) m_mixer->setChannelVolume(ch, value);
             else if (cc == 10) m_mixer->setChannelPan(ch, value);
             else if (cc == 11) m_mixer->setChannelExpression(ch, value);
@@ -140,6 +148,10 @@ void Sequencer::seekToTick(int tick) {
     }
 }
 
+/**
+ * Advance playback time by a frame count and process all events up to the new time.
+ * (does not render audio)
+ */
 void Sequencer::update(unsigned long frames) {
     if (!m_is_playing || !m_song || !m_mixer) return;
 
@@ -147,13 +159,19 @@ void Sequencer::update(unsigned long frames) {
     m_current_time += time_delta;
     m_current_sample += static_cast<int64_t>(frames);
 
-    processEventsUpTo(m_current_time);
+    this->processEventsUpTo(m_current_time);
 }
 
+/**
+ * The main real-time playback routine.
+ * 
+ * Fill an output buffer by rendering audio in chunks between event boundaries,
+ *  while dispatching events at exact sample positions.
+ */
 void Sequencer::fillAudio(float *out_buffer, unsigned long frames) {
     if (!out_buffer || frames == 0) return;
 
-    // Silence if not ready or not playing.
+    // silence if not ready or not playing
     if (!m_is_playing || !m_song || !m_mixer) {
         std::memset(out_buffer, 0, frames * 2 * sizeof(float));
         return;
@@ -164,21 +182,26 @@ void Sequencer::fillAudio(float *out_buffer, unsigned long frames) {
     float *write_ptr = out_buffer;
 
     while (frames_remaining > 0) {
-        // Dispatch any events scheduled at or before current time
+        // dispatch any events scheduled at or before current time
         while (m_event_index < events.size()) {
             double event_time = events[m_event_index]->seconds;
-            int64_t event_sample = static_cast<int64_t>(std::floor(event_time * g_sample_rate));
+            int64_t event_sample = static_cast<int64_t>(
+                std::floor(event_time * g_sample_rate)
+            );
             if (event_sample > m_current_sample) break;
             if (dispatchEvent(events[m_event_index])) {
-                // Loop occurred; continue processing at new time/index
-                m_current_sample = static_cast<int64_t>(std::floor(m_current_time * g_sample_rate));
+                // loop occurred
+                m_current_sample = static_cast<int64_t>(
+                    std::floor(m_current_time * g_sample_rate)
+                );
                 continue;
             }
             m_event_index++;
         }
 
         // Determine next event time or end of buffer
-        int64_t buffer_end_sample = m_current_sample + static_cast<int64_t>(frames_remaining);
+        int64_t buffer_end_sample = m_current_sample
+                                  + static_cast<int64_t>(frames_remaining);
         int64_t next_event_sample = buffer_end_sample;
 
         if (m_event_index < events.size()) {
@@ -195,7 +218,9 @@ void Sequencer::fillAudio(float *out_buffer, unsigned long frames) {
 
         unsigned long frames_until_event = 0;
         if (next_event_sample > m_current_sample) {
-            frames_until_event = static_cast<unsigned long>(next_event_sample - m_current_sample);
+            frames_until_event = static_cast<unsigned long>(
+                next_event_sample - m_current_sample
+            );
         }
 
         if (frames_until_event > frames_remaining) {
@@ -221,6 +246,9 @@ void Sequencer::fillAudio(float *out_buffer, unsigned long frames) {
     }
 }
 
+/**
+ * Dispatch all queued song events whose timestamps are at or before the given time.
+ */
 void Sequencer::processEventsUpTo(double time) {
     auto &events = m_song->getMergedEvents();
 
@@ -236,6 +264,10 @@ void Sequencer::processEventsUpTo(double time) {
     }
 }
 
+/**
+ * Interpret one MIDI event and apply the corresponding action to sequencer/mixer state.
+ * Returning whether a loop jump occurred.
+ */
 bool Sequencer::dispatchEvent(smf::MidiEvent *event) {
     uint8_t channel = event->getChannel();
 
@@ -262,22 +294,22 @@ bool Sequencer::dispatchEvent(smf::MidiEvent *event) {
         uint8_t value = event->getP2();
 
         switch (cc) {
-        case 1:   // Modulation depth (MOD)
+        case 1:   // modulation depth (MOD)
             m_mixer->setChannelMod(channel, value);
             break;
-        case 7:   // Channel volume
+        case 7:   // channel volume
             m_mixer->setChannelVolume(channel, value);
             break;
-        case 10:  // Pan
+        case 10:  // pan
             m_mixer->setChannelPan(channel, value);
             break;
-        case 11:  // Expression
+        case 11:  // expression
             m_mixer->setChannelExpression(channel, value);
             break;
         case 21:  // LFO speed (LFOS)
             m_mixer->setChannelLfos(channel, value);
             break;
-        case 22:  // Modulation type (MODT)
+        case 22:  // modulation type (MODT)
             m_mixer->setChannelModt(channel, value);
             break;
         case 26:  // LFO delay (LFODL)
@@ -286,12 +318,12 @@ bool Sequencer::dispatchEvent(smf::MidiEvent *event) {
         }
     }
     else if (event->isPitchbend()) {
-        // Pitch bend is 14-bit: combine P1 (LSB) and P2 (MSB)
+        // pitch bend is 14-bit: combine P1 (LSB) and P2 (MSB)
         int bend = (event->getP2() << 7) | event->getP1();
         m_mixer->setChannelPitchBend(channel, bend);
     }
     else if (event->isTempo() && m_mixer) {
-        // Update LFO tick rate when tempo changes
+        // update LFO tick rate when tempo changes
         int tpqn = m_song ? m_song->getTicksPerQuarterNote() : 24;
         double spt = event->getTempoSPT(tpqn);
         int samples_per_tick = static_cast<int>(spt * g_sample_rate);
@@ -299,6 +331,7 @@ bool Sequencer::dispatchEvent(smf::MidiEvent *event) {
     }
     else if (event->isText() || event->isMarkerText()) {
         std::string text = event->getMetaContent();
+        // "[]" are text loop markers
         if (text == "[") {
             m_loop_begin_index = m_event_index;
         }
