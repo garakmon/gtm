@@ -1,20 +1,9 @@
 #include "app/controller.h"
 
-#include <algorithm>
-#include <cmath>
-#include <limits>
-
-#include <QFrame>
-#include <QGraphicsView>
-#include <QLabel>
-#include <QMessageBox>
-#include <QMouseEvent>
-#include <QScrollBar>
-#include <QVector>
-#include <QWheelEvent>
-
 #include "app/project.h"
 #include "app/projectinterface.h"
+#include "deps/midifile/MidiEvent.h"
+#include "sound/song.h"
 #include "ui/colors.h"
 #include "ui/mainwindow.h"
 #include "ui/measureroll.h"
@@ -25,10 +14,21 @@
 #include "ui/songlistmodel.h"
 #include "ui/trackroll.h"
 #include "ui_mainwindow.h"
-#include "sound/song.h"
 #include "util/constants.h"
 #include "util/util.h"
-#include "deps/midifile/MidiEvent.h"
+
+#include <QFrame>
+#include <QGraphicsView>
+#include <QLabel>
+#include <QMessageBox>
+#include <QMouseEvent>
+#include <QScrollBar>
+#include <QVector>
+#include <QWheelEvent>
+
+#include <algorithm>
+#include <cmath>
+#include <limits>
 
 
 

@@ -1,23 +1,24 @@
 #include "ui/graphicstrackitem.h"
 
-#include <QPainter>
-#include <QFontMetrics>
-#include <QGraphicsSceneMouseEvent>
-#include <QPainterPath>
-#include <QGraphicsSceneHoverEvent>
-#include <QStyleOptionGraphicsItem>
-
-#include "ui/colors.h"
-#include "ui/graphicsscorenoteitem.h"
-#include "ui/trackbuttonitem.h"
-#include "ui/trackmeteritem.h"
-#include "sound/soundtypes.h"
-#include "util/constants.h"
 #include "deps/midifile/MidiEvent.h"
 #include "deps/midifile/MidiEventList.h"
+#include "sound/soundtypes.h"
+#include "ui/colors.h"
+#include "ui/trackbuttonitem.h"
+#include "ui/trackmeteritem.h"
+#include "util/constants.h"
+#include "util/util.h"
 
-namespace {
-TrackEventViewMask viewFlagForType(GraphicsTrackMetaEventItem::EventType type) {
+#include <QFontMetrics>
+#include <QGraphicsSceneHoverEvent>
+#include <QGraphicsSceneMouseEvent>
+#include <QPainter>
+#include <QPainterPath>
+#include <QStyleOptionGraphicsItem>
+
+
+
+static TrackEventViewMask viewFlagForType(GraphicsTrackMetaEventItem::EventType type) {
     switch (type) {
     case GraphicsTrackMetaEventItem::EventType::Program: return TrackEventView_Program;
     case GraphicsTrackMetaEventItem::EventType::Volume: return TrackEventView_Volume;
@@ -30,43 +31,8 @@ TrackEventViewMask viewFlagForType(GraphicsTrackMetaEventItem::EventType type) {
     }
 }
 
-QString instrumentTypeAbbrev(const Instrument *inst) {
-    if (!inst) return "-";
-
-    static const QMap<int, QString> s_base_type = {
-        {0x00, "PCM"}, {0x08, "PCM"}, {0x10, "PCM"},
-        {0x03, "Wave"}, {0x0B, "Wave"},
-    };
-    static const QMap<int, QString> s_duty_map = {
-        {0, "12"}, {1, "25"}, {2, "50"}, {3, "75"}
-    };
-
-    if (s_base_type.contains(inst->type_id)) {
-        return s_base_type.value(inst->type_id);
-    }
-    switch (inst->type_id) {
-    case 0x01:
-    case 0x09:
-        return QString("Sq.%1S").arg(s_duty_map.value(inst->duty_cycle & 0x03, "50"));
-    case 0x02:
-    case 0x0A:
-        return QString("Sq.%1").arg(s_duty_map.value(inst->duty_cycle & 0x03, "50"));
-    case 0x04:
-    case 0x0C:
-        return (inst->duty_cycle & 0x1) ? "Ns.7" : "Ns.15";
-    case 0x40:
-        return "Split";
-    case 0x80:
-        return "Drum";
-    default:
-        return "-";
-    }
-}
-} // namespace
-
-
-
-GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent) : QGraphicsObject(parent) {
+GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent)
+  : QGraphicsObject(parent) {
     this->m_track = track;
     this->m_row = row;
     int color_index = row < g_max_num_tracks ? row : g_max_num_tracks - 1;
@@ -75,49 +41,52 @@ GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent) 
 
     m_y_position = ui_track_item_height * this->m_row;
     const int row_y = m_y_position;
-    const int num_block_w = 20;
-    const int num_block_x = 5;
-    const int buttons_x = num_block_x + num_block_w + 3;
-
-    const int button_h = 12;
-    const int button_gap = 2;
-    const int button_stack_h = button_h + button_gap + button_h;
+    const int button_stack_h = ui_track_button_h + ui_track_button_gap + ui_track_button_h;
     const int buttons_y = row_y + (ui_track_item_height - button_stack_h) / 2;
 
-    // Mute button (graphics item)
     m_mute_button = new GraphicsTrackButtonItem(GraphicsTrackButtonItem::Type::Mute, this);
-    m_mute_button->setPos(buttons_x, buttons_y);
+    m_mute_button->setPos(ui_track_buttons_x, buttons_y);
     m_mute_button->setZValue(2);
 
-    // Solo button (graphics item)
     m_solo_button = new GraphicsTrackButtonItem(GraphicsTrackButtonItem::Type::Solo, this);
-    m_solo_button->setPos(buttons_x, buttons_y + button_h + button_gap);
+    m_solo_button->setPos(ui_track_buttons_x,
+                          buttons_y + ui_track_button_h + ui_track_button_gap);
     m_solo_button->setZValue(2);
 
-    // Centered stereo meter
+    // central stereo meter
     constexpr bool k_enable_track_meters = true;
     if (k_enable_track_meters) {
-        int meter_x = buttons_x + 16 + 6;
         int meter_y = row_y + (ui_track_item_height / 2) + 4;
-        m_meter_item = new GraphicsTrackMeterItem(QSizeF(44, 10), this);
+        m_meter_item = new GraphicsTrackMeterItem(QSizeF(ui_track_meter_w, 10), this);
         m_meter_item->setColors(m_color_light);
-        m_meter_item->setPos(meter_x, meter_y);
+        m_meter_item->setPos(ui_track_meter_x, meter_y);
         m_meter_item->setZValue(2);
     }
-
-    updateMuteButton();
-    updateSoloButton();
 
     updateMuteButton();
     updateSoloButton();
 }
 
 QRectF GraphicsTrackItem::boundingRect() const {
-    int h = ui_track_item_height + (m_expanded ? ui_automation_total_height : 0);
+    int h = ui_track_item_height + (m_expanded ? ui_controller_total_height : 0);
     return QRectF(0, m_y_position, ui_track_item_width, h);
 }
 
-void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
+/**
+ * Draw the track row, playback label, and expanded controller lane labels.
+ * 
+ *  +------------------------------------------+
+ *  | [ # ] [M]   [ voice type. ]              |
+ *  |       [S]    L ====|==== R               |
+ *  +------------------------------------------+
+ *  | ---- Volume ---------------------------- |
+ *  | ---- Expression ------------------------ |
+ *  | ---- Pan ------------------------------- |
+ *  | ---- Pitch Bend ------------------------ |
+ *  +------------------------------------------+
+ */
+void GraphicsTrackItem::paint(QPainter *painter,
+                              const QStyleOptionGraphicsItem *, QWidget *) {
     QRectF rect = this->boundingRect();
     const qreal header_y = rect.y();
     const qreal header_h = ui_track_item_height;
@@ -125,8 +94,9 @@ void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     painter->setBrush(this->m_color);
     painter->drawRoundedRect(rect, 5, 5);
 
-    // Track number block (left)
-    QRectF numRect(5, rect.y() + 4, 20, ui_track_item_height - 8);
+    // track number block (left)
+    QRectF numRect(ui_track_number_block_x, rect.y() + 4,
+                   ui_track_number_block_w, ui_track_item_height - 8);
     painter->setBrush(this->m_color_light);
     painter->setPen(Qt::NoPen);
     painter->drawRoundedRect(numRect, 3, 3);
@@ -134,54 +104,56 @@ void GraphicsTrackItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     painter->setFont(QFont("sans-serif", 9, QFont::Bold));
     painter->drawText(numRect, Qt::AlignCenter, QString::number(m_row));
 
-    // Draw current voice type info if playing (top half, above meter)
+    // draw current voice type info if playing (top half, above meter)
     if (!m_playing_voice_type.isEmpty()) {
         painter->setPen(m_color.lightness() > 100 ? Qt::black : Qt::white);
         painter->setFont(QFont("sans-serif", 7));
 
         const QString info = m_playing_voice_type;
-        const int num_block_w = 20;
-        const int num_block_x = 5;
-        const int buttons_x = num_block_x + num_block_w + 3;
-        const int meter_x = buttons_x + 16 + 6;
-        const int meter_w = 44;
-
         const qreal text_top = header_y + 1.0;
         const qreal text_h = (header_h * 0.45) - 1.0;
-        QRectF textRect(meter_x, text_top, meter_w, text_h);
+        QRectF textRect(ui_track_meter_x, text_top, ui_track_meter_w, text_h);
         painter->drawText(textRect, Qt::AlignCenter, info);
     }
 
-    // Draw expanded automation sub-lane labels
+    // draw expanded controller lane labels
     if (m_expanded) {
-        const QString labels[] = {"Volume", "Expression", "Pan", "Pitch Bend"};
-        const Qt::PenStyle styles[] = {Qt::SolidLine, Qt::DashLine, Qt::DotLine, Qt::DashDotLine};
+        const QStringList labels = {"Volume", "Expression", "Pan", "Pitch Bend"};
+        const QList<Qt::PenStyle> styles = {
+            Qt::SolidLine, Qt::DashLine, Qt::DotLine, Qt::DashDotLine
+        };
         const QColor label_color = Qt::white;
         const int base_y = m_y_position + ui_track_item_height;
-        for (int i = 0; i < ui_automation_lane_count; i++) {
-            int lane_y = base_y + (i * ui_automation_lane_height);
-            QRectF lane_rect(0, lane_y, ui_track_item_width, ui_automation_lane_height);
+        for (int i = 0; i < ui_controller_lane_count; i++) {
+            int lane_y = base_y + (i * ui_controller_lane_height);
+            QRectF lane_rect(0, lane_y, ui_track_item_width, ui_controller_lane_height);
 
-            // Alternating darker background
+            // alternating darker background
             painter->setPen(Qt::NoPen);
             painter->setBrush(m_color.darker(i % 2 == 0 ? 140 : 150));
             painter->drawRect(lane_rect);
 
-            // Line-style sample (12px segment)
+            // line-style samples
             qreal sample_x = 4.0;
-            qreal sample_y = lane_y + ui_automation_lane_height / 2.0;
+            qreal sample_y = lane_y + ui_controller_lane_height / 2.0;
             qreal sample_w = (styles[i] == Qt::SolidLine) ? 1.5 : 1.0;
             painter->setPen(QPen(label_color, sample_w, styles[i]));
-            painter->drawLine(QPointF(sample_x, sample_y), QPointF(sample_x + 12.0, sample_y));
+            painter->drawLine(QPointF(sample_x, sample_y),
+                              QPointF(sample_x + 12.0, sample_y));
 
-            // Label
+            // labels
             painter->setPen(label_color);
             painter->setFont(QFont("IBM Plex Sans", 7));
-            painter->drawText(lane_rect.adjusted(20, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft, labels[i]);
+            painter->drawText(lane_rect.adjusted(20, 0, 0, 0),
+                              Qt::AlignVCenter | Qt::AlignLeft,
+                              labels[i]);
         }
     }
 }
 
+/**
+ * Emit track selection when the row is clicked.
+ */
 void GraphicsTrackItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
     if (event && event->button() == Qt::LeftButton) {
         emit trackClicked(m_track);
@@ -191,17 +163,18 @@ void GraphicsTrackItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
     QGraphicsObject::mousePressEvent(event);
 }
 
-void GraphicsTrackItem::addItem(GraphicsScoreItem *item) {
-    //
-    this->m_score_items.append(item);
-    //item->setColor(this->m_color);
+bool GraphicsTrackItem::isSoloed() const {
+    return m_solo_button && m_solo_button->isChecked();
 }
 
+/**
+ * Update the displayed live voice type for this track.
+ */
 void GraphicsTrackItem::setPlayingInfo(const QString &voiceType) {
     if (voiceType == m_last_voice_type) return;
     m_last_voice_type = voiceType;
     m_playing_voice_type = voiceType;
-    update();  // trigger repaint
+    update();
 }
 
 void GraphicsTrackItem::clearPlayingInfo() {
@@ -211,8 +184,10 @@ void GraphicsTrackItem::clearPlayingInfo() {
     update();
 }
 
-bool GraphicsTrackItem::isSoloed() const {
-    return m_solo_button && m_solo_button->isChecked();
+void GraphicsTrackItem::setMeterLevels(float left, float right) {
+    if (m_meter_item) {
+        m_meter_item->setLevels(left, right);
+    }
 }
 
 void GraphicsTrackItem::setMuted(bool muted) {
@@ -228,20 +203,9 @@ void GraphicsTrackItem::setSoloed(bool soloed) {
     update();
 }
 
-void GraphicsTrackItem::setMeterLevels(float left, float right) {
-    if (m_meter_item) {
-        m_meter_item->setLevels(left, right);
-    }
-}
-
-void GraphicsTrackItem::updateMuteButton() {
-    if (m_mute_button) m_mute_button->update();
-}
-
-void GraphicsTrackItem::updateSoloButton() {
-    if (m_solo_button) m_solo_button->update();
-}
-
+/**
+ * Handle child button state changes and emit the corresponding track signal.
+ */
 void GraphicsTrackItem::buttonToggled(bool isMuteButton, bool checked) {
     if (isMuteButton) {
         m_muted = checked;
@@ -255,6 +219,9 @@ void GraphicsTrackItem::buttonToggled(bool isMuteButton, bool checked) {
     }
 }
 
+/**
+ * Enable (or disable) the child mute and solo controls.
+ */
 void GraphicsTrackItem::setControlsEnabled(bool enabled) {
     if (m_mute_button) {
         m_mute_button->setEnabled(enabled);
@@ -266,12 +233,15 @@ void GraphicsTrackItem::setControlsEnabled(bool enabled) {
     }
 }
 
+/**
+ * Move the row vertically and keep child items aligned with it.
+ */
 void GraphicsTrackItem::setYPosition(int y) {
     if (m_y_position == y) return;
     prepareGeometryChange();
     int dy = y - m_y_position;
     m_y_position = y;
-    // Reposition child items by the delta
+    // reposition child items by the delta
     if (m_mute_button) m_mute_button->moveBy(0, dy);
     if (m_solo_button) m_solo_button->moveBy(0, dy);
     if (m_meter_item) m_meter_item->moveBy(0, dy);
@@ -286,7 +256,15 @@ void GraphicsTrackItem::setExpanded(bool expanded) {
 }
 
 int GraphicsTrackItem::totalHeight() const {
-    return ui_track_item_height + (m_expanded ? ui_automation_total_height : 0);
+    return ui_track_item_height + (m_expanded ? ui_controller_total_height : 0);
+}
+
+void GraphicsTrackItem::updateMuteButton() {
+    if (m_mute_button) m_mute_button->update();
+}
+
+void GraphicsTrackItem::updateSoloButton() {
+    if (m_solo_button) m_solo_button->update();
 }
 
 
@@ -294,12 +272,15 @@ int GraphicsTrackItem::totalHeight() const {
 //////////////////////////////////////////////////////////////////////////////////////////
 
 
-
-GraphicsTrackMetaEventItem::GraphicsTrackMetaEventItem(smf::MidiEvent *event, GraphicsTrackItem *parent_track,
-                                                       const VoiceGroup *song_voicegroup,
-                                                       const QMap<QString, VoiceGroup> *all_voicegroups,
-                                                       const QMap<QString, KeysplitTable> *keysplit_tables)
-  : QGraphicsItem(parent_track) {
+/**
+ * Initialize one track meta event marker and cache the expensive hover text.
+ */
+GraphicsTrackMetaEventItem::GraphicsTrackMetaEventItem(
+    smf::MidiEvent *event, GraphicsTrackItem *parent_track,
+    const VoiceGroup *song_voicegroup,
+    const QMap<QString, VoiceGroup> *all_voicegroups,
+    const QMap<QString, KeysplitTable> *keysplit_tables
+) : QGraphicsItem(nullptr) {
     this->m_parent_track = parent_track;
     this->m_event = event;
     this->m_song_voicegroup = song_voicegroup;
@@ -310,6 +291,15 @@ GraphicsTrackMetaEventItem::GraphicsTrackMetaEventItem(smf::MidiEvent *event, Gr
         m_program_hover_text = buildProgramHoverText();
     }
 
+    QFont hover_font("IBM Plex Mono", 0);
+    hover_font.setPixelSize(9);
+    hover_font.setStyleHint(QFont::TypeWriter);
+    hover_font.setFixedPitch(true);
+    const QFontMetrics hover_fm(hover_font);
+    m_hover_width = qMax<qreal>(84.0, static_cast<qreal>(
+        hover_fm.horizontalAdvance(hoverText()) + 18
+    ));
+
     setAcceptHoverEvents(true);
     setAcceptedMouseButtons(Qt::LeftButton);
     setFlag(QGraphicsItem::ItemIsSelectable, true);
@@ -318,157 +308,30 @@ GraphicsTrackMetaEventItem::GraphicsTrackMetaEventItem(smf::MidiEvent *event, Gr
     setZValue(1.0);
 }
 
+/**
+ * Return the local bounds needed for the marker and its hover chip.
+ */
 QRectF GraphicsTrackMetaEventItem::boundingRect() const {
-    QFont hover_font("IBM Plex Mono", 0);
-    hover_font.setPixelSize(9);
-    hover_font.setStyleHint(QFont::TypeWriter);
-    hover_font.setFixedPitch(true);
-    const QFontMetrics hover_fm(hover_font);
-    const int text_w = qMax(0, hover_fm.horizontalAdvance(hoverText()) + 18);
-    const qreal width = qMax<qreal>(84.0, static_cast<qreal>(text_w));
-
     if (m_type == EventType::Program) {
-        // Full-height vertical line from top of track to bottom
+        // full-height vertical line from top of track to bottom
         int track_h = ui_track_item_height;
         if (m_parent_track && m_parent_track->isExpanded())
             track_h = m_parent_track->totalHeight();
         qreal line_top = -(ui_track_item_height - 3.0);
-        return QRectF(-6.0, line_top, width, track_h + 6.0);
+        return QRectF(-6.0, line_top, m_hover_width, track_h + 6.0);
     }
-    // Keep a generous local rect for hover chip and minimum hit target.
-    return QRectF(-6.0, -20.0, width, 32.0);
+    // give some room for hit detection
+    return QRectF(-6.0, -20.0, m_hover_width, 32.0);
 }
 
-QPainterPath GraphicsTrackMetaEventItem::shape() const {
-    // 12x12 hit target centered on the marker x.
-    QPainterPath p;
-    p.addRect(QRectF(-6.0, -3.0, 12.0, 12.0));
-    return p;
-}
-
-GraphicsTrackMetaEventItem::EventType GraphicsTrackMetaEventItem::detectType(const smf::MidiEvent *event) {
-    if (!event) return EventType::ControlOther;
-    if (event->isPatchChange()) return EventType::Program;
-    if (event->isPitchbend()) return EventType::Pitch;
-    if (!event->isController()) return EventType::ControlOther;
-
-    const int cc = event->getP1();
-    if (cc == 7) return EventType::Volume;
-    if (cc == 10) return EventType::Pan;
-    if (cc == 11) return EventType::Expression;
-    return EventType::ControlOther;
-}
-
-QColor GraphicsTrackMetaEventItem::eventColor() const {
-    switch (m_type) {
-    case EventType::Program: return ui_event_program;
-    case EventType::Volume: return ui_event_volume;
-    case EventType::Pan: return ui_event_pan;
-    case EventType::Expression: return ui_event_expression;
-    case EventType::Pitch: return ui_event_pitch;
-    case EventType::ControlOther:
-    default:
-        return ui_event_control_other;
-    }
-}
-
-QString GraphicsTrackMetaEventItem::hoverText() const {
-    if (!m_event) return QString();
-    if (m_type == EventType::Program && !m_program_hover_text.isEmpty()) {
-        return m_program_hover_text;
-    }
-    if (m_event->isPatchChange()) {
-        return QString("Prog %1").arg(m_event->getP1());
-    }
-    if (m_event->isController()) {
-        const int cc = m_event->getP1();
-        const int val = m_event->getP2();
-        if (cc == 7) return QString("Vol %1").arg(val);
-        if (cc == 10) return QString("Pan %1").arg(val);
-        if (cc == 11) return QString("Expr %1").arg(val);
-        return QString("CC%1 %2").arg(cc).arg(val);
-    }
-    if (m_event->isPitchbend()) {
-        const int bend = (m_event->getP2() << 7) | m_event->getP1();
-        return QString("Bend %1").arg(bend - 8192);
-    }
-    return QString();
-}
-
-const Instrument *GraphicsTrackMetaEventItem::resolveInstrument(const Instrument *inst, uint8_t key) const {
-    if (!inst || !m_all_voicegroups) return inst;
-
-    if (inst->type_id == 0x40) { // voice_keysplit
-        auto vg_it = m_all_voicegroups->find(inst->sample_label);
-        if (vg_it == m_all_voicegroups->end()) return nullptr;
-
-        int inst_index = 0;
-        if (m_keysplit_tables && !inst->keysplit_table.isEmpty()) {
-            auto table_it = m_keysplit_tables->find(inst->keysplit_table);
-            if (table_it != m_keysplit_tables->end()) {
-                const KeysplitTable &table = table_it.value();
-                auto note_it = table.note_map.find(key);
-                if (note_it != table.note_map.end()) {
-                    inst_index = note_it.value();
-                } else {
-                    for (auto it = table.note_map.begin(); it != table.note_map.end(); ++it) {
-                        if (it.key() <= key) {
-                            inst_index = it.value();
-                        }
-                    }
-                }
-            }
-        }
-
-        const VoiceGroup &split_vg = vg_it.value();
-        if (inst_index < 0 || inst_index >= split_vg.instruments.size()) return nullptr;
-        return resolveInstrument(&split_vg.instruments[inst_index], key);
-    }
-
-    if (inst->type_id == 0x80) { // voice_keysplit_all
-        auto it = m_all_voicegroups->find(inst->sample_label);
-        if (it == m_all_voicegroups->end()) return nullptr;
-        const VoiceGroup &drum_vg = it.value();
-        const int drum_index = key - drum_vg.offset;
-        if (drum_index < 0 || drum_index >= drum_vg.instruments.size()) return nullptr;
-        return resolveInstrument(&drum_vg.instruments[drum_index], key);
-    }
-
-    return inst;
-}
-
-QString GraphicsTrackMetaEventItem::buildProgramHoverText() const {
-    if (!m_event) return QString();
-    const int program = m_event->getP1();
-    if (!m_song_voicegroup) {
-        return QString("Prog %1").arg(program);
-    }
-    if (program < 0 || program >= m_song_voicegroup->instruments.size()) {
-        return QString("Prog %1").arg(program);
-    }
-
-    const Instrument *inst = &m_song_voicegroup->instruments[program];
-    const Instrument *resolved = resolveInstrument(inst, static_cast<uint8_t>(inst->base_key));
-    const Instrument *display = resolved ? resolved : inst;
-
-    const QString type = instrumentTypeAbbrev(display);
-    QString source;
-    if (display->type_id == 0x40 || display->type_id == 0x80) {
-        source = display->sample_label;
-    } else if (!display->sample_label.isEmpty()) {
-        source = display->sample_label;
-    }
-
-    if (!source.isEmpty()) {
-        return QString("P%1 %2 %3").arg(program).arg(type).arg(source);
-    }
-    return QString("P%1 %2").arg(program).arg(type);
-}
-
-void GraphicsTrackMetaEventItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
-    Q_UNUSED(option);
-    Q_UNUSED(widget);
-
+/**
+ * Draw the event marker, collision badge, and hover label.
+ * 
+ * !TODO: make something better than this--hit detection is still not great, and display
+ *        of multiple items at the same tick is still less than ideal
+ */
+void GraphicsTrackMetaEventItem::paint(QPainter *painter,
+                                       const QStyleOptionGraphicsItem *, QWidget *) {
     constexpr qreal k_strip_top = 0.0;
     constexpr qreal k_marker_h = 7.0;
     constexpr qreal k_marker_w = 2.5;
@@ -484,18 +347,19 @@ void GraphicsTrackMetaEventItem::paint(QPainter *painter, const QStyleOptionGrap
     painter->setRenderHint(QPainter::Antialiasing, false);
 
     if (m_type == EventType::Program) {
-        // Full-height vertical divider line for program changes
+        // full-height vertical divider line for program changes
         int track_h = ui_track_item_height;
         if (m_parent_track && m_parent_track->isExpanded())
             track_h = m_parent_track->totalHeight();
-        // y position is relative to our placement at lane_base_y
+        // y position is relative to item's placement at lane_base_y
         const qreal line_top = -(ui_track_item_height - 3.0);
         const qreal line_bot = line_top + track_h;
         QColor prog_color = m_parent_track ? m_parent_track->color().darker(160) : color;
-        painter->setPen(QPen(prog_color, (m_hovered || selected) ? 1.5 : 0.75, Qt::DashLine));
+        painter->setPen(QPen(prog_color, (m_hovered || selected) ?
+                                         1.5 : 0.75, Qt::DashLine));
         painter->drawLine(QPointF(0.0, line_top), QPointF(0.0, line_bot));
 
-        // Small label chip at top
+        // small label chip at top
         QString label = QString("P%1").arg(m_event ? m_event->getP1() : 0);
         QFont f("IBM Plex Mono", 0);
         f.setPixelSize(7);
@@ -512,7 +376,8 @@ void GraphicsTrackMetaEventItem::paint(QPainter *painter, const QStyleOptionGrap
         painter->drawText(chip, Qt::AlignCenter, label);
     } else {
         painter->setPen(QPen(color, marker_w, Qt::SolidLine, Qt::FlatCap));
-        painter->drawLine(QPointF(0.0, k_strip_top + 1.0), QPointF(0.0, k_strip_top + 1.0 + marker_h));
+        painter->drawLine(QPointF(0.0, k_strip_top + 1.0),
+                          QPointF(0.0, k_strip_top + 1.0 + marker_h));
     }
 
     if (selected) {
@@ -521,7 +386,7 @@ void GraphicsTrackMetaEventItem::paint(QPainter *painter, const QStyleOptionGrap
         painter->drawRect(marker_rect.adjusted(-2.0, -1.0, 2.0, 1.0));
     }
 
-    // Collision indicator
+    // collision indicator
     if (m_bucket_count >= 2 && m_bucket_count <= 3 && m_bucket_overflow == 0) {
         painter->setPen(Qt::NoPen);
         painter->setBrush(color.lighter(130));
@@ -557,7 +422,9 @@ void GraphicsTrackMetaEventItem::paint(QPainter *painter, const QStyleOptionGrap
             const int w = fm.horizontalAdvance(text) + 8;
             const QRectF chip(6.0, -16.0, w, 12.0);
             painter->setPen(QPen(ui_color_score_line_dark));
-            painter->setBrush(m_parent_track ? m_parent_track->color().darker(120) : ui_color_score_line_dark);
+            painter->setBrush(m_parent_track ?
+                              m_parent_track->color().darker(120) :
+                              ui_color_score_line_dark);
             painter->drawRoundedRect(chip, 3, 3);
             painter->setPen(ui_color_score_line_light);
             painter->drawText(chip, Qt::AlignCenter, text);
@@ -565,20 +432,31 @@ void GraphicsTrackMetaEventItem::paint(QPainter *painter, const QStyleOptionGrap
     }
 }
 
-void GraphicsTrackMetaEventItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event) {
-    Q_UNUSED(event);
+/**
+ * Get an expanded hit shape for easier interaction with the marker.
+ */
+QPainterPath GraphicsTrackMetaEventItem::shape() const {
+    // currently 12x12 hit target centered on the marker x pos
+    QPainterPath p;
+    p.addRect(QRectF(-6.0, -3.0, 12.0, 12.0));
+    return p;
+}
+
+void GraphicsTrackMetaEventItem::hoverEnterEvent(QGraphicsSceneHoverEvent *) {
     m_hovered = true;
     setZValue(3.0);
     update();
 }
 
-void GraphicsTrackMetaEventItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event) {
-    Q_UNUSED(event);
+void GraphicsTrackMetaEventItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *) {
     m_hovered = false;
     setZValue(1.0);
     update();
 }
 
+/**
+ * Toggle selection when the marker is clicked.
+ */
 void GraphicsTrackMetaEventItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
     if (event && event->button() == Qt::LeftButton) {
         setSelected(!isSelected());
@@ -589,19 +467,110 @@ void GraphicsTrackMetaEventItem::mousePressEvent(QGraphicsSceneMouseEvent *event
     QGraphicsItem::mousePressEvent(event);
 }
 
+GraphicsTrackMetaEventItem::EventType GraphicsTrackMetaEventItem::detectType(
+    const smf::MidiEvent *event
+) {
+    if (!event) return EventType::ControlOther;
+    if (event->isPatchChange()) return EventType::Program;
+    if (event->isPitchbend()) return EventType::Pitch;
+    if (!event->isController()) return EventType::ControlOther;
+
+    const int cc = event->getP1();
+    if (cc == 7) return EventType::Volume;
+    if (cc == 10) return EventType::Pan;
+    if (cc == 11) return EventType::Expression;
+    return EventType::ControlOther;
+}
+
+QColor GraphicsTrackMetaEventItem::eventColor() const {
+    switch (m_type) {
+    case EventType::Program: return ui_event_program;
+    case EventType::Volume: return ui_event_volume;
+    case EventType::Pan: return ui_event_pan;
+    case EventType::Expression: return ui_event_expression;
+    case EventType::Pitch: return ui_event_pitch;
+    case EventType::ControlOther:
+    default:
+        return ui_event_control_other;
+    }
+}
+
+/**
+ * Build the short hover label shown for this event.
+ */
+QString GraphicsTrackMetaEventItem::hoverText() const {
+    if (!m_event) return QString();
+    if (m_type == EventType::Program && !m_program_hover_text.isEmpty()) {
+        return m_program_hover_text;
+    }
+    if (m_event->isPatchChange()) {
+        return QString("Prog %1").arg(m_event->getP1());
+    }
+    if (m_event->isController()) {
+        const int cc = m_event->getP1();
+        const int val = m_event->getP2();
+        if (cc == 7) return QString("Vol %1").arg(val);
+        if (cc == 10) return QString("Pan %1").arg(val);
+        if (cc == 11) return QString("Expr %1").arg(val);
+        return QString("CC%1 %2").arg(cc).arg(val);
+    }
+    if (m_event->isPitchbend()) {
+        const int bend = (m_event->getP2() << 7) | m_event->getP1();
+        return QString("Bend %1").arg(bend - 8192);
+    }
+    return QString();
+}
+
+/**
+ * Build the program-change hover label, including resolved instrument.
+ */
+QString GraphicsTrackMetaEventItem::buildProgramHoverText() const {
+    if (!m_event) return QString();
+    const int program = m_event->getP1();
+    if (!m_song_voicegroup) {
+        return QString("Prog %1").arg(program);
+    }
+    if (program >= m_song_voicegroup->instruments.size()) {
+        return QString("Prog %1").arg(program);
+    }
+
+    const Instrument *inst = &m_song_voicegroup->instruments[program];
+    const Instrument *resolved = resolveInstrumentForKey(
+        inst,
+        static_cast<uint8_t>(inst->base_key),
+        m_all_voicegroups,
+        m_keysplit_tables
+    );
+    const Instrument *display = resolved ? resolved : inst;
+
+    const QString type = instrumentTypeAbbrev(display, InstrumentTypeAbbrevMode::Display);
+    QString source;
+    if (!display->sample_label.isEmpty()) {
+        source = display->sample_label;
+    }
+
+    if (!source.isEmpty()) {
+        return QString("P%1 %2 %3").arg(program).arg(type).arg(source);
+    }
+    return QString("P%1 %2").arg(program).arg(type);
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
 
 
+/**
+ * Initialize the track meta-event manager and create child marker items.
+ */
 GraphicsTrackRollManager::GraphicsTrackRollManager(
     smf::MidiEventList *event_list, GraphicsTrackItem *parent_track,
     int initial_vol, int initial_pan, int initial_expr, int initial_bend,
     const VoiceGroup *song_voicegroup,
     const QMap<QString, VoiceGroup> *all_voicegroups,
-    const QMap<QString, KeysplitTable> *keysplit_tables)
-  : QGraphicsItem(parent_track) {
+    const QMap<QString, KeysplitTable> *keysplit_tables
+) : QGraphicsItem(parent_track) {
     this->m_parent_track = parent_track;
     this->m_event_list = event_list;
     this->m_song_voicegroup = song_voicegroup;
@@ -612,13 +581,13 @@ GraphicsTrackRollManager::GraphicsTrackRollManager(
         setPos(0.0, ui_track_item_height * m_parent_track->row());
     }
 
-    // Calculate width from last event
+    // calculate width from last event tick
     m_width = 0;
     if (event_list->size() > 0) {
         m_width = (*event_list)[event_list->size() - 1].tick * ui_tick_x_scale;
     }
 
-    // Create child items for control events (program, CC, pitch bend)
+    // create child items for control events (program, CC, pitch bend)
     QMap<qint64, QList<GraphicsTrackMetaEventItem *>> buckets;
     constexpr qreal k_bucket_px = 4.0;
 
@@ -643,12 +612,13 @@ GraphicsTrackRollManager::GraphicsTrackRollManager(
             item->setVisible(isVisibleType(item->eventType()));
 
             const int bucket = static_cast<int>(item->x() / k_bucket_px);
-            const qint64 key = (static_cast<qint64>(lane) << 32) | static_cast<quint32>(bucket);
+            const int64_t key = (static_cast<int64_t>(lane) << 32)
+                                | static_cast<uint32_t>(bucket);
             buckets[key].append(item);
         }
     }
 
-    for (auto it = buckets.begin(); it != buckets.end(); ++it) {
+    for (auto it = buckets.begin(); it != buckets.end(); it++) {
         const int count = it.value().size();
         const int overflow = qMax(0, count - 3);
         for (auto *item : it.value()) {
@@ -660,31 +630,62 @@ GraphicsTrackRollManager::GraphicsTrackRollManager(
     buildStepGraphData(initial_vol, initial_pan, initial_expr, initial_bend);
 }
 
-bool GraphicsTrackRollManager::isVisibleType(GraphicsTrackMetaEventItem::EventType type) const {
-    return (m_event_view_mask & viewFlagForType(type)) != 0;
+QRectF GraphicsTrackRollManager::boundingRect() const {
+    int h = ui_track_item_height + (m_expanded ? ui_controller_total_height : 0);
+    return QRectF(0, 0, m_width, h);
 }
 
-int GraphicsTrackRollManager::laneForType(GraphicsTrackMetaEventItem::EventType type) const {
-    switch (type) {
-    case GraphicsTrackMetaEventItem::EventType::Program:
-        return 0;
-    case GraphicsTrackMetaEventItem::EventType::Volume:
-    case GraphicsTrackMetaEventItem::EventType::Expression:
-        return 1;
-    case GraphicsTrackMetaEventItem::EventType::Pan:
-    case GraphicsTrackMetaEventItem::EventType::Pitch:
-    case GraphicsTrackMetaEventItem::EventType::ControlOther:
-    default:
-        return 2;
+/**
+ * Draw the track event background and the current compact or expanded view.
+ */
+void GraphicsTrackRollManager::paint(QPainter *painter,
+                                     const QStyleOptionGraphicsItem *option, QWidget *) {
+    if (!m_parent_track) return;
+
+    // background
+    const QRectF row_rect(0.0, 0.0, m_width, ui_track_item_height);
+    painter->setPen(QPen(m_parent_track->color().darker(115)));
+    painter->setBrush(QColor::fromHsl(m_parent_track->color().hslHue(),
+                                      m_parent_track->color().hslSaturation(),
+                                      220));
+    painter->drawRect(row_rect);
+
+    // draw mini step graphs in collapsed mode, full lanes when expanded
+    if (m_expanded) {
+        paintExpandedLanes(painter, option);
+    } else {
+        paintMiniStepGraphs(painter, option);
     }
 }
 
-qreal GraphicsTrackRollManager::markerYForLane(int lane) const {
-    const qreal lane_base_y = ui_track_item_height - 3.0;
-    const qreal lane_step = 3.0;
-    return lane_base_y - (qBound(0, lane, 2) * lane_step);
+/**
+ * Toggle the expanded controller-lane view.
+ */
+void GraphicsTrackRollManager::setExpanded(bool expanded) {
+    if (m_expanded == expanded) return;
+    prepareGeometryChange();
+    m_expanded = expanded;
+    update();
 }
 
+/**
+ * Set the visible event mask and update child marker visibility.
+ */
+void GraphicsTrackRollManager::setEventViewMask(TrackEventViewMask mask) {
+    const TrackEventViewMask normalized = (mask == 0) ? TrackEventView_All : mask;
+    if (m_event_view_mask == normalized) return;
+    m_event_view_mask = normalized;
+
+    for (auto *item : m_items) {
+        if (!item) continue;
+        item->setVisible(isVisibleType(item->eventType()));
+    }
+    update();
+}
+
+/**
+ * Build the cached stepped controller data from the track event list.
+ */
 void GraphicsTrackRollManager::buildStepGraphData(int initial_vol, int initial_pan,
                                                    int initial_expr, int initial_bend) {
     m_cc_volume.append({0, initial_vol});
@@ -707,104 +708,25 @@ void GraphicsTrackRollManager::buildStepGraphData(int initial_vol, int initial_p
     }
 }
 
-void GraphicsTrackRollManager::setExpanded(bool expanded) {
-    if (m_expanded == expanded) return;
-    prepareGeometryChange();
-    m_expanded = expanded;
-    update();
-}
-
-void GraphicsTrackRollManager::setEventViewMask(TrackEventViewMask mask) {
-    const TrackEventViewMask normalized = (mask == 0) ? TrackEventView_All : mask;
-    if (m_event_view_mask == normalized) return;
-    m_event_view_mask = normalized;
-
-    for (auto *item : m_items) {
-        if (!item) continue;
-        item->setVisible(isVisibleType(item->eventType()));
-    }
-    update();
-}
-
-QRectF GraphicsTrackRollManager::boundingRect() const {
-    int h = ui_track_item_height + (m_expanded ? ui_automation_total_height : 0);
-    return QRectF(0, 0, m_width, h);
-}
-
-void GraphicsTrackRollManager::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
-    Q_UNUSED(widget);
-    if (!m_parent_track) return;
-
-    // Main track row background
-    const QRectF row_rect(0.0, 0.0, m_width, ui_track_item_height);
-    painter->setPen(QPen(m_parent_track->color().darker(115)));
-    painter->setBrush(QColor::fromHsl(m_parent_track->color().hslHue(),
-                                      m_parent_track->color().hslSaturation(),
-                                      220));
-    painter->drawRect(row_rect);
-
-    // Draw mini step graphs in collapsed mode, expanded lanes when expanded
-    if (m_expanded) {
-        paintExpandedLanes(painter, option);
-    } else {
-        paintMiniStepGraphs(painter, option);
-    }
-}
-
-void GraphicsTrackRollManager::paintStepLine(QPainter *painter, const QVector<CCPoint> &data,
-                                              Qt::PenStyle pen_style, const QRectF &rect,
-                                              int val_min, int val_max) {
-    if (data.isEmpty() || rect.width() <= 0 || rect.height() <= 0) return;
-
-    const qreal range = static_cast<qreal>(val_max - val_min);
-    if (range <= 0) return;
-
-    // Build stepped path
-    QPainterPath path;
-    bool started = false;
-    for (int i = 0; i < data.size(); i++) {
-        qreal x = data[i].tick * ui_tick_x_scale;
-        qreal norm = static_cast<qreal>(data[i].value - val_min) / range;
-        qreal y = rect.bottom() - norm * rect.height();
-
-        if (!started) {
-            path.moveTo(qMax(x, rect.x()), y);
-            started = true;
-        } else {
-            // Horizontal step then vertical
-            path.lineTo(x, path.currentPosition().y());
-            path.lineTo(x, y);
-        }
-    }
-    // Extend to end of rect
-    if (started) {
-        path.lineTo(rect.right(), path.currentPosition().y());
-    }
-
-    // Draw the step line (opaque, track-derived dark color)
-    QColor line_color = m_parent_track->color().darker(200);
-    qreal width = (pen_style == Qt::SolidLine) ? 1.5 : 1.0;
-    painter->setPen(QPen(line_color, width, pen_style));
-    painter->setBrush(Qt::NoBrush);
-    painter->drawPath(path);
-}
-
-void GraphicsTrackRollManager::paintMiniStepGraphs(QPainter *painter, const QStyleOptionGraphicsItem *option) {
-    // Top 24px: step graphs (1px padding → usable 22px)
+/**
+ * Draw the stepped controller graphs in collapsed mode.
+ */
+void GraphicsTrackRollManager::paintMiniStepGraphs(QPainter *painter,
+                                                   const QStyleOptionGraphicsItem *option) {
+    // top 24px: step graphs (1px padding → usable 22px)
     const qreal graph_y = 1.0;
     const qreal graph_h = 22.0;
-    // Bottom 6px: event strip for ControlOther markers
+    // bottom 6px: event strip for CCOther markers
     const qreal strip_y = 24.0;
     const qreal strip_h = 6.0;
 
-    // Draw slightly darker background for the event strip
     QColor strip_bg = QColor::fromHsl(m_parent_track->color().hslHue(),
                                       m_parent_track->color().hslSaturation(), 205);
     painter->setPen(Qt::NoPen);
     painter->setBrush(strip_bg);
     painter->drawRect(QRectF(0, strip_y, m_width, strip_h));
 
-    // Clip to exposed rect for performance
+    // clip to exposed rect for performance
     const QRectF exposed = option->exposedRect;
     const QRectF graph_rect(exposed.x(), graph_y, exposed.width(), graph_h);
 
@@ -828,42 +750,122 @@ void GraphicsTrackRollManager::paintMiniStepGraphs(QPainter *painter, const QSty
     painter->restore();
 }
 
-void GraphicsTrackRollManager::paintExpandedLanes(QPainter *painter, const QStyleOptionGraphicsItem *option) {
+/**
+ * Draw the expanded controller lanes and their stepped graphs.
+ */
+void GraphicsTrackRollManager::paintExpandedLanes(QPainter *painter,
+                                                  const QStyleOptionGraphicsItem *option) {
     const int base_y = ui_track_item_height;
     const QColor track_color = m_parent_track->color();
 
-    const QVector<CCPoint> *data[] = {&m_cc_volume, &m_cc_expression, &m_cc_pan, &m_cc_pitch};
+    const QVector<CCPoint> *data[] = {
+        &m_cc_volume, &m_cc_expression, &m_cc_pan, &m_cc_pitch
+    };
     const int val_maxes[] = {127, 127, 127, 16383};
 
-    // Clip to exposed rect for performance
+    // clip to exposed rect for performance
     const QRectF exposed = option->exposedRect;
 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, false);
 
-    for (int i = 0; i < ui_automation_lane_count; i++) {
-        int lane_y = base_y + (i * ui_automation_lane_height);
-        QRectF lane_rect(0, lane_y, m_width, ui_automation_lane_height);
+    for (int i = 0; i < ui_controller_lane_count; i++) {
+        int lane_y = base_y + (i * ui_controller_lane_height);
+        QRectF lane_rect(0, lane_y, m_width, ui_controller_lane_height);
 
-        // Lane background
+        // background
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor::fromHsl(track_color.hslHue(),
                                           track_color.hslSaturation(),
                                           i % 2 == 0 ? 210 : 215));
         painter->drawRect(lane_rect);
 
-        // Lane separator line (subtle, lighter than background)
+        // lane separator line
         int sep_l = (i % 2 == 0) ? 200 : 205;
         painter->setPen(QPen(QColor::fromHsl(track_color.hslHue(),
                                              track_color.hslSaturation(), sep_l), 0.5));
         painter->drawLine(QPointF(0, lane_y), QPointF(m_width, lane_y));
 
-        // Step graph within lane (2px padding so max values don't sit on border)
-        QRectF graph_rect(exposed.x(), lane_y + 2.0, exposed.width(), ui_automation_lane_height - 4.0);
-        painter->setClipRect(QRectF(0, lane_y, m_width, ui_automation_lane_height));
+        // step graph within lane (2px padding so max values don't sit on border)
+        QRectF graph_rect(exposed.x(), lane_y + 2.0,
+                          exposed.width(), ui_controller_lane_height - 4.0);
+        painter->setClipRect(QRectF(0, lane_y, m_width, ui_controller_lane_height));
         paintStepLine(painter, *data[i], Qt::SolidLine, graph_rect, 0, val_maxes[i]);
         painter->setClipping(false);
     }
 
     painter->restore();
+}
+
+/**
+ * Draw one stepped controller line inside the provided lane rect.
+ */
+void GraphicsTrackRollManager::paintStepLine(QPainter *painter,
+                                             const QVector<CCPoint> &data,
+                                             Qt::PenStyle pen_style,
+                                             const QRectF &rect,
+                                             int val_min, int val_max) {
+    if (data.isEmpty() || rect.width() <= 0 || rect.height() <= 0) return;
+
+    const qreal range = static_cast<qreal>(val_max - val_min);
+    if (range <= 0) return;
+
+    QPainterPath path;
+    bool started = false;
+    for (int i = 0; i < data.size(); i++) {
+        qreal x = data[i].tick * ui_tick_x_scale;
+        qreal norm = static_cast<qreal>(data[i].value - val_min) / range;
+        qreal y = rect.bottom() - norm * rect.height();
+
+        if (!started) {
+            path.moveTo(qMax(x, rect.x()), y);
+            started = true;
+        } else {
+            // horizontal step then vertical
+            path.lineTo(x, path.currentPosition().y());
+            path.lineTo(x, y);
+        }
+    }
+    // extend to end of rect
+    if (started) {
+        path.lineTo(rect.right(), path.currentPosition().y());
+    }
+
+    // draw the step line
+    QColor line_color = m_parent_track->color().darker(200);
+    qreal width = (pen_style == Qt::SolidLine) ? 1.5 : 1.0;
+    painter->setPen(QPen(line_color, width, pen_style));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawPath(path);
+}
+
+bool GraphicsTrackRollManager::isVisibleType(GraphicsTrackMetaEventItem::EventType type) const {
+    return (m_event_view_mask & viewFlagForType(type)) != 0;
+}
+
+/**
+ * Map ab event type to its compact display lane.
+ */
+int GraphicsTrackRollManager::laneForType(GraphicsTrackMetaEventItem::EventType type) const {
+    switch (type) {
+    case GraphicsTrackMetaEventItem::EventType::Program:
+        return 0;
+    case GraphicsTrackMetaEventItem::EventType::Volume:
+    case GraphicsTrackMetaEventItem::EventType::Expression:
+        return 1;
+    case GraphicsTrackMetaEventItem::EventType::Pan:
+    case GraphicsTrackMetaEventItem::EventType::Pitch:
+    case GraphicsTrackMetaEventItem::EventType::ControlOther:
+    default:
+        return 2;
+    }
+}
+
+/**
+ * Get the marker y-position for one compact display lane.
+ */
+qreal GraphicsTrackRollManager::markerYForLane(int lane) const {
+    const qreal lane_base_y = ui_track_item_height - 3.0;
+    const qreal lane_step = 3.0;
+    return lane_base_y - (qBound(0, lane, 2) * lane_step);
 }

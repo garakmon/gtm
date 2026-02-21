@@ -40,10 +40,17 @@ const int ui_piano_key_black_width = 60;
 
 const int ui_track_item_height = 30;
 const int ui_track_item_width = 98;
+static constexpr int ui_track_number_block_w = 20;
+static constexpr int ui_track_number_block_x = 5;
+static constexpr int ui_track_button_h = 12;
+static constexpr int ui_track_button_gap = 2;
+static constexpr int ui_track_buttons_x = ui_track_number_block_x + ui_track_number_block_w + 3;
+static constexpr int ui_track_meter_x = ui_track_buttons_x + 16 + 6;
+static constexpr int ui_track_meter_w = 44;
 
-const int ui_automation_lane_height = 18;
-const int ui_automation_lane_count = 4;  // Volume, Expression, Pan, Pitch Bend
-const int ui_automation_total_height = ui_automation_lane_count * ui_automation_lane_height;
+const int ui_controller_lane_height = 18;
+const int ui_controller_lane_count = 4;  // Volume, Expression, Pan, Pitch Bend
+const int ui_controller_total_height = ui_controller_lane_count * ui_controller_lane_height;
 
 const int ui_tick_x_scale = 2;
 

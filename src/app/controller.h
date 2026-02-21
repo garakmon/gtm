@@ -2,16 +2,17 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#include <cstdint>
+#include "app/project.h"
+#include "app/projectinterface.h"
+#include "sound/player.h"
+
 #include <QElapsedTimer>
 #include <QMap>
 #include <QObject>
 #include <QPointer>
 #include <QTimer>
 
-#include "app/project.h"
-#include "app/projectinterface.h"
-#include "sound/player.h"
+#include <cstdint>
 
 
 

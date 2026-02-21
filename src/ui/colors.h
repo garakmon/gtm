@@ -2,10 +2,10 @@
 #ifndef COLORS_H
 #define COLORS_H
 
-#include <QColor>
-
 #include "util/constants.h"
 #include "util/theme.h"
+
+#include <QColor>
 
 
 

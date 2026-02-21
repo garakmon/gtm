@@ -4,10 +4,12 @@
 #define CUSTOMWIDGETS_H
 
 #include <QComboBox>
-#include <QLineEdit>
-#include <QSpinBox>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMargins>
+#include <QSpinBox>
+
+
 
 class QSvgRenderer;
 class GTMSvgIconWidget;

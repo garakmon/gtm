@@ -1,15 +1,15 @@
 #include "ui/measureroll.h"
 
-#include <QPainter>
-#include <QPainterPath>
-#include <QGraphicsSimpleTextItem>
+#include "sound/song.h"
+#include "ui/colors.h"
+#include "ui/graphicsmetaeventitem.h"
+#include "util/constants.h"
+
 #include <QGraphicsLineItem>
 #include <QGraphicsPolygonItem>
-
-#include "ui/colors.h"
-#include "util/constants.h"
-#include "ui/graphicsmetaeventitem.h"
-#include "sound/song.h"
+#include <QGraphicsSimpleTextItem>
+#include <QPainter>
+#include <QPainterPath>
 
 
 

@@ -2,13 +2,14 @@
 #ifndef SONG_H
 #define SONG_H
 
+#include "deps/midifile/MidiFile.h"
+#include "sound/soundtypes.h"
+
 #include <QList>
 #include <QMap>
 #include <QSet>
-#include <memory>
 
-#include "sound/soundtypes.h"
-#include "deps/midifile/MidiFile.h"
+#include <memory>
 
 
 

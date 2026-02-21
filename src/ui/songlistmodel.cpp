@@ -1,9 +1,9 @@
 #include "ui/songlistmodel.h"
 
+#include "app/project.h"
+
 #include <QColor>
 #include <QIcon>
-
-#include "app/project.h"
 
 
 

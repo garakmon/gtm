@@ -2,8 +2,8 @@
 #ifndef GRAPHICSSCOREITEMS_H
 #define GRAPHICSSCOREITEMS_H
 
-#include <QGraphicsItem>
 #include <QColor>
+#include <QGraphicsItem>
 
 
 

@@ -2,9 +2,11 @@
 #ifndef TRACKMETERITEM_H
 #define TRACKMETERITEM_H
 
-#include <QGraphicsItem>
 #include <QColor>
+#include <QGraphicsItem>
 #include <QSizeF>
+
+
 
 class GraphicsTrackMeterItem : public QGraphicsItem {
 public:

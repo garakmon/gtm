@@ -6,12 +6,13 @@ extern "C" {
     #include "portaudio.h"
 }
 
-#include <array>
-#include <atomic>
-#include <QMap>
-
 #include "sound/soundtypes.h"
 #include "util/constants.h"
+
+#include <QMap>
+
+#include <array>
+#include <atomic>
 
 
 

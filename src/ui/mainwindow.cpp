@@ -1,7 +1,17 @@
 #include "ui/mainwindow.h"
-#include "ui_mainwindow.h"
 
-#include <limits>
+#include "app/controller.h"
+#include "ui/colors.h"
+#include "ui/customwidgets.h"
+#include "ui/graphicstrackitem.h"
+#include "ui/meters.h"
+#include "ui/minimapwidget.h"
+#include "ui/pianoroll.h"
+#include "ui/previewsoundwindow.h"
+#include "ui/trackroll.h"
+#include "ui_mainwindow.h"
+#include "util/constants.h"
+#include "util/theme.h"
 
 #include <QButtonGroup>
 #include <QComboBox>
@@ -22,17 +32,7 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
-#include "app/controller.h"
-#include "ui/colors.h"
-#include "ui/customwidgets.h"
-#include "ui/graphicstrackitem.h"
-#include "ui/meters.h"
-#include "ui/minimapwidget.h"
-#include "ui/pianoroll.h"
-#include "ui/previewsoundwindow.h"
-#include "ui/trackroll.h"
-#include "util/constants.h"
-#include "util/theme.h"
+#include <limits>
 
 
 

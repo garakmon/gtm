@@ -1,8 +1,8 @@
 #include "sound/song.h"
 
+#include <QDebug>
 
 #include <algorithm>
-#include <QDebug>
 #include <cmath>
 
 

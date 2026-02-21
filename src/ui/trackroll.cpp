@@ -1,14 +1,16 @@
 #include "ui/trackroll.h"
 
-#include <QGraphicsView>
+#include "sound/song.h"
+#include "ui/colors.h"
+#include "ui/graphicstrackitem.h"
+#include "util/constants.h"
+#include "util/util.h"
+
 #include <QEvent>
+#include <QGraphicsView>
 #include <QWheelEvent>
 
-#include "ui/graphicstrackitem.h"
-#include "sound/song.h"
-#include "util/constants.h"
-#include "ui/colors.h"
-#include "util/util.h"
+
 
 namespace {
 TrackEventViewMask presetToMask(TrackRoll::TrackEventPreset preset) {
@@ -212,7 +214,7 @@ void TrackRoll::relayout() {
 
         y += ui_track_item_height;
         if (expanded) {
-            y += ui_automation_total_height;
+            y += ui_controller_total_height;
         }
     }
 

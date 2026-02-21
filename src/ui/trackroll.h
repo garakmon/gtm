@@ -2,12 +2,14 @@
 #ifndef TRACKROLL_H
 #define TRACKROLL_H
 
-#include <QObject>
+#include "ui/graphicstrackitem.h"
+
 #include <QGraphicsScene>
 #include <QMap>
+#include <QObject>
+
 #include <memory>
 
-#include "ui/graphicstrackitem.h"
 
 
 class Song;

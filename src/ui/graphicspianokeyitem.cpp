@@ -1,11 +1,11 @@
 #include "ui/graphicspianokeyitem.h"
 
+#include "util/util.h"
+
+#include <QGraphicsEffect>
+#include <QGraphicsSceneMouseEvent>
 #include <QPainter>
 #include <QWidget>
-#include <QGraphicsSceneMouseEvent>
-#include <QGraphicsEffect>
-
-#include "util/util.h"
 
 
 

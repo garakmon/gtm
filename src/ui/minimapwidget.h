@@ -2,10 +2,13 @@
 #ifndef MINIMAPWIDGET_H
 #define MINIMAPWIDGET_H
 
-#include <QWidget>
 #include <QImage>
 #include <QPointer>
+#include <QWidget>
+
 #include <memory>
+
+
 
 class Song;
 class QScrollBar;

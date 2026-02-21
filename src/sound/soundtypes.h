@@ -2,12 +2,13 @@
 #ifndef SOUNDTYPES_H
 #define SOUNDTYPES_H
 
-#include <cstdint>
-#include <QString>
+#include "util/constants.h"
+
 #include <QByteArray>
 #include <QMap>
+#include <QString>
 
-#include "util/constants.h"
+#include <cstdint>
 
 
 

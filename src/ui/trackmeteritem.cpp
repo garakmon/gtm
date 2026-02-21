@@ -3,6 +3,8 @@
 #include <QPainter>
 #include <QtMath>
 
+
+
 GraphicsTrackMeterItem::GraphicsTrackMeterItem(const QSizeF &size, QGraphicsItem *parent)
     : QGraphicsItem(parent), m_size(size) {
     setCacheMode(QGraphicsItem::DeviceCoordinateCache);

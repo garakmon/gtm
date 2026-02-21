@@ -1,4 +1,5 @@
 #include "ui/previewsoundwindow.h"
+
 #include "ui_previewsoundwindow.h"
 
 

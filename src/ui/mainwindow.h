@@ -2,14 +2,15 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <memory>
+#include "ui/graphicstrackitem.h"
+#include "util/gtmconfig.h"
+
 #include <QCloseEvent>
 #include <QMainWindow>
 #include <QPointer>
 #include <QVector>
 
-#include "ui/graphicstrackitem.h"
-#include "util/gtmconfig.h"
+#include <memory>
 
 
 

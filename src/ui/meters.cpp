@@ -1,11 +1,12 @@
 #include "ui/meters.h"
 
+#include <QHBoxLayout>
 #include <QPainter>
 #include <QSlider>
-#include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QtMath>
 #include <QtGlobal>
+#include <QtMath>
+
 
 
 SegmentedMeterBar::SegmentedMeterBar(QWidget *parent) : QWidget(parent) {

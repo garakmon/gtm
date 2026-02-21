@@ -2,9 +2,9 @@
 #ifndef GRAPHICSPIANOKEYITEM_H
 #define GRAPHICSPIANOKEYITEM_H
 
-#include <QGraphicsItem>
-
 #include "util/constants.h"
+
+#include <QGraphicsItem>
 
 
 

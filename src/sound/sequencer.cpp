@@ -3,9 +3,9 @@
 #include "sound/mixer.h"
 #include "util/constants.h"
 
-#include <cstring>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 
 
 

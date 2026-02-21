@@ -1,18 +1,19 @@
 #include "ui/pianoroll.h"
 
-#include <QGraphicsView>
-#include <QGraphicsLineItem>
-#include <QEvent>
-#include <QWheelEvent>
-#include <QPixmap>
-#include <QPainter>
-#include <cmath>
-
-#include "ui/graphicsscorenoteitem.h"
 #include "sound/song.h"
-#include "util/constants.h"
 #include "ui/colors.h"
+#include "ui/graphicsscorenoteitem.h"
+#include "util/constants.h"
 #include "util/util.h"
+
+#include <QEvent>
+#include <QGraphicsLineItem>
+#include <QGraphicsView>
+#include <QPainter>
+#include <QPixmap>
+#include <QWheelEvent>
+
+#include <cmath>
 
 
 

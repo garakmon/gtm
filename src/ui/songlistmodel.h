@@ -2,9 +2,9 @@
 #ifndef SONGLISTMODEL_H
 #define SONGLISTMODEL_H
 
-#include <memory>
-
 #include <QAbstractListModel>
+
+#include <memory>
 
 
 

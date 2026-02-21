@@ -3,6 +3,8 @@
 #include <QApplication>
 #include <QFile>
 
+
+
 static ThemePalette defaultPalette() {
     ThemePalette p;
     p.bg = "#272822";

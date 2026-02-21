@@ -2,10 +2,12 @@
 #ifndef METERS_H
 #define METERS_H
 
-#include <QWidget>
-#include <QPointer>
 #include <QColor>
+#include <QPointer>
 #include <QSlider>
+#include <QWidget>
+
+
 
 class SegmentedMeterBar : public QWidget {
     Q_OBJECT

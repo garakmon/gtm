@@ -4,6 +4,8 @@
 
 #include <QString>
 
+
+
 class GtmConfig {
 public:
     static QString fileName();

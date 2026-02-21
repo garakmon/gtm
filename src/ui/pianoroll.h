@@ -2,13 +2,14 @@
 #ifndef PIANOROLL_H
 #define PIANOROLL_H
 
-#include <memory>
+#include "ui/graphicspianokeyitem.h"
+
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
 #include <QMap>
 #include <QObject>
 
-#include "ui/graphicspianokeyitem.h"
+#include <memory>
 
 
 

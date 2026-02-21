@@ -1,13 +1,14 @@
 #include "ui/midispinboxes.h"
 
-#include <QWheelEvent>
-#include <QLineEdit>
-#include <QFontDatabase>
-#include <limits>
-
+#include "deps/midifile/MidiEvent.h"
 #include "util/constants.h"
 #include "util/util.h"
-#include "deps/midifile/MidiEvent.h"
+
+#include <QFontDatabase>
+#include <QLineEdit>
+#include <QWheelEvent>
+
+#include <limits>
 
 
 

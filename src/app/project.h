@@ -2,11 +2,12 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
-#include <QMap>
-#include <memory>
-
 #include "sound/song.h"
 #include "sound/soundtypes.h"
+
+#include <QMap>
+
+#include <memory>
 
 
 

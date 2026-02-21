@@ -4,6 +4,8 @@
 
 #include <QGraphicsItem>
 
+
+
 namespace smf { class MidiEvent; }
 
 class GraphicsMetaEventItem : public QGraphicsItem {

@@ -2,9 +2,12 @@
 #ifndef MEASUREROLL_H
 #define MEASUREROLL_H
 
-#include <memory>
-#include <QObject>
 #include <QGraphicsScene>
+#include <QObject>
+
+#include <memory>
+
+
 
 class QGraphicsLineItem;
 class QGraphicsPolygonItem;

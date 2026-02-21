@@ -2,10 +2,12 @@
 #ifndef THEME_H
 #define THEME_H
 
+#include "util/constants.h"
+
 #include <QString>
 #include <QVector>
 
-#include "util/constants.h"
+
 
 struct ThemePalette {
     QString bg;

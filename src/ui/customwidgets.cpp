@@ -1,12 +1,14 @@
 #include "ui/customwidgets.h"
 
-#include <QFontMetrics>
 #include <QEvent>
-#include <QSvgRenderer>
-#include <QPainter>
-#include <QStyle>
+#include <QFontMetrics>
 #include <QImage>
+#include <QPainter>
 #include <QResizeEvent>
+#include <QStyle>
+#include <QSvgRenderer>
+
+
 
 GTMComboBox::GTMComboBox(QWidget *parent) : QComboBox(parent) {
     QFont mono("IBM Plex Mono");

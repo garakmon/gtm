@@ -1,49 +1,14 @@
 #include "sound/mixer.h"
 
-#include <cmath>
+#include "util/util.h"
+
 #include <algorithm>
-#include <QDebug>
+#include <cmath>
 
 
 
 // duty cycle thresholds for square waves (12.5%, 25%, 50%, 75%)
 static const double k_duty_thresholds[4] = {0.125, 0.25, 0.5, 0.75};
-
-/**
- *  Helper to get voice type abbreviation (based on agbplay)
- */
-static QString voiceTypeAbbrev(const Instrument *inst) {
-    if (!inst) return "-";
-
-    static const QMap<int, QString> s_base_type = {
-        {0x00, "PCM"}, {0x08, "PCM"}, {0x10, "PCM"},
-        {0x03, "Wave"}, {0x0B, "Wave"},
-    };
-    static const QMap<int, QString> s_duty_map = {
-        {0, "12"}, {1, "25"}, {2, "50"}, {3, "75"}
-    };
-
-    const int type_id = inst->type_id;
-    if (s_base_type.contains(type_id)) {
-        return s_base_type.value(type_id);
-    }
-
-    const QString duty = s_duty_map.value(inst->duty_cycle & 0x03, "50");
-
-    switch (type_id) {
-    case 0x01: // Square1 (sweep)
-    case 0x09:
-        return QString("Sq.%1S").arg(duty);
-    case 0x02: // Square2
-    case 0x0A:
-        return QString("Sq.%1").arg(duty);
-    case 0x04: // Noise
-    case 0x0C:
-        return (inst->duty_cycle & 0x1) ? "Ns.7" : "Ns.15";
-    default:
-        return "Multi";
-    }
-}
 
 /**
  * Generates the next raw sample for the voice’s current instrument type, advances its
@@ -685,7 +650,8 @@ void Mixer::noteOn(uint8_t channel, uint8_t key, uint8_t velocity, uint8_t progr
     // store info for UI display
     if (channel < g_num_midi_channels) {
         m_channel_play_info[channel].active = true;
-        m_channel_play_info[channel].voice_type = voiceTypeAbbrev(inst);
+        m_channel_play_info[channel].voice_type =
+            instrumentTypeAbbrev(inst, InstrumentTypeAbbrevMode::Playback);
     }
 
     Voice *voice = nullptr;
@@ -866,82 +832,7 @@ Mixer::ChannelPlayInfo Mixer::getChannelPlayInfo(uint8_t channel) const {
  */
 const Instrument *Mixer::resolveInstrument(const Instrument *inst, uint8_t key,
                                            const VoiceGroup **out_vg) const {
-    if (!inst || !m_all_voicegroups) return inst;
-
-    // resolve voice_keysplit through the selected table
-    if (inst->type_id == 0x40) {
-        // sample_label names the referenced voicegroup
-        auto vg_it = m_all_voicegroups->find(inst->sample_label);
-        if (vg_it == m_all_voicegroups->end()) {
-            qDebug() << "resolveInstrument: keysplit voicegroup not found:"
-                     << inst->sample_label;
-            return nullptr;
-        }
-
-        // map the midi key to a concrete instrument index
-        int inst_index = 0;
-        if (m_keysplit_tables && !inst->keysplit_table.isEmpty()) {
-            auto table_it = m_keysplit_tables->find(inst->keysplit_table);
-            if (table_it != m_keysplit_tables->end()) {
-                const KeysplitTable &table = table_it.value();
-                auto note_it = table.note_map.find(key);
-                if (note_it != table.note_map.end()) {
-                    inst_index = note_it.value();
-                } else {
-                    // fall back to the highest key not above the request
-                    for (auto it = table.note_map.begin();
-                         it != table.note_map.end(); it++) {
-                        if (it.key() <= key) {
-                            inst_index = it.value();
-                        }
-                    }
-                }
-            } else {
-                qDebug() << "resolveInstrument: keysplit table not found:"
-                         << inst->keysplit_table;
-            }
-        }
-
-        const VoiceGroup &split_vg = vg_it.value();
-        if (inst_index < 0 || inst_index >= split_vg.instruments.size()) {
-            qDebug() << "resolveInstrument: key" << key << "inst_index" << inst_index
-                     << "out of range for" << inst->sample_label
-                     << "(size:" << split_vg.instruments.size() << ")";
-            return nullptr;
-        }
-
-        if (out_vg) *out_vg = &split_vg;
-        // recurse so nested keysplits still resolve correctly
-        return this->resolveInstrument(&split_vg.instruments[inst_index], key, out_vg);
-    }
-
-    // resolve voice_keysplit_all by direct drum index
-    if (inst->type_id == 0x80) {
-        // sample_label names the referenced voicegroup
-        auto it = m_all_voicegroups->find(inst->sample_label);
-        if (it == m_all_voicegroups->end()) {
-            qDebug() << "resolveInstrument: keysplit_all voicegroup not found:"
-                     << inst->sample_label;
-            return nullptr;
-        }
-
-        const VoiceGroup &drum_vg = it.value();
-        int drum_index = key - drum_vg.offset;
-
-        if (drum_index < 0 || drum_index >= drum_vg.instruments.size()) {
-            qDebug() << "resolveInstrument: key" << key
-                     << "out of range for" << inst->sample_label
-                     << "(offset:" << drum_vg.offset
-                     << "size:" << drum_vg.instruments.size() << ")";
-            return nullptr;
-        }
-
-        if (out_vg) *out_vg = &drum_vg;
-        // recurse so nested keysplits still resolve correctly
-        return this->resolveInstrument(&drum_vg.instruments[drum_index], key, out_vg);
-    }
-
-    return inst;
+    return resolveInstrumentForKey(inst, key, m_all_voicegroups, m_keysplit_tables, out_vg);
 }
 
 /**
