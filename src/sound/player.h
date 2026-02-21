@@ -24,7 +24,7 @@ class Song;
 ///
 //////////////////////////////////////////////////////////////////////////////////////////
 class Player {
-public:
+public: // methods
     Player() : m_audio_stream(nullptr) {}
     ~Player();
 
@@ -42,7 +42,7 @@ public:
     Mixer *getMixer() { return &m_mixer; }
     Sequencer *getSequencer() { return &m_sequencer; }
 
-private:
+private: // methods
     void audioCallback(float *out_buffer, unsigned long frame_count);
     static int paStaticCallback(const void *input, void *output,
                                 unsigned long frame_count,
@@ -50,6 +50,7 @@ private:
                                 PaStreamCallbackFlags status_flags,
                                 void *user_data);
 
+private: // members
     PaStream *m_audio_stream;
 
     Mixer m_mixer;

@@ -35,7 +35,7 @@ class QToolButton;
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
-public:
+public: // methods
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
@@ -47,7 +47,7 @@ public:
 
     friend class Controller;
 
-private:
+private: // methods
     // window initialization
     void setupUi();
     void loadConfig();
@@ -70,7 +70,7 @@ private:
     void setupTrackMetaControls();
     void applyTrackMetaMaskFromUi();
 
-protected:
+protected: // methods
     void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
 
@@ -88,7 +88,7 @@ private slots:
     // other actions
     void on_action_PreviewSound_triggered();
 
-private:
+private: // members
     Ui::MainWindow *ui;
 
     std::unique_ptr<Controller> m_controller;
