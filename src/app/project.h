@@ -2,8 +2,8 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
-#include "sound/song.h"
 #include "sound/soundtypes.h"
+#include "sound/song.h"
 
 #include <QMap>
 
@@ -11,24 +11,34 @@
 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// The Project is the model of the currently opened decomp project and its music data.
+/// It owns the relevant resources (sound samples, PCM wave data, voicegroups, keysplits),
+/// and the set of Song objects that have actually been instantiated.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 class Project {
 public:
-    Project();
-    ~Project();
+    Project() = default;
+    ~Project() = default;
 
-public:
-    void load();
-    void load(QString path);
+    Project(const Project &) = delete;
+    Project &operator=(const Project &) = delete;
+    Project(Project &&) = delete;
+    Project &operator=(Project &&) = delete;
 
+    void reset();
+    void setRootPath(const QString &path);
+    const QString &rootPath() const;
+
+    // song data stuff
     std::shared_ptr<Song> addSong(const QString &title, smf::MidiFile &midi);
-    std::shared_ptr<Song> getSong(const QString &title) { return this->m_song_table.contains(title) ? this->m_song_table[title] : nullptr; }
+    std::shared_ptr<Song> getSong(const QString &title) const;
+    std::shared_ptr<Song> activeSong() const;
+    void setActiveSong(const QString &title);
 
-    std::shared_ptr<Song> activeSong() { return this->m_active_song; }
-    void setActiveSong(const QString &title) { this->m_active_song = this->getSong(title); }
-    void setRootPath(const QString &path) { m_root_path = path; }
-    const QString &rootPath() const { return m_root_path; }
-
-    // direct_sound_data.inc mappings
+    // loading
     void addSampleMapping(const QString &label, const QString &path);
     void addSample(const QString &label, const Sample &sample);
     void addPcmData(const QString &label, const QByteArray &data);
@@ -36,36 +46,41 @@ public:
     void setVoiceGroupOffset(const QString &group, int offset);
     void addTable(const QString &label, const KeysplitTable &table);
     void addSongEntry(const SongEntry &song);
-    void updateSongData(const QString &title, const QString &voicegroup, int volume, int priority, int reverb);
+    void updateSongData(const QString &title, const QString &voicegroup,
+                        int volume, int priority, int reverb);
 
-public:
-    int getNumSongsInTable() { return this->m_song_table_order.size(); }
-    QString getSongTitleAt(int i) { return this->m_song_table_order.at(i); } // !TODO: bounds checking
-    SongEntry &getSongEntryByTitle(const QString &title) { return this->m_song_entries[title]; }
-    bool songLoaded(const QString &title) { return this->m_song_table.contains(title); }
+    // getters
+    int getNumSongsInTable() const;
+    QString getSongTitleAt(int i) const;
+    SongEntry &getSongEntryByTitle(const QString &title);
+    bool songLoaded(const QString &title) const;
     QString getSamplePath(const QString &label) const;
     Sample &getSample(const QString &label);
-
     bool hasSample(const QString &label) const;
-
-    const QMap<QString, Sample> &getSamples() const { return m_samples; }
-    const QMap<QString, QByteArray> &getPcmData() const { return m_pcm_data; }
-    const QMap<QString, VoiceGroup> &getVoiceGroups() const { return m_voicegroups; }
-    const QMap<QString, KeysplitTable> &getKeysplitTables() const { return m_keysplit_tables; }
+    const QMap<QString, Sample> &getSamples() const;
+    const QMap<QString, QByteArray> &getPcmData() const;
+    const QMap<QString, VoiceGroup> &getVoiceGroups() const;
+    const QMap<QString, KeysplitTable> &getKeysplitTables() const;
     const VoiceGroup *getVoiceGroup(const QString &name) const;
 
 private:
+    // songs
+    QMap<QString, std::shared_ptr<Song>> m_song_table;
     std::shared_ptr<Song> m_active_song;
 
+    // project resources
     QMap<QString, QString> m_sample_map; // label -> path
     QMap<QString, Sample> m_samples; // label -> loaded PCM data
     QMap<QString, QByteArray> m_pcm_data; // label -> 16-byte programmable wave data
     QMap<QString, VoiceGroup> m_voicegroups;
     QMap<QString, KeysplitTable> m_keysplit_tables;
+
+    // song table data
     QMap<QString, SongEntry> m_song_entries; // song titles and filenames
-    QStringList m_song_table_order; // just titles in order read !TODO: rename? (m_song_titles?)
-    QMap<QString, std::shared_ptr<Song>> m_song_table; // loaded songs
-    QString m_root_path;
+    QStringList m_song_table_order;
+
+    // project metadata
+    QString m_root;
 
     friend class ProjectInterface;
 };

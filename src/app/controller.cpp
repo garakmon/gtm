@@ -23,6 +23,7 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QScrollBar>
+#include <QTime>
 #include <QVector>
 #include <QWheelEvent>
 
