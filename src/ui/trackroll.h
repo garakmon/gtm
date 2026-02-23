@@ -16,6 +16,12 @@ class Song;
 class GraphicsTrackItem;
 class GraphicsTrackRollManager;
 
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// TrackRoll owns the two scenes used for the track list and the track event roll.
+/// It builds and manages the GraphicsTrackItem rows and their associated meta events.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 class TrackRoll : public QObject {
     Q_OBJECT
 
@@ -29,39 +35,42 @@ public:
     };
 
     TrackRoll(QObject *parent = nullptr);
+    ~TrackRoll() override = default;
 
-    QGraphicsScene *sceneRoll() { return &this->m_scene_roll; };
-    QGraphicsScene *sceneTracks() { return &this->m_scene_track_list; }
+    // disable copy and move
+    TrackRoll(const TrackRoll &) = delete;
+    TrackRoll &operator=(const TrackRoll &) = delete;
+    TrackRoll(TrackRoll &&) = delete;
+    TrackRoll &operator=(TrackRoll &&) = delete;
 
-    void setSong(std::shared_ptr<Song> song) {
-        this->m_scene_roll.clear();
-        this->m_scene_track_list.clear();
-        this->m_track_items.clear();
-        this->m_roll_managers.clear();
-        this->m_expanded_row = -1;
+    // scene getters
+    QGraphicsScene *sceneRoll() { return &m_scene_roll; }
+    QGraphicsScene *sceneTracks() { return &m_scene_track_list; }
 
-        this->m_active_song = song;
-        this->drawTracks();
-    }
+    void setSong(std::shared_ptr<Song> song);
 
-    GraphicsTrackItem *addTrack();
-
-    // Update track display with current instrument info (called during playback)
+    // playback display
     void setTrackPlayingInfo(int channel, const QString &voiceType);
     void clearAllPlayingInfo();
-    void setTrackMuted(int channel, bool muted);
-    void setTrackSoloed(int channel, bool soloed);
     void setTrackMeterLevels(int channel, float left, float right);
     void clearAllMeters();
+
+    // control state
+    void setTrackMuted(int channel, bool muted);
+    void setTrackSoloed(int channel, bool soloed);
     void clearAllSoloed();
     bool hasSoloed() const;
     void setTracksInteractive(bool enabled);
+
+    // layout
     void toggleTrackExpansion(int display_row);
+
+    // event display
     void setEventViewMask(TrackEventViewMask mask);
     TrackEventViewMask eventViewMask() const { return m_event_view_mask; }
     void setEventPreset(TrackEventPreset preset);
     void setEventPreset(int preset_index);
-    TrackEventPreset eventPreset() const { return m_event_preset; }
+
     void setInstrumentContext(const VoiceGroup *song_voicegroup,
                               const QMap<QString, VoiceGroup> *all_voicegroups,
                               const QMap<QString, KeysplitTable> *keysplit_tables);
@@ -76,21 +85,27 @@ private slots:
     void onTrackClicked(int track);
 
 private:
+    // drawing helpers
+    void reset();
     void drawTracks();
     void relayout();
 
-    // vert scrolls the same
+private:
+    std::shared_ptr<Song> m_active_song;
+
+    // scenes
     QGraphicsScene m_scene_roll;
     QGraphicsScene m_scene_track_list;
 
-    std::shared_ptr<Song> m_active_song;
-
-    // Map channel to track item for playback info display
+    // managed items
     QMap<int, GraphicsTrackItem *> m_track_items;
     QMap<int, GraphicsTrackRollManager *> m_roll_managers;
+
+    // layout and event state
     int m_expanded_row = -1;
     TrackEventViewMask m_event_view_mask = TrackEventView_All;
-    TrackEventPreset m_event_preset = TrackEventPreset::All;
+
+    // instrument info
     const VoiceGroup *m_song_voicegroup = nullptr;
     const QMap<QString, VoiceGroup> *m_all_voicegroups = nullptr;
     const QMap<QString, KeysplitTable> *m_keysplit_tables = nullptr;

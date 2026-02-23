@@ -6,14 +6,9 @@
 #include "util/constants.h"
 #include "util/util.h"
 
-#include <QEvent>
-#include <QGraphicsView>
-#include <QWheelEvent>
 
 
-
-namespace {
-TrackEventViewMask presetToMask(TrackRoll::TrackEventPreset preset) {
+static TrackEventViewMask presetToMask(TrackRoll::TrackEventPreset preset) {
     switch (preset) {
     case TrackRoll::TrackEventPreset::All:
         return TrackEventView_All;
@@ -29,99 +24,66 @@ TrackEventViewMask presetToMask(TrackRoll::TrackEventPreset preset) {
     }
 }
 
-TrackRoll::TrackEventPreset maskToPreset(TrackEventViewMask mask) {
-    if (mask == TrackEventView_All) return TrackRoll::TrackEventPreset::All;
-    if (mask == (TrackEventView_Volume | TrackEventView_Expression | TrackEventView_Pan)) return TrackRoll::TrackEventPreset::Mix;
-    if (mask == TrackEventView_Program) return TrackRoll::TrackEventPreset::Timbre;
-    if (mask == TrackEventView_ControlOther) return TrackRoll::TrackEventPreset::Other;
-    return TrackRoll::TrackEventPreset::Custom;
-}
-} // namespace
-
-
 TrackRoll::TrackRoll(QObject *parent) : QObject(parent) {
-    this->m_scene_roll.setParent(this);
+    m_scene_roll.setParent(this);
 }
 
-void TrackRoll::drawTracks() {
-    this->m_scene_track_list.clear();
-    this->m_scene_roll.clear();
-    this->m_track_items.clear();
-    this->m_roll_managers.clear();
-    this->m_expanded_row = -1;
-
-    const auto *states = m_active_song->getInitialChannelStates();
-
-    int track_num = 0;
-    int display_row = 0;
-    for (auto track : this->m_active_song->tracks()) {
-        if (this->m_active_song->isMetaTrack(track_num)) {
-            track_num++;
-            continue;
-        }
-
-        GraphicsTrackItem *track_item = new GraphicsTrackItem(track_num, display_row);
-        this->m_scene_track_list.addItem(track_item);
-
-        // Pass initial channel state for step graph data
-        int ch = display_row < 16 ? display_row : 0;
-        auto *manager = new GraphicsTrackRollManager(track, track_item,
-            states[ch].volume, states[ch].pan, states[ch].expression, states[ch].pitch_bend,
-            m_song_voicegroup, m_all_voicegroups, m_keysplit_tables);
-        manager->setEventViewMask(m_event_view_mask);
-        this->m_scene_roll.addItem(manager);
-        m_roll_managers[display_row] = manager;
-
-        // Connect signals
-        connect(track_item, &GraphicsTrackItem::muteToggled, this, &TrackRoll::trackMuteToggled);
-        connect(track_item, &GraphicsTrackItem::soloToggled, this, &TrackRoll::trackSoloToggled);
-        connect(track_item, &GraphicsTrackItem::trackClicked, this, &TrackRoll::onTrackClicked);
-
-        // Store by display row (which maps to MIDI channel for typical GBA music)
-        m_track_items[display_row] = track_item;
-
-        track_num++;
-        display_row++;
-    }
-
-    relayout();
+/**
+ * Set the active song and rebuild the track scenes.
+ */
+void TrackRoll::setSong(std::shared_ptr<Song> song) {
+    this->reset();
+    m_active_song = song;
+    this->drawTracks();
 }
 
+/**
+ * Update the playback label for one track.
+ */
 void TrackRoll::setTrackPlayingInfo(int channel, const QString &voiceType) {
-    // Channel typically maps to display row for GBA music
-    if (m_track_items.contains(channel)) {
-        m_track_items[channel]->setPlayingInfo(voiceType);
-    }
+    auto it = m_track_items.find(channel);
+    if (it == m_track_items.end() || !it.value()) return;
+
+    it.value()->setPlayingInfo(voiceType);
 }
 
+/**
+ * Clear the playback label for every track.
+ */
 void TrackRoll::clearAllPlayingInfo() {
     for (auto item : m_track_items) {
         item->clearPlayingInfo();
     }
 }
 
-void TrackRoll::setTrackMuted(int channel, bool muted) {
-    if (m_track_items.contains(channel)) {
-        m_track_items[channel]->setMuted(muted);
-    }
-}
-
-void TrackRoll::setTrackSoloed(int channel, bool soloed) {
-    if (m_track_items.contains(channel)) {
-        m_track_items[channel]->setSoloed(soloed);
-    }
-}
-
+/**
+ * Update the level meter for one track.
+ */
 void TrackRoll::setTrackMeterLevels(int channel, float left, float right) {
-    if (m_track_items.contains(channel)) {
-        m_track_items[channel]->setMeterLevels(left, right);
-    }
+    auto it = m_track_items.find(channel);
+    if (it == m_track_items.end() || !it.value()) return;
+
+    it.value()->setMeterLevels(left, right);
 }
 
 void TrackRoll::clearAllMeters() {
     for (auto item : m_track_items) {
         item->setMeterLevels(0.0f, 0.0f);
     }
+}
+
+void TrackRoll::setTrackMuted(int channel, bool muted) {
+    auto it = m_track_items.find(channel);
+    if (it == m_track_items.end() || !it.value()) return;
+
+    it.value()->setMuted(muted);
+}
+
+void TrackRoll::setTrackSoloed(int channel, bool soloed) {
+    auto it = m_track_items.find(channel);
+    if (it == m_track_items.end() || !it.value()) return;
+
+    it.value()->setSoloed(soloed);
 }
 
 void TrackRoll::clearAllSoloed() {
@@ -134,6 +96,7 @@ bool TrackRoll::hasSoloed() const {
     for (auto item : m_track_items) {
         if (item->isSoloed()) return true;
     }
+
     return false;
 }
 
@@ -143,71 +106,156 @@ void TrackRoll::setTracksInteractive(bool enabled) {
     }
 }
 
-void TrackRoll::onTrackClicked(int track) {
-    // Find display_row for this track number
-    for (auto it = m_track_items.begin(); it != m_track_items.end(); ++it) {
-        if (it.value()->track() == track) {
-            toggleTrackExpansion(it.key());
-            break;
-        }
-    }
-    emit trackSelected(track);
-}
-
+/**
+ * Toggle the expanded state for one display row.
+ */
 void TrackRoll::toggleTrackExpansion(int display_row) {
     if (m_expanded_row == display_row) {
         m_expanded_row = -1;
     } else {
         m_expanded_row = display_row;
     }
-    relayout();
+
+    this->relayout();
 }
 
+/**
+ * Set the visible track event mask.
+ */
 void TrackRoll::setEventViewMask(TrackEventViewMask mask) {
-    const TrackEventViewMask normalized = (mask == 0) ? TrackEventView_All : mask;
+    TrackEventViewMask normalized = mask == 0 ? TrackEventView_All : mask;
     if (m_event_view_mask == normalized) return;
+
     m_event_view_mask = normalized;
-    m_event_preset = maskToPreset(normalized);
+
     for (auto *manager : m_roll_managers) {
         if (manager) manager->setEventViewMask(m_event_view_mask);
     }
 }
 
+/**
+ * Set the visible track event preset.
+ */
 void TrackRoll::setEventPreset(TrackEventPreset preset) {
     if (preset == TrackEventPreset::Custom) return;
-    const TrackEventViewMask mask = presetToMask(preset);
-    setEventViewMask(mask);
+
+    TrackEventViewMask mask = presetToMask(preset);
+    this->setEventViewMask(mask);
 }
 
+/**
+ * Set the visible track event preset from the combobox index.
+ */
 void TrackRoll::setEventPreset(int preset_index) {
     if (preset_index < static_cast<int>(TrackEventPreset::All) ||
         preset_index > static_cast<int>(TrackEventPreset::Other)) {
         return;
     }
-    setEventPreset(static_cast<TrackEventPreset>(preset_index));
+
+    this->setEventPreset(static_cast<TrackEventPreset>(preset_index));
 }
 
+/**
+ * Set the instrument lookup data for track events.
+ */
 void TrackRoll::setInstrumentContext(const VoiceGroup *song_voicegroup,
                                      const QMap<QString, VoiceGroup> *all_voicegroups,
-                                     const QMap<QString, KeysplitTable> *keysplit_tables) {
+                                     const QMap<QString, KeysplitTable> *keysplits) {
     m_song_voicegroup = song_voicegroup;
     m_all_voicegroups = all_voicegroups;
-    m_keysplit_tables = keysplit_tables;
+    m_keysplit_tables = keysplits;
 }
 
+/**
+ * Handle a click on one track row.
+ */
+void TrackRoll::onTrackClicked(int track) {
+    for (auto it = m_track_items.begin(); it != m_track_items.end(); ++it) {
+        if (it.value()->track() == track) {
+            this->toggleTrackExpansion(it.key());
+            break;
+        }
+    }
+
+    emit trackSelected(track);
+}
+
+/**
+ * Clear the current track scenes and cached items.
+ */
+void TrackRoll::reset() {
+    m_scene_track_list.clear();
+    m_scene_roll.clear();
+    m_track_items.clear();
+    m_roll_managers.clear();
+    m_expanded_row = -1;
+}
+
+/**
+ * Draw every track row for the active song.
+ */
+void TrackRoll::drawTracks() {
+    if (!m_active_song) return;
+
+    const auto *states = m_active_song->getInitialChannelStates();
+
+    int track_num = 0;
+    int display_row = 0;
+    for (auto track : m_active_song->tracks()) {
+        if (m_active_song->isMetaTrack(track_num)) {
+            track_num++;
+            continue;
+        }
+
+        GraphicsTrackItem *track_item = new GraphicsTrackItem(track_num, display_row);
+        m_scene_track_list.addItem(track_item);
+
+        // fall back to channel 0 state beyond 16 rows (m4a engine limit)
+        int ch = display_row < 16 ? display_row : 0;
+        auto *manager = new GraphicsTrackRollManager(
+            track, track_item,
+            states[ch].volume, states[ch].pan,
+            states[ch].expression, states[ch].pitch_bend,
+            m_song_voicegroup, m_all_voicegroups, m_keysplit_tables);
+        manager->setEventViewMask(m_event_view_mask);
+        m_scene_roll.addItem(manager);
+
+        connect(track_item, &GraphicsTrackItem::muteToggled,
+                this, &TrackRoll::trackMuteToggled, Qt::UniqueConnection);
+        connect(track_item, &GraphicsTrackItem::soloToggled,
+                this, &TrackRoll::trackSoloToggled, Qt::UniqueConnection);
+        connect(track_item, &GraphicsTrackItem::trackClicked,
+                this, &TrackRoll::onTrackClicked, Qt::UniqueConnection);
+
+        m_roll_managers[display_row] = manager;
+        m_track_items[display_row] = track_item;
+
+        track_num++;
+        display_row++;
+    }
+
+    this->relayout();
+}
+
+/**
+ * Recompute the row geometry after expansion changes.
+ */
 void TrackRoll::relayout() {
     int y = 0;
     int num_rows = m_track_items.size();
-    for (int row = 0; row < num_rows; row++) {
-        if (!m_track_items.contains(row)) continue;
 
-        bool expanded = (row == m_expanded_row);
-        auto *track_item = m_track_items[row];
+    for (int row = 0; row < num_rows; row++) {
+        auto track_it = m_track_items.find(row);
+        if (track_it == m_track_items.end() || !track_it.value()) continue;
+
+        bool expanded = row == m_expanded_row;
+        GraphicsTrackItem *track_item = track_it.value();
         track_item->setExpanded(expanded);
         track_item->setYPosition(y);
 
-        if (m_roll_managers.contains(row)) {
-            auto *manager = m_roll_managers[row];
+        auto manager_it = m_roll_managers.find(row);
+        if (manager_it != m_roll_managers.end() && manager_it.value()) {
+            GraphicsTrackRollManager *manager = manager_it.value();
             manager->setExpanded(expanded);
             manager->setPos(0, y);
         }
