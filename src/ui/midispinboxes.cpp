@@ -4,36 +4,9 @@
 #include "util/constants.h"
 #include "util/util.h"
 
-#include <QFontDatabase>
-#include <QLineEdit>
-#include <QWheelEvent>
-
 #include <limits>
 
-
-
-MidiSpinBox::MidiSpinBox(QWidget *parent)
-    : QSpinBox(parent) {
-    // Don't let scrolling hijack focus.
-    setFocusPolicy(Qt::StrongFocus);
-}
-
-void MidiSpinBox::wheelEvent(QWheelEvent *event) {
-    // Only allow scrolling to modify contents when it explicitly has focus.
-    if (this->hasFocus()) {
-        QSpinBox::wheelEvent(event);
-    } else {
-        event->ignore();
-    }
-}
-
-void MidiSpinBox::setLineEditEnabled(bool enabled) {
-    this->lineEdit()->setReadOnly(!enabled);
-}
-
-
-
-MidiKeySpinBox::MidiKeySpinBox(QWidget *parent) : MidiSpinBox(parent) {
+MidiKeySpinBox::MidiKeySpinBox(QWidget *parent) : GTMSpinBox(parent) {
     this->setRange(0, g_num_notes_piano - 1);
 }
 
@@ -49,9 +22,7 @@ QString MidiKeySpinBox::textFromValue(int value) const {
         .arg(value / 12 - 1);
 }
 
-
-
-MidiTickSpinBox::MidiTickSpinBox(QWidget *parent) : MidiSpinBox(parent) {
+MidiTickSpinBox::MidiTickSpinBox(QWidget *parent) : GTMSpinBox(parent) {
     this->setRange(0, std::numeric_limits<decltype(smf::MidiEvent::tick)>::max());
 }
 

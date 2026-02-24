@@ -10,6 +10,11 @@
 
 class Project;
 
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// The SongListModel is the underlying model for the Song List view.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 class SongListModel : public QAbstractListModel {
     Q_OBJECT
 
@@ -24,7 +29,8 @@ public:
     void refreshAll();
 
 private:
-    Project *m_project; // make sure the model is deleted if ever other projects are allowed to be opened
+    Project *m_project;
+    // !TODO: make sure model is deleted if ever other projects are allowed to be opened
 };
 
 #endif // SONGLISTMODEL_H

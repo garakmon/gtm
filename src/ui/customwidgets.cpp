@@ -16,6 +16,37 @@ GTMComboBox::GTMComboBox(QWidget *parent) : QComboBox(parent) {
     setFont(mono);
 }
 
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+GTMSpinBox::GTMSpinBox(QWidget *parent) : QSpinBox(parent) {
+    QFont mono("IBM Plex Mono");
+    mono.setStyleHint(QFont::Monospace);
+    setFont(mono);
+    setFocusPolicy(Qt::StrongFocus);
+}
+
+void GTMSpinBox::setLineEditEnabled(bool enabled) {
+    this->lineEdit()->setReadOnly(!enabled);
+}
+
+void GTMSpinBox::wheelEvent(QWheelEvent *event) {
+    if (this->hasFocus()) {
+        QSpinBox::wheelEvent(event);
+    } else {
+        event->ignore();
+    }
+}
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 GTMLineEdit::GTMLineEdit(QWidget *parent) : QLineEdit(parent) {}
 
 void GTMLineEdit::setLeadingSvg(const QString &path, int size) {
@@ -78,11 +109,11 @@ void GTMLineEdit::updateLeadingGeometry() {
     m_leading_icon->setGeometry(x, y, icon_size, icon_size);
 }
 
-GTMSpinBox::GTMSpinBox(QWidget *parent) : QSpinBox(parent) {
-    QFont mono("IBM Plex Mono");
-    mono.setStyleHint(QFont::Monospace);
-    setFont(mono);
-}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 GTMSvgIconWidget::GTMSvgIconWidget(QWidget *parent) : QWidget(parent) {
     m_renderer = new QSvgRenderer(this);
@@ -146,6 +177,11 @@ void GTMSvgIconWidget::changeEvent(QEvent *event) {
         update();
     }
 }
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 GTMFormLabel::GTMFormLabel(QWidget *parent) : QLabel(parent) {
     updateMinimumWidth();

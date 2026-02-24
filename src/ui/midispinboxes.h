@@ -2,23 +2,16 @@
 #ifndef MIDIKEYSPINBOX_H
 #define MIDIKEYSPINBOX_H
 
-#include <QSpinBox>
+#include "ui/customwidgets.h"
 
 
 
-class MidiSpinBox : public QSpinBox {
-    Q_OBJECT
-
-public:
-    MidiSpinBox(QWidget *parent = nullptr);
-
-    void wheelEvent(QWheelEvent *event) override;
-    void setLineEditEnabled(bool enabled);
-};
-
-
-
-class MidiKeySpinBox : public MidiSpinBox {
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// A key + note spinbox specialized for MIDI keys displaying the actual musical note.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+class MidiKeySpinBox : public GTMSpinBox {
     Q_OBJECT
 
 public:
@@ -35,7 +28,14 @@ private:
 
 
 
-class MidiTickSpinBox : public MidiSpinBox {
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// A tick spinbox specialized for MIDI tick positions, with additional measure.bar text.
+///
+/// !TODO: measure.bar not actually implemented yet
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+class MidiTickSpinBox : public GTMSpinBox {
     Q_OBJECT
 
 public:

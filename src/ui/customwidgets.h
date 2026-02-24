@@ -12,8 +12,15 @@
 
 
 class QSvgRenderer;
+class QWheelEvent;
 class GTMSvgIconWidget;
 
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// Custom ComboBox adding:
+///     - monospaced font styling
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 class GTMComboBox : public QComboBox {
     Q_OBJECT
 
@@ -23,6 +30,32 @@ public:
 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// Custom SpinBox adding:
+///     - monospaced font styling
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+class GTMSpinBox : public QSpinBox {
+    Q_OBJECT
+
+public:
+    explicit GTMSpinBox(QWidget *parent = nullptr);
+
+    void setLineEditEnabled(bool enabled);
+
+protected:
+    void wheelEvent(QWheelEvent *event) override;
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// Custom LineEdit adding:
+///     - support for an inline leading SVG icon inside the line edit
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 class GTMLineEdit : public QLineEdit {
     Q_OBJECT
 
@@ -46,6 +79,14 @@ private:
     class GTMSvgIconWidget *m_leading_icon = nullptr;
 };
 
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// Custom Widget (Icon) adding:
+///     - recolorable svg graphics
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 class GTMSvgIconWidget : public QWidget {
     Q_OBJECT
 
@@ -69,19 +110,16 @@ private:
 
 
 
-class GTMSpinBox : public QSpinBox {
-    Q_OBJECT
-
-public:
-    explicit GTMSpinBox(QWidget *parent = nullptr);
-};
-
-
-
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// Custom Label adding:
+///     - automatic min-width sizing based on target character count (for form alignment)
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 class GTMFormLabel : public QLabel {
     Q_OBJECT
     Q_PROPERTY(int target_chars READ targetChars WRITE setTargetChars)
-    // ^ allows individual labels to set their own targets (like in Qt creator)
+    // ^ allows individual labels to set their own targets (ie in Qt creator)
 
 public:
     explicit GTMFormLabel(QWidget *parent = nullptr);

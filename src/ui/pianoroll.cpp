@@ -59,7 +59,8 @@ GraphicsScoreNoteItem *PianoRoll::addNote(int track, int row, smf::MidiEvent *ev
         m_track_note_groups.insert(track, group);
     }
 
-    GraphicsScoreNoteItem *item = new GraphicsScoreNoteItem(this, track, row, event, event->getLinkedEvent());
+    GraphicsScoreNoteItem *item = new GraphicsScoreNoteItem(this, track, row, event,
+                                                            event->getLinkedEvent());
     item->setParentItem(group);
     item->setFlag(QGraphicsItem::ItemIsSelectable, m_edits_enabled);
     item->setAcceptedMouseButtons(m_edits_enabled ? Qt::LeftButton : Qt::NoButton);

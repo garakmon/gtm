@@ -2,46 +2,44 @@
 
 #include "app/project.h"
 
-#include <QColor>
+#include <QGuiApplication>
 #include <QIcon>
+#include <QPalette>
 
 
 
-int SongListModel::rowCount(const QModelIndex &parent) const {
-    Q_UNUSED(parent);
-    return this->m_project->getNumSongsInTable();
+int SongListModel::rowCount(const QModelIndex &) const {
+    if (!m_project) return 0;
+    return m_project->getNumSongsInTable();
 }
 
 QVariant SongListModel::data(const QModelIndex &index, int role) const {
-    if (!index.isValid() || index.row() >= this->m_project->getNumSongsInTable()) {
+    if (!m_project || !index.isValid() || index.row() >= m_project->getNumSongsInTable()) {
         return QVariant();
     }
 
-    const QString &title = this->m_project->getSongTitleAt(index.row());
-    const SongEntry &entry = m_project->getSongEntryByTitle(title);
-
-    if (role == Qt::DisplayRole) {
-        return QString("[%1] ").arg(index.row(), 4, 10, QLatin1Char('0')) + title;
-    }
-
-    if (role == Qt::UserRole) {
+    // handle the lightweight text roles first
+    if (role == Qt::DisplayRole || role == Qt::UserRole) {
+        QString title = m_project->getSongTitleAt(index.row());
+        if (role == Qt::DisplayRole) {
+            return QString("[%1] ").arg(index.row(), 4, 10, QLatin1Char('0')) + title;
+        }
         return title;
     }
 
+    QString title = m_project->getSongTitleAt(index.row());
+    SongEntry &entry = m_project->getSongEntryByTitle(title);
+
     if (role == Qt::ForegroundRole) {
-        // files without a rule in midi.cfg cannot be played (at least for now)
-        // !TODO: how do I just fully disable an item?
+        // show missing midi entries as disabled text
         if (entry.midifile.isEmpty()) {
-            return QColor(0x808080);
+            return QGuiApplication::palette().color(QPalette::Disabled, QPalette::Text);
         }
-        // else if (this->m_project->getSong().isEmpty()) {
-        //     // empty midi file?
-        //     return QColor(0x009922);
-        // }
-        return QColor(0xffffff);
+        return QVariant();
     }
 
     if (role == Qt::DecorationRole) {
+        // choose an icon based on the song state in memory
         static const QIcon s_song_icon_default(":/icons/song.svg");
         static const QIcon s_song_icon_loaded(":/icons/song-loaded.svg");
         static const QIcon s_song_icon_editing(":/icons/song-editing.svg");
@@ -67,12 +65,12 @@ QVariant SongListModel::data(const QModelIndex &index, int role) const {
 }
 
 Qt::ItemFlags SongListModel::flags(const QModelIndex &index) const {
-    if (!index.isValid() || index.row() >= this->m_project->getNumSongsInTable()) {
+    if (!m_project || !index.isValid() || index.row() >= m_project->getNumSongsInTable()) {
         return Qt::NoItemFlags;
     }
 
-    const QString &title = this->m_project->getSongTitleAt(index.row());
-    const SongEntry &entry = m_project->getSongEntryByTitle(title);
+    QString title = m_project->getSongTitleAt(index.row());
+    SongEntry &entry = m_project->getSongEntryByTitle(title);
 
     if (entry.midifile.isEmpty()) {
         return Qt::NoItemFlags;
@@ -82,9 +80,12 @@ Qt::ItemFlags SongListModel::flags(const QModelIndex &index) const {
 }
 
 void SongListModel::refreshAll() {
+    if (!m_project) return;
+
     const int rows = this->rowCount();
     if (rows <= 0) return;
+
     const QModelIndex first = this->index(0, 0);
     const QModelIndex last = this->index(rows - 1, 0);
-    emit dataChanged(first, last, {Qt::DecorationRole});
+    emit dataChanged(first, last);
 }
