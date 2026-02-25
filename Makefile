@@ -10,6 +10,6 @@ release:
 	cmake --build build --parallel
 
 debug:
-	export NINJA_STATUS="[%f/%t %p | %e s] "; \
-	qt-cmake -G Ninja -S . -B build_debug -DCMAKE_BUILD_TYPE=Debug -DCMAKE_COLOR_DIAGNOSTICS=ON; \
-	cmake --build build_debug --parallel --verbose
+	export NINJA_STATUS="[$$(printf '\033[96m')%f/%t %p$$(printf '\033[0m') | %es] "; \
+	qt-cmake -G Ninja -S . -B build_debug -DCMAKE_BUILD_TYPE=Debug -DCMAKE_COLOR_DIAGNOSTICS=ON -DGTM_TIME_COMPILES=ON; \
+	cmake --build build_debug --parallel
