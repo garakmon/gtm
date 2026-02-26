@@ -22,6 +22,9 @@ const int g_num_white_per_octave = 7;
 const int g_num_black_per_octave = 5;
 const int g_num_notes_per_scale = 8; // do-re-mi-fa-so-la-ti-do
 const int g_midi_middle_c = 60;
+const int g_midi_cc_volume = 7;
+const int g_midi_cc_pan = 10;
+const int g_midi_cc_expression = 11;
 
 const unsigned g_white_key_mask = 0b10101001010;
 const unsigned g_black_key_mask = 0b01010110101;

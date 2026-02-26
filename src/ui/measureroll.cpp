@@ -14,19 +14,37 @@
 
 
 MeasureRoll::MeasureRoll(QObject *parent) : QObject(parent) {
-    //
-    createPlaybackGuide();
+    this->createPlaybackGuide();
+}
+
+QGraphicsScene *MeasureRoll::sceneMeasures() {
+    return &m_scene_measures;
+}
+
+void MeasureRoll::setSong(std::shared_ptr<Song> song) {
+    m_scene_measures.clear();
+    m_active_song = song;
+    this->drawMeasures();
+    this->drawMetaEvents();
+}
+
+int MeasureRoll::tick() {
+    return m_current_tick;
 }
 
 bool MeasureRoll::advance() {
-    //
     this->m_current_tick += 1;
+    // !TODO: check for end of song?
     return true;
-    // check for end of song
+}
+
+void MeasureRoll::setTick(int tick) {
+    m_current_tick = tick;
 }
 
 void MeasureRoll::drawMeasures() {
-    // !TODO: this crashes when there are no events in the midifile, so do some checking somewhere.
+    // !TODO: this crashes when there are no events in the midifile,
+    //        so do some checking somewhere.
     this->m_scene_measures.clear();
 
     if (!this->m_active_song) {
@@ -76,7 +94,9 @@ void MeasureRoll::drawMeasures() {
             if (measure_width > 0) {
                 QPainterPath header_box;
                 header_box.addRoundedRect(measure_x + 1, 1, measure_width - 2, 8, 3, 3);
-                auto *header_item = this->m_scene_measures.addPath(header_box, QPen(Qt::NoPen), QBrush(QColor(0, 0, 0, 100)));
+                auto *header_item = this->m_scene_measures.addPath(
+                    header_box, QPen(Qt::NoPen), QBrush(QColor(0, 0, 0, 100))
+                );
                 header_item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
                 auto* m_text = new QGraphicsSimpleTextItem(QString::number(measure_number));
@@ -86,7 +106,8 @@ void MeasureRoll::drawMeasures() {
                 
                 if (m_text->boundingRect().width() < measure_width) {
                     this->m_scene_measures.addItem(m_text);
-                    m_text->setPos(measure_x + (measure_width / 2.0) - (m_text->boundingRect().width() / 2.0), 0);
+                    m_text->setPos(measure_x + (measure_width / 2.0)
+                                   - (m_text->boundingRect().width() / 2.0), 0);
                     m_text->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
                 }
                 else {
@@ -95,7 +116,8 @@ void MeasureRoll::drawMeasures() {
                 }
             }
 
-            // draw [measure.beat] numbers and timestamps in MM:SS.ms for the first beat in each measure
+            // draw [measure.beat] numbers and timestamps in MM:SS.ms
+            // for the first beat in each measure
             for (int beat_id = 0; beat_id < current_num; ++beat_id) {
                 int beat_tick = measure_start_tick + (beat_id * ticks_per_beat);
                 if (beat_tick >= end_of_segment) break;
@@ -103,10 +125,11 @@ void MeasureRoll::drawMeasures() {
                 int x_pos = beat_tick * ui_tick_x_scale;
                 bool is_start = (beat_id == 0);
 
-                // Vertical Lines
-                auto *line_item = this->m_scene_measures.addLine(x_pos, is_start ? 0 : 10, x_pos, ui_measure_roll_height,
-                                                                 QPen(is_start ? QColor(255, 255, 255, 180) : QColor(255, 255, 255, 60),
-                                                                 1, is_start ? Qt::SolidLine : Qt::DotLine));
+                // vertical Lines
+                auto *line_item = this->m_scene_measures.addLine(
+                    x_pos, is_start ? 0 : 10, x_pos, ui_measure_roll_height,
+                    QPen(is_start ? QColor(255, 255, 255, 180) : QColor(255, 255, 255, 60),
+                    1, is_start ? Qt::SolidLine : Qt::DotLine));
                 line_item->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
 
                 // timestamp
@@ -114,7 +137,8 @@ void MeasureRoll::drawMeasures() {
                     double total_seconds = this->m_active_song->getTimeInSeconds(beat_tick);
                     int minutes = static_cast<int>(total_seconds) / 60;
                     int seconds = static_cast<int>(total_seconds) % 60;
-                    int millis = static_cast<int>((total_seconds - static_cast<int>(total_seconds)) * 1000);
+                    int millis = static_cast<int>((total_seconds
+                                 - static_cast<int>(total_seconds)) * 1000);
 
                     // MM:SS.ms
                     QString time_string = QString("%1:%2.%3")
@@ -132,7 +156,9 @@ void MeasureRoll::drawMeasures() {
                 }
 
                 // beat
-                QGraphicsSimpleTextItem *b_item = new QGraphicsSimpleTextItem(QString("%1.%2").arg(measure_number).arg(beat_id + 1));
+                QGraphicsSimpleTextItem *b_item = new QGraphicsSimpleTextItem(
+                    QString("%1.%2").arg(measure_number).arg(beat_id + 1)
+                );
                 b_item->setBrush(is_start ? Qt::white : QColor(200, 200, 200));
                 QFont b_font = b_item->font(); b_font.setPixelSize(7);
                 b_item->setFont(b_font);
@@ -151,7 +177,8 @@ void MeasureRoll::drawMeasures() {
     }
 
     this->m_scene_measures.setBackgroundBrush(ui_color_piano_roll_bg);
-    this->m_scene_measures.setSceneRect(QRect(0, 0, final_tick * ui_tick_x_scale, ui_measure_roll_height));
+    this->m_scene_measures.setSceneRect(QRect(0, 0, final_tick * ui_tick_x_scale,
+                                              ui_measure_roll_height));
 
     this->createPlaybackGuide();
 }
@@ -185,25 +212,46 @@ void MeasureRoll::updatePlaybackGuide(int tick) {
 }
 
 void MeasureRoll::drawMetaEvents() {
-    if (!m_active_song) return;
+    for (GraphicsMetaEventItem *item : m_meta_event_items) {
+        if (!item) {
+            continue;
+        }
+        m_scene_measures.removeItem(item);
+        delete item;
+    }
+    m_meta_event_items.clear();
 
-    for (auto it = m_active_song->getTimeSignatures().begin(); it != m_active_song->getTimeSignatures().end(); ++it) {
+    if (!m_active_song) {
+        return;
+    }
+
+    for (auto it = m_active_song->getTimeSignatures().begin();
+         it != m_active_song->getTimeSignatures().end();
+         it++) {
         auto *item = new GraphicsMetaEventItem(it.value(), GraphicsMetaEventItem::MetaType::TimeSignature);
         m_scene_measures.addItem(item);
+        m_meta_event_items.append(item);
     }
 
-    for (auto it = m_active_song->getTempoChanges().begin(); it != m_active_song->getTempoChanges().end(); ++it) {
+    for (auto it = m_active_song->getTempoChanges().begin();
+        it != m_active_song->getTempoChanges().end();
+        it++) {
         auto *item = new GraphicsMetaEventItem(it.value(), GraphicsMetaEventItem::MetaType::Tempo);
         m_scene_measures.addItem(item);
+        m_meta_event_items.append(item);
     }
 
-    for (auto it = m_active_song->getKeySignatures().begin(); it != m_active_song->getKeySignatures().end(); ++it) {
+    for (auto it = m_active_song->getKeySignatures().begin();
+        it != m_active_song->getKeySignatures().end();
+        it++) {
         auto *item = new GraphicsMetaEventItem(it.value(), GraphicsMetaEventItem::MetaType::KeySignature);
         m_scene_measures.addItem(item);
+        m_meta_event_items.append(item);
     }
 
     for (auto *event : m_active_song->getMarkers()) {
         auto *item = new GraphicsMetaEventItem(event, GraphicsMetaEventItem::MetaType::Marker);
         m_scene_measures.addItem(item);
+        m_meta_event_items.append(item);
     }
 }

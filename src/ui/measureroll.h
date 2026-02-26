@@ -1,9 +1,8 @@
 #pragma once
-#ifndef MEASUREROLL_H
-#define MEASUREROLL_H
 
 #include <QGraphicsScene>
 #include <QObject>
+#include <QVector>
 
 #include <memory>
 
@@ -11,46 +10,59 @@
 
 class QGraphicsLineItem;
 class QGraphicsPolygonItem;
+class GraphicsMetaEventItem;
 
 class Song;
 
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// MeasureRoll owns the timeline strip above the piano roll and track roll.
+/// It builds and maintains the measure/beat grid, timestamps, and song meta event
+/// markers, and it also owns the playhead indicator shown in that strip.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 class MeasureRoll : public QObject {
     Q_OBJECT
+
 public:
     MeasureRoll(QObject *parent = nullptr);
+    ~MeasureRoll() override = default;
 
-    QGraphicsScene *sceneMeasures() { return &this->m_scene_measures; };
+    MeasureRoll(const MeasureRoll &) = delete;
+    MeasureRoll &operator=(const MeasureRoll &) = delete;
+    MeasureRoll(MeasureRoll &&) = delete;
+    MeasureRoll &operator=(MeasureRoll &&) = delete;
 
-    void setSong(std::shared_ptr<Song> song) {
-        this->m_scene_measures.clear();
-        this->m_active_song = song;
-        drawMeasures();
-        drawMetaEvents();
-    }
+    // scene access
+    QGraphicsScene *sceneMeasures();
 
-    int tick() { return this->m_current_tick; }
-    // TODO: advance() move tick, Controller has tick info to scroll all views
+    void setSong(std::shared_ptr<Song> song);
+
+    int tick();
     bool advance();
-    void setTick(int tick) { this->m_current_tick = tick; }
+    void setTick(int tick);
 
+    // playhead display
     void createPlaybackGuide();
     void updatePlaybackGuide(int tick);
 
-    // QGraphicsItem *marker() { return this->m_marker; } // ensure visible (for scrolling?)
-
 private:
+    // drawing helpers
     void drawMeasures();
     void drawMetaEvents();
 
 private:
+    std::shared_ptr<Song> m_active_song;
+
+    // scene state
     QGraphicsScene m_scene_measures;
 
-    QGraphicsLineItem *m_playhead_line;
-    QGraphicsPolygonItem *m_playhead_arrow;
+    // child items
+    QGraphicsLineItem *m_playhead_line = nullptr;
+    QGraphicsPolygonItem *m_playhead_arrow = nullptr;
+    QVector<GraphicsMetaEventItem *> m_meta_event_items;
 
+    // playback state
     int m_current_tick = 0;
     int m_last_playhead_x = -1;
-    std::shared_ptr<Song> m_active_song;
 };
-
-#endif // MEASUREROLL_H

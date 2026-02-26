@@ -4,85 +4,105 @@
 
 #include "deps/midifile/MidiFile.h"
 #include "sound/soundtypes.h"
+#include "util/constants.h"
 
 #include <QList>
 #include <QMap>
 #include <QSet>
 
-#include <memory>
+#include <cstdint>
+#include <vector>
 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// The Song class is the gtm enriched MIDI model. It wraps a parsed smf::MidiFile, adding
+/// some extra data the rest of the app needs for playback and editing.
+/// Song does not perform playback itself, but it provides the structured timing and
+/// event data that Sequencer, Controller, and the editor views depend on.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 class Song : public smf::MidiFile {
 public:
-    Song();
+    Song() = default;
     Song(smf::MidiFile &midifile);
+    ~Song() = default;
 
-    Song(const Song&) = delete;
-    Song &operator=(const Song&) = delete;
+    Song(const Song &) = delete;
+    Song &operator=(const Song &) = delete;
+    Song(Song &&) = delete;
+    Song &operator=(Song &&) = delete;
 
-    ~Song();
-
+    // song loading
     bool load();
     void mergeEvents();
 
+    // timing
     double durationInSeconds();
     int durationInTicks();
+    int getTickFromTime(double seconds);
 
-    // reference so no copy wasting time
-    QList<QPair<int, smf::MidiEvent *>> &getNotes() { return this->m_notes; }
-    const QList<QPair<int, smf::MidiEvent *>> &getNotes() const { return this->m_notes; }
-    QMap<int, smf::MidiEvent *> &getTimeSignatures() { return this->m_time_signatures; }
-    const QMap<int, smf::MidiEvent *> &getTimeSignatures() const { return this->m_time_signatures; }
-    QMap<int, smf::MidiEvent *> &getTempoChanges() { return this->m_tempo_changes; }
-    const QMap<int, smf::MidiEvent *> &getTempoChanges() const { return this->m_tempo_changes; }
-    QMap<int, smf::MidiEvent *> &getKeySignatures() { return this->m_key_signatures; }
-    const QMap<int, smf::MidiEvent *> &getKeySignatures() const { return this->m_key_signatures; }
-    QList<smf::MidiEvent *> &getMarkers() { return this->m_markers; }
-    const QList<smf::MidiEvent *> &getMarkers() const { return this->m_markers; }
-    QList<smf::MidiEvent *> &getMergedEvents() { return this->m_merged_events; }
-    const QList<smf::MidiEvent *> &getMergedEvents() const { return this->m_merged_events; }
+    // getters return references for efficiency
+    QList<QPair<int, smf::MidiEvent *>> &getNotes() { return m_notes; }
+    const QList<QPair<int, smf::MidiEvent *>> &getNotes() const { return m_notes; }
+    QMap<int, smf::MidiEvent *> &getTimeSignatures() { return m_time_signatures; }
+    const QMap<int, smf::MidiEvent *> &getTimeSignatures() const { return m_time_signatures; }
+    QMap<int, smf::MidiEvent *> &getTempoChanges() { return m_tempo_changes; }
+    const QMap<int, smf::MidiEvent *> &getTempoChanges() const { return m_tempo_changes; }
+    QMap<int, smf::MidiEvent *> &getKeySignatures() { return m_key_signatures; }
+    const QMap<int, smf::MidiEvent *> &getKeySignatures() const { return m_key_signatures; }
+    QList<smf::MidiEvent *> &getMarkers() { return m_markers; }
+    const QList<smf::MidiEvent *> &getMarkers() const { return m_markers; }
+    QList<smf::MidiEvent *> &getMergedEvents() { return m_merged_events; }
+    const QList<smf::MidiEvent *> &getMergedEvents() const { return m_merged_events; }
 
-    std::vector<smf::MidiEventList *> tracks() { return this->m_events; }
-    std::vector<smf::MidiEventList *> tracks() const { return this->m_events; }
+    // track access
+    std::vector<smf::MidiEventList *> &tracks() { return m_events; }
+    const std::vector<smf::MidiEventList *> &tracks() const { return m_events; }
     bool isMetaTrack(int track) const { return m_meta_tracks.contains(track); }
     int getDisplayRow(int track) const { return m_meta_tracks.contains(0) ? track - 1 : track; }
 
-    void setMetaInfo(const SongEntry &entry) { this->m_meta_info = entry; }
-    const SongEntry& getMetaInfo() const { return this->m_meta_info; }
+    // song metadata
+    void setMetaInfo(const SongEntry &entry) { m_meta_info = entry; }
+    const SongEntry &getMetaInfo() const { return m_meta_info; }
 
-    int getTickFromTime(double seconds);
-
-    // Initial state per channel, extracted from track headers before merging
+    // initial channel state info
     const uint8_t *getInitialPrograms() const { return m_initial_programs; }
-
     struct InitialChannelState {
-        uint8_t volume = 100;      // CC7
-        uint8_t pan = 64;          // CC10 (center)
-        uint8_t expression = 127;  // CC11
-        int16_t pitch_bend = 0;    // center = 0 (raw value 8192)
+        uint8_t volume = 100;
+        uint8_t pan = 0x40;
+        uint8_t expression = 0x7f;
+        int16_t pitch_bend = 0;
     };
     const InitialChannelState *getInitialChannelStates() const { return m_initial_channel_states; }
+
+    // edit status
     bool isClean() const { return m_clean; }
     void setClean(bool clean = true) { m_clean = clean; }
     void markDirty() { m_clean = false; }
 
 private:
     void extractInitialState();
+
+private:
+    // event data
     QMap<int, smf::MidiEvent *> m_time_signatures;
     QMap<int, smf::MidiEvent *> m_tempo_changes;
     QMap<int, smf::MidiEvent *> m_key_signatures;
     QList<smf::MidiEvent *> m_markers;
     QList<QPair<int, smf::MidiEvent *>> m_notes;
+    QList<smf::MidiEvent *> m_merged_events;
+
+    // song meta info
     QSet<int> m_meta_tracks;
-
-    QList<smf::MidiEvent *> m_merged_events; // for playback
-
     SongEntry m_meta_info;
 
-    // Initial state per channel (extracted from track headers)
-    uint8_t m_initial_programs[16] = {0};
-    InitialChannelState m_initial_channel_states[16];
+    // initial channel state
+    uint8_t m_initial_programs[g_num_midi_channels] = {0};
+    InitialChannelState m_initial_channel_states[g_num_midi_channels];
+
+    // edit state
     bool m_clean = true;
 };
 

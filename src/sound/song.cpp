@@ -1,40 +1,24 @@
 #include "sound/song.h"
 
-#include <QDebug>
-
 #include <algorithm>
 #include <cmath>
 
 
+namespace {
+constexpr int k_pitch_bend_center = 8192;
+} // namespace
 
-Song::Song() {
-    //
-}
 
-Song::Song(smf::MidiFile &midifile) : smf::MidiFile(midifile) {
-    // move to load()?
-    //m_track_count = m_midi_file.getTrackCount();
-    //this->linkNotePairs();
-}
 
-Song::~Song() {
-    //
-}
+/**
+ * Create this song from a parsed midi file.
+ */
+Song::Song(smf::MidiFile &midifile) : smf::MidiFile(midifile) { }
 
-// TIME SIGNATURE CODE
-/*
-    // load meta events from the first track
-    for (int i = 0; i < midifile[0].size(); i++) {
-        if (midifile[0][i].isTimeSignature()) {
-            TimeSigChange change;
-            change.tick = midifile[0][i].tick;
-            change.num = midifile[0][i].getP1();
-            change.den = std::pow(2, midifile[0][i].getP2());
-            timeSigMap.push_back(change);
-        }
-    }
-*/
-
+/**
+ * Load song data from the MidiFile.
+ * Importantly, call linkNotePairs() and doTimeAnalysis().
+ */
 bool Song::load() {
     this->doTimeAnalysis();
     this->linkNotePairs();
@@ -46,11 +30,10 @@ bool Song::load() {
     m_markers.clear();
     m_notes.clear();
 
-    // Extract initial state from track headers before merging
     this->extractInitialState();
 
     int track_num = 0;
-    for (auto track : this->tracks()) {
+    for (auto *track : this->tracks()) {
         bool has_notes = false;
 
         for (int i = 0; i < track->size(); i++) {
@@ -85,31 +68,32 @@ bool Song::load() {
     return true;
 }
 
+/**
+ * Merge all events into one tick-ordered list.
+ * This makes playback much easier.
+ */
 void Song::mergeEvents() {
-    // !TODO: whenever I get to letting edits happen, this probably needs
-    // to be called whenever a Song is unclean/has been edited in order to play it back
-    this->m_merged_events.clear();
+    m_merged_events.clear();
 
     int track_count = this->getTrackCount();
-
     int total_events = 0;
     for (int t = 0; t < track_count; t++) {
         total_events += this->getEventCount(t);
     }
 
-    this->m_merged_events.reserve(total_events);
+    m_merged_events.reserve(total_events);
 
     for (int track_index = 0; track_index < track_count; track_index++) {
-        smf::MidiEventList &event_list = *this->m_events[track_index];
+        smf::MidiEventList &event_list = *m_events[track_index];
         int event_count = event_list.size();
 
         for (int i = 0; i < event_count; ++i) {
-            this->m_merged_events.append(&event_list[i]);
+            m_merged_events.append(&event_list[i]);
         }
     }
 
-    // Preserve event order for identical ticks (important for note on/off ordering)
-    std::stable_sort(this->m_merged_events.begin(), this->m_merged_events.end(),
+    // preserve event order for identical ticks
+    std::stable_sort(m_merged_events.begin(), m_merged_events.end(),
         [](smf::MidiEvent *a, smf::MidiEvent *b) {
             return a->tick < b->tick;
         }
@@ -119,10 +103,12 @@ void Song::mergeEvents() {
 double Song::durationInSeconds() {
     this->doTimeAnalysis();
     this->joinTracks();
+
     if (this->getTrackCount() <= 0 || (*this)[0].size() == 0) {
         this->splitTracks();
         return 0.0;
     }
+
     double end_time = (*this)[0].last().seconds;
     this->splitTracks();
     return end_time;
@@ -130,29 +116,31 @@ double Song::durationInSeconds() {
 
 int Song::durationInTicks() {
     this->joinTracks();
+
     if (this->getTrackCount() <= 0 || (*this)[0].size() == 0) {
         this->splitTracks();
         return 0;
     }
+
     int end_tick = (*this)[0].last().tick;
     this->splitTracks();
     return end_tick;
 }
 
+/**
+ * Convert playback time into a song tick.
+ */
 int Song::getTickFromTime(double seconds) {
     if (seconds <= 0.0) return 0;
 
-    // Tempo-aware time -> tick conversion to avoid drift on tempo changes.
     int tpqn = this->getTicksPerQuarterNote();
     if (tpqn <= 0) return 0;
 
-
-    // Default MIDI tempo is 120 BPM = 500000 us per quarter note.
     double current_spt = 0.5 / static_cast<double>(tpqn);
     int prev_tick = 0;
     double remaining = seconds;
 
-    // If there is a tempo at tick 0, use it as initial tempo.
+    // use the tick 0 tempo if one exists.
     if (!m_tempo_changes.isEmpty()) {
         auto it0 = m_tempo_changes.begin();
         if (it0.key() == 0 && it0.value()) {
@@ -174,8 +162,7 @@ int Song::getTickFromTime(double seconds) {
         double segment_seconds = delta_ticks * current_spt;
 
         if (remaining < segment_seconds) {
-            int tick = prev_tick + static_cast<int>(std::floor(remaining / current_spt));
-            return tick;
+            return prev_tick + static_cast<int>(std::floor(remaining / current_spt));
         }
 
         remaining -= segment_seconds;
@@ -183,36 +170,31 @@ int Song::getTickFromTime(double seconds) {
         current_spt = tempo_event->getTempoSPT(tpqn);
     }
 
-    // After last tempo change.
-    int tick = prev_tick + static_cast<int>(std::floor(remaining / current_spt));
-    return tick;
+    return prev_tick + static_cast<int>(std::floor(remaining / current_spt));
 }
 
+/**
+ * Extract the initial per-channel state from tick 0 events.
+ */
 void Song::extractInitialState() {
-    // Initialize defaults
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < g_num_midi_channels; i++) {
         m_initial_programs[i] = 0;
         m_initial_channel_states[i] = InitialChannelState();
     }
 
-    // Track which values we've found per channel
-    bool found_program[16] = {false};
-    bool found_volume[16] = {false};
-    bool found_pan[16] = {false};
-    bool found_expression[16] = {false};
-    bool found_pitch_bend[16] = {false};
+    bool found_program[g_num_midi_channels] = {false};
+    bool found_volume[g_num_midi_channels] = {false};
+    bool found_pan[g_num_midi_channels] = {false};
+    bool found_expression[g_num_midi_channels] = {false};
+    bool found_pitch_bend[g_num_midi_channels] = {false};
 
-    // For each track, extract initial state from events at tick 0
-    // These are the "setup" events before the music starts
-    for (auto *track : this->m_events) {
+    for (auto *track : m_events) {
         for (int i = 0; i < track->size(); i++) {
             smf::MidiEvent &event = (*track)[i];
-
-            // Only consider events at tick 0 as initial state
             if (event.tick > 0) break;
 
             uint8_t ch = event.getChannel();
-            if (ch >= 16) continue;
+            if (ch >= g_num_midi_channels) continue;
 
             if (event.isPatchChange() && !found_program[ch]) {
                 m_initial_programs[ch] = event.getP1();
@@ -222,22 +204,23 @@ void Song::extractInitialState() {
                 uint8_t cc = event.getP1();
                 uint8_t value = event.getP2();
 
-                if (cc == 7 && !found_volume[ch]) {
+                if (cc == g_midi_cc_volume && !found_volume[ch]) {
                     m_initial_channel_states[ch].volume = value;
                     found_volume[ch] = true;
                 }
-                else if (cc == 10 && !found_pan[ch]) {
+                else if (cc == g_midi_cc_pan && !found_pan[ch]) {
                     m_initial_channel_states[ch].pan = value;
                     found_pan[ch] = true;
                 }
-                else if (cc == 11 && !found_expression[ch]) {
+                else if (cc == g_midi_cc_expression && !found_expression[ch]) {
                     m_initial_channel_states[ch].expression = value;
                     found_expression[ch] = true;
                 }
             }
             else if (event.isPitchbend() && !found_pitch_bend[ch]) {
                 int bend = (event.getP2() << 7) | event.getP1();
-                m_initial_channel_states[ch].pitch_bend = static_cast<int16_t>(bend - 8192);
+                m_initial_channel_states[ch].pitch_bend =
+                    static_cast<int16_t>(bend - k_pitch_bend_center);
                 found_pitch_bend[ch] = true;
             }
         }
