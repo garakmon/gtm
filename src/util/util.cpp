@@ -28,7 +28,9 @@ int whiteNoteToY(int note) {
 
     int white_index = countSetBits(g_black_key_mask & ((1 << index_in_octave) - 1));
 
-    int pos = max_y - (octave * ui_piano_keys_octave_height + ui_piano_key_white_height_sums[white_index] + ui_piano_key_white_height[white_index]);
+    int pos = max_y - (octave * ui_piano_keys_octave_height
+                       + ui_piano_key_white_height_sums[white_index]
+                       + ui_piano_key_white_height[white_index]);
 
     return pos;
 }
@@ -113,7 +115,7 @@ const Instrument *resolveInstrumentForKey(
                 if (note_it != table.note_map.end()) {
                     inst_index = note_it.value();
                 } else {
-                    for (auto it = table.note_map.begin(); it != table.note_map.end(); ++it) {
+                    for (auto it = table.note_map.begin(); it != table.note_map.end(); it++) {
                         if (it.key() <= key) {
                             inst_index = it.value();
                         }
@@ -146,12 +148,14 @@ const Instrument *resolveInstrumentForKey(
 
 static QString s_note_strings_sharp[g_num_notes_per_octave] = {
     "C", QString::fromUtf8("C\u266F"), "D", QString::fromUtf8("D\u266F"), "E",
-    "F", QString::fromUtf8("F\u266F"), "G", QString::fromUtf8("G\u266F"), "A", QString::fromUtf8("A\u266F"), "B"
+    "F", QString::fromUtf8("F\u266F"), "G", QString::fromUtf8("G\u266F"), "A",
+    QString::fromUtf8("A\u266F"), "B"
 };
 
 static QString s_note_strings_flat[g_num_notes_per_octave] = {
     "C", QString::fromUtf8("D\u266D"), "D", QString::fromUtf8("E\u266D"), "E",
-    "F", QString::fromUtf8("G\u266D"), "G", QString::fromUtf8("A\u266D"), "A", QString::fromUtf8("B\u266D"), "B"
+    "F", QString::fromUtf8("G\u266D"), "G", QString::fromUtf8("A\u266D"), "A",
+    QString::fromUtf8("B\u266D"), "B"
 };
 
 static int pitchClassFromValue(int value) {

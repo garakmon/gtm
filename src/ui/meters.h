@@ -9,6 +9,11 @@
 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// A SegmentedMeterBar is a 1-dimensional level meter widget for volume indication.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 class SegmentedMeterBar : public QWidget {
     Q_OBJECT
 
@@ -25,12 +30,20 @@ protected:
 private:
     int m_segments = 24;
     float m_level = 0.0f;
-    QColor m_color_low = QColor(0x4c, 0xaf, 0x50);   // green
-    QColor m_color_mid = QColor(0xff, 0xc1, 0x07);   // amber
-    QColor m_color_high = QColor(0xe5, 0x39, 0x35);  // red
+    QColor m_color_low = QColor(0x4c, 0xaf, 0x50); // green
+    QColor m_color_mid = QColor(0xff, 0xc1, 0x07); // amber
+    QColor m_color_high = QColor(0xe5, 0x39, 0x35); // red
     QColor m_color_off = QColor(0x2b, 0x2b, 0x2b);
 };
 
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// A CenteredStereoMeter is a 1-dimensional level meter widget for volume indication.
+/// This widget uses a symmetric stereo level display.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 class CenteredStereoMeter : public QWidget {
     Q_OBJECT
 
@@ -52,6 +65,13 @@ private:
     QColor m_color_off = QColor(0x1d, 0x1d, 0x1d);
 };
 
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// The MasterMeterWidget combines two horizontal output meters with a volume slider.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
 class MasterMeterWidget : public QWidget {
     Q_OBJECT
 

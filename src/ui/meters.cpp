@@ -14,6 +14,9 @@ SegmentedMeterBar::SegmentedMeterBar(QWidget *parent) : QWidget(parent) {
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
 
+/**
+ * Set the current normalized level for this meter bar.
+ */
 void SegmentedMeterBar::setLevel(float level) {
     float clamped = qBound(0.0f, level, 1.0f);
     if (qFuzzyCompare(m_level, clamped)) return;
@@ -21,11 +24,17 @@ void SegmentedMeterBar::setLevel(float level) {
     update();
 }
 
+/**
+ * Set the number of segments in this meter bar.
+ */
 void SegmentedMeterBar::setSegments(int segments) {
     m_segments = qMax(1, segments);
     update();
 }
 
+/**
+ * Set the active zone colors for this meter bar.
+ */
 void SegmentedMeterBar::setZoneColors(const QColor &low, const QColor &mid, const QColor &high) {
     m_color_low = low;
     m_color_mid = mid;
@@ -61,6 +70,7 @@ void SegmentedMeterBar::paintEvent(QPaintEvent *event) {
 }
 
 
+
 CenteredStereoMeter::CenteredStereoMeter(QWidget *parent) : QWidget(parent) {
     setMinimumHeight(12);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -75,6 +85,9 @@ void CenteredStereoMeter::setLevels(float left, float right) {
     update();
 }
 
+/**
+ * Set the segment count for each side of this stereo meter.
+ */
 void CenteredStereoMeter::setSegmentsPerSide(int segments) {
     m_segments_per_side = qMax(1, segments);
     update();
@@ -104,10 +117,10 @@ void CenteredStereoMeter::paintEvent(QPaintEvent *event) {
     int lit_left = qBound(0, static_cast<int>(qRound(m_level_left * segments)), segments);
     int lit_right = qBound(0, static_cast<int>(qRound(m_level_right * segments)), segments);
 
-    // Center line
+    // center line
     painter.fillRect(QRectF(center_x, 0.0f, 1.0f, height()), m_color_off);
 
-    // Left segments (from center outward)
+    // left segments (from center outward)
     float x_left = center_x - center_gap - seg_w;
     for (int i = 0; i < segments; ++i) {
         QColor color = (i < lit_left) ? m_color_on : m_color_off;
@@ -115,7 +128,7 @@ void CenteredStereoMeter::paintEvent(QPaintEvent *event) {
         x_left -= seg_w + gap;
     }
 
-    // Right segments (from center outward)
+    // right segments (from center outward)
     float x_right = center_x + center_gap;
     for (int i = 0; i < segments; ++i) {
         QColor color = (i < lit_right) ? m_color_on : m_color_off;
@@ -123,6 +136,7 @@ void CenteredStereoMeter::paintEvent(QPaintEvent *event) {
         x_right += seg_w + gap;
     }
 }
+
 
 
 MasterMeterWidget::MasterMeterWidget(QWidget *parent) : QWidget(parent) {
@@ -152,6 +166,9 @@ MasterMeterWidget::MasterMeterWidget(QWidget *parent) : QWidget(parent) {
     setFixedSize(150, 24);
 }
 
+/**
+ * Set the current normalized levels for this master meter widget.
+ */
 void MasterMeterWidget::setLevels(float left, float right) {
     if (m_left) m_left->setLevel(left);
     if (m_right) m_right->setLevel(right);
