@@ -15,6 +15,7 @@
 #include "ui/trackroll.h"
 #include "ui_mainwindow.h"
 #include "util/constants.h"
+#include "util/logging.h"
 #include "util/util.h"
 
 #include <QFrame>
@@ -321,7 +322,7 @@ Controller::Controller(MainWindow *window) : QObject(window) {
 
     m_player = std::make_unique<Player>();
     if (!m_player->initializeAudio()) {
-        qDebug() << "Failed to initialize audio."; // !TODO: use a logging utility func
+        logging::error("Failed to initialize audio.", logging::LogCategory::Audio);
     }
 
     this->connectSignals();
@@ -1431,7 +1432,8 @@ void Controller::songListSongRequested(const QModelIndex &index) {
 
     // abort if this entry has no midi path
     if (entry.midifile.isEmpty()) {
-        qDebug() << QString("No MIDI file defined for %1.").arg(title);
+        logging::warn(QString("No MIDI file defined for %1.").arg(title),
+                      logging::LogCategory::Project);
         return;
     }
 
@@ -1443,7 +1445,8 @@ void Controller::songListSongRequested(const QModelIndex &index) {
         if (midi.getTrackCount() == 0
          || (midi.getTrackCount() > 0
          && midi[0].size() == 0)) {
-            qDebug() << QString("MIDI file for %1 could not be loaded.").arg(title);
+            logging::warn(QString("MIDI file for %1 could not be loaded.").arg(title),
+                          logging::LogCategory::Project);
             entry.midifile.clear();
             if (m_song_list_model) {
                 QModelIndex idx = m_song_list_model->index(index.row(), 0);

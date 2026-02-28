@@ -47,7 +47,7 @@ void MinimapWidget::paintEvent(QPaintEvent *event) {
 
     QPainter painter(this);
     if (!m_song || m_total_ticks <= 0) {
-        // Leave transparent when no song is loaded.
+        // leave transparent when no song is loaded.
         return;
     }
     painter.fillRect(rect(), ui_color_piano_roll_bg.darker(120));
@@ -78,7 +78,7 @@ void MinimapWidget::paintEvent(QPaintEvent *event) {
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(view_rect);
 
-    // Tint inside viewport
+    // tint inside viewport
     QColor tint = Qt::white;
     tint.setAlpha(70);
     painter.fillRect(view_rect.adjusted(1, 1, -1, -1), tint);
@@ -116,7 +116,7 @@ void MinimapWidget::rebuildCache() {
     const double scale_x = static_cast<double>(w) / static_cast<double>(m_total_ticks);
     const double scale_y = static_cast<double>(h - 1) / 127.0;
 
-    // Horizontal octave lines (subtle, alternating) - draw as fills (no border)
+    // horizontal octave lines (subtle, alternating) - draw as fills (no border)
     for (int key = 0, idx = 0; key < 128; key += 12, ++idx) {
         QColor line = (idx % 2 == 0) ? ui_color_score_line_dark : ui_color_score_line_light;
         int y = h - 1 - static_cast<int>(key * scale_y);

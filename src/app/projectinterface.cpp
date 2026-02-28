@@ -2,8 +2,8 @@
 
 #include "app/project.h"
 #include "sound/soundtypes.h"
+#include "util/logging.h"
 
-#include <QDebug>
 #include <QDataStream>
 #include <QDir>
 #include <QFile>
@@ -70,6 +70,8 @@ bool ProjectInterface::loadProject(const QString &root) {
     QDir project_dir(root);
 
     if (!project_dir.exists("sound") || !project_dir.exists("include")) {
+        logging::debug(QString("Project root not a valid decomp project. (%1)").arg(root),
+                       logging::LogCategory::Project);
         return false;
     }
 
@@ -249,18 +251,19 @@ bool ProjectInterface::loadWavFile(const QString &label, const QString &path) {
     QByteArray data = this->readBinaryFile(path, &error);
 
     if (data.isEmpty()) {
-        qDebug() << "failed to open wav file:" << path << error;
+        logging::warn(QString("Failed to open wav file: %1 (%2)").arg(path, error),
+                      logging::LogCategory::Audio);
         return false;
     }
 
     if (data.size() < 44) {
-        qDebug() << "wav file too small:" << path;
+        logging::warn(QString("WAV file too small: %1").arg(path), logging::LogCategory::Audio);
         return false;
     }
 
     // verify riff header
     if (data.mid(0, 4) != "RIFF" || data.mid(8, 4) != "WAVE") {
-        qDebug() << "invalid wav header:" << path;
+        logging::warn(QString("Invalid WAV header: %1").arg(path), logging::LogCategory::Audio);
         return false;
     }
 
@@ -312,7 +315,8 @@ bool ProjectInterface::loadWavFile(const QString &label, const QString &path) {
     }
 
     if (sample.data.isEmpty()) {
-        qDebug() << "no data chunk found in wav:" << path;
+        logging::warn(QString("No data chunk found in WAV: %1").arg(path),
+                      logging::LogCategory::Audio);
         return false;
     }
 
@@ -341,7 +345,8 @@ bool ProjectInterface::loadVoiceGroups() {
 bool ProjectInterface::parseVoiceGroup(const QString &path) {
     QString text = this->readTextFile(this->concatPaths(m_root, path));
     if (text.isEmpty()) {
-        qDebug() << "parseVoiceGroup: empty file:" << path;
+        logging::warn(QString("Voicegroup file is empty: %1").arg(path),
+                      logging::LogCategory::Project);
         return false;
     }
 
@@ -352,7 +357,8 @@ bool ProjectInterface::parseVoiceGroup(const QString &path) {
     QRegularExpressionMatch label_match = label_regex.match(text);
 
     if (!label_match.hasMatch()) {
-        qDebug() << "parseVoiceGroup: no voicegroup label in:" << path;
+        logging::warn(QString("No voicegroup label found in: %1").arg(path),
+                      logging::LogCategory::Project);
         return false;
     }
 
@@ -530,7 +536,7 @@ void ProjectInterface::parseKeysplitInstrument(const QString &name) {
 void ProjectInterface::parseMidiConfig() {
     QString text = this->readTextFile(this->concatPaths(m_root, "sound/songs/midi/midi.cfg"));
     if (text.isEmpty()) {
-        qDebug() << "parseMidiConfig: midi.cfg not found";
+        logging::warn("midi.cfg not found", logging::LogCategory::Project);
         return;
     }
 

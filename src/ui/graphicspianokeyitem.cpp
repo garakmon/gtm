@@ -18,19 +18,10 @@ QRectF GraphicsPianoKeyItem::boundingRect() const {
 }
 
 void GraphicsPianoKeyItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
-    // TODO: move paint to subclasses?
-    // int width = 20;
-    // int height = 5;
-    // int x = 0;
-    // int y = this->m_note * 10;
-
     QSize key_dimensions = this->dimensions();
 
     painter->setPen(QColor(24, 25, 22));
 
-    //QColor color(0, 201, 114);
-
-    //painter->setPen(Qt::black);
     QColor key_color = this->m_color;
     painter->setBrush(key_color);
 
@@ -45,16 +36,18 @@ void GraphicsPianoKeyItem::paint(QPainter *painter, const QStyleOptionGraphicsIt
 }
 
 void GraphicsPianoKeyItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-    // try to play this note
-    qDebug() << "note:" << this->m_note << "at" << this->pos() << "vs scene:" << this->scenePos();
-    qDebug() << "clicked pos:" << event->pos();
+    // !TODO: try to play this note?
     event->accept();
 }
 
 
 
+//////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 GraphicsPianoKeyItemBlack::GraphicsPianoKeyItemBlack(int note) : GraphicsPianoKeyItem(note) {
-    this->setColor(Qt::black); // TODO: make more advanced looking with paint() reimplimentation
+    this->setColor(Qt::black);
 
     QGraphicsDropShadowEffect *black_key_shadow = new QGraphicsDropShadowEffect();
     black_key_shadow->setBlurRadius(10);
@@ -66,6 +59,10 @@ GraphicsPianoKeyItemBlack::GraphicsPianoKeyItemBlack(int note) : GraphicsPianoKe
 QSize GraphicsPianoKeyItemBlack::dimensions() const {
     return QSize(ui_piano_key_black_width, ui_piano_key_black_height);
 };
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
 
 
 

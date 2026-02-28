@@ -1,7 +1,12 @@
 qt_add_library(gtm-util STATIC
     util.cpp
     gtmconfig.cpp
+    logging.cpp
     theme.cpp
+)
+
+set_target_properties(gtm-util PROPERTIES
+    AUTOMOC OFF
 )
 
 target_link_libraries(gtm-util PUBLIC

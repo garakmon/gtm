@@ -5,6 +5,10 @@ qt_add_library(gtm-sound STATIC
     sequencer.cpp
 )
 
+set_target_properties(gtm-sound PROPERTIES
+    AUTOMOC OFF
+)
+
 if(APPLE)
     set(PLATFORM_LIBS
         "-framework CoreAudio" "-framework AudioToolbox"

@@ -56,12 +56,7 @@ QVariant GraphicsScoreNoteItem::itemChange(GraphicsItemChange change, const QVar
     switch(change) {
     case QGraphicsItem::ItemSelectedHasChanged:
         if (value.toBool()) {
-            // item has changed to selected
-            qDebug() << "item selected, note:" << this->m_event->getKeyNumber();
             emit this->m_piano_roll->eventItemSelected(this->m_event);
-        }
-        else {
-            // cleared selection
         }
         break;
     case QGraphicsItem::ItemPositionHasChanged:
