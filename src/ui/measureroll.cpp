@@ -22,7 +22,6 @@ QGraphicsScene *MeasureRoll::sceneMeasures() {
 }
 
 void MeasureRoll::setSong(std::shared_ptr<Song> song) {
-    m_scene_measures.clear();
     m_active_song = song;
     this->drawMeasures();
     this->drawMetaEvents();
@@ -42,10 +41,18 @@ void MeasureRoll::setTick(int tick) {
     m_current_tick = tick;
 }
 
+void MeasureRoll::resetScene() {
+    this->m_scene_measures.clear();
+    m_meta_event_items.clear();
+    m_playhead_line = nullptr;
+    m_playhead_arrow = nullptr;
+    m_last_playhead_x = -1;
+}
+
 void MeasureRoll::drawMeasures() {
     // !TODO: this crashes when there are no events in the midifile,
     //        so do some checking somewhere.
-    this->m_scene_measures.clear();
+    this->resetScene();
 
     if (!this->m_active_song) {
         return;
@@ -216,7 +223,9 @@ void MeasureRoll::drawMetaEvents() {
         if (!item) {
             continue;
         }
-        m_scene_measures.removeItem(item);
+        if (item->scene() == &m_scene_measures) {
+            m_scene_measures.removeItem(item);
+        }
         delete item;
     }
     m_meta_event_items.clear();

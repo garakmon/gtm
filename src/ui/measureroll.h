@@ -48,6 +48,7 @@ public:
 
 private:
     // drawing helpers
+    void resetScene();
     void drawMeasures();
     void drawMetaEvents();
 

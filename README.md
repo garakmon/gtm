@@ -2,6 +2,7 @@
 
 `gtm` is a (work in progress) Qt desktop tool for working with music from gen 3 [pret decomp projects](https://github.com/pret) that use the mp2k sound engine. Perhaps support for other engines and will come in the future.
 
+![Screenshot](gtm-screenshot.png)
 
 ## Status
 
