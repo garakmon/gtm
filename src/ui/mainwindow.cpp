@@ -10,6 +10,7 @@
 #include "ui/pianoroll.h"
 #include "ui/previewsoundwindow.h"
 #include "ui/trackroll.h"
+#include "ui/voicegroupeditor.h"
 #include "ui_mainwindow.h"
 #include "util/constants.h"
 #include "util/theme.h"
@@ -708,5 +709,30 @@ void MainWindow::on_action_PreviewSound_triggered() {
         m_preview_sound_window = new PreviewSoundWindow(this);
         m_preview_sound_window->setAttribute(Qt::WA_DeleteOnClose);
         m_preview_sound_window->show();
+    }
+}
+
+void MainWindow::on_action_VoicegroupEditor_triggered() {
+    if (m_voicegroup_editor_window && m_controller) {
+        m_voicegroup_editor_window->setVoicegroups(m_controller->voicegroups());
+        m_voicegroup_editor_window->setKeysplitTables(m_controller->keysplitTables());
+    }
+
+    if (m_voicegroup_editor_window) {
+        m_voicegroup_editor_window->show();
+        m_voicegroup_editor_window->raise();
+        m_voicegroup_editor_window->activateWindow();
+    }
+    else {
+        m_voicegroup_editor_window = new VoicegroupEditor(this);
+        if (m_controller) {
+            m_voicegroup_editor_window->setVoicegroups(m_controller->voicegroups());
+            m_voicegroup_editor_window->setKeysplitTables(m_controller->keysplitTables());
+        }
+        m_voicegroup_editor_window->setAttribute(Qt::WA_DeleteOnClose);
+        connect(m_voicegroup_editor_window, &QObject::destroyed, this, [this]() {
+            m_voicegroup_editor_window = nullptr;
+        });
+        m_voicegroup_editor_window->show();
     }
 }

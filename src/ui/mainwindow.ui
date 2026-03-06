@@ -1897,6 +1897,7 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <addaction name="action_VoicegroupEditor"/>
     <addaction name="action_PreviewSound"/>
    </widget>
    <addaction name="menuFile"/>
@@ -1916,6 +1917,11 @@
   <action name="action_Open">
    <property name="text">
     <string>Open...</string>
+   </property>
+  </action>
+  <action name="action_VoicegroupEditor">
+   <property name="text">
+    <string>Voicegroup Editor</string>
    </property>
   </action>
  </widget>

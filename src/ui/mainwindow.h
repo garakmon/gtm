@@ -19,6 +19,7 @@ class Controller;
 class PianoRoll;
 class TrackRoll;
 class PreviewSoundWindow;
+class VoicegroupEditor;
 class MinimapWidget;
 class MasterMeterWidget;
 class QComboBox;
@@ -88,6 +89,7 @@ private slots:
 
     // other actions
     void on_action_PreviewSound_triggered();
+    void on_action_VoicegroupEditor_triggered();
 
 private: // members
     Ui::MainWindow *ui;
@@ -97,6 +99,7 @@ private: // members
 
     // subwindows
     QPointer<PreviewSoundWindow> m_preview_sound_window;
+    QPointer<VoicegroupEditor> m_voicegroup_editor_window;
 
     // manually initialized ui elements
     QPointer<MinimapWidget> m_minimap;

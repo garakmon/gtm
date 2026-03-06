@@ -377,6 +377,16 @@ QStringList Controller::voicegroupNames() const {
     return names;
 }
 
+const QMap<QString, VoiceGroup> &Controller::voicegroups() const {
+    static const QMap<QString, VoiceGroup> s_empty_voicegroups;
+    return m_project ? m_project->getVoiceGroups() : s_empty_voicegroups;
+}
+
+const QMap<QString, KeysplitTable> &Controller::keysplitTables() const {
+    static const QMap<QString, KeysplitTable> s_empty_tables;
+    return m_project ? m_project->getKeysplitTables() : s_empty_tables;
+}
+
 QStringList Controller::playerNames() const {
     if (!m_project) return {"MUS_PLAYER"};
 

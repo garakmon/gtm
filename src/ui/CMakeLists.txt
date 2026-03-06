@@ -1,6 +1,9 @@
 qt_add_library(gtm-ui STATIC
     mainwindow.ui
     mainwindow.cpp
+    voicegroupeditor.ui
+    voicegroupeditor.cpp
+    voicegroupdelegates.cpp
     dialogs.cpp
     pianoroll.cpp
     minimapwidget.cpp

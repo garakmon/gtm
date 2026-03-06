@@ -52,6 +52,8 @@ public:
     const QString &projectRoot() const;
     bool createSong(const NewSongSettings &settings);
     QStringList voicegroupNames() const;
+    const QMap<QString, VoiceGroup> &voicegroups() const;
+    const QMap<QString, KeysplitTable> &keysplitTables() const;
     QStringList playerNames() const;
     QStringList songTitles() const;
     bool loadSong();
