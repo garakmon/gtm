@@ -10,6 +10,7 @@
 #include <QMap>
 #include <QObject>
 #include <QPointer>
+#include <QStringList>
 #include <QTimer>
 
 #include <cstdint>
@@ -49,6 +50,10 @@ public:
     // project + interface / loading + saving
     bool loadProject(const QString &root);
     const QString &projectRoot() const;
+    bool createSong(const NewSongSettings &settings);
+    QStringList voicegroupNames() const;
+    QStringList playerNames() const;
+    QStringList songTitles() const;
     bool loadSong();
     bool loadSong(std::shared_ptr<Song> song); // !TODO: return shared_ptr<Song>?
 

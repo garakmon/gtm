@@ -1,6 +1,7 @@
 qt_add_library(gtm-ui STATIC
     mainwindow.ui
     mainwindow.cpp
+    dialogs.cpp
     pianoroll.cpp
     minimapwidget.cpp
     meters.cpp

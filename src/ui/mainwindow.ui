@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1225</width>
+    <width>1248</width>
     <height>811</height>
    </rect>
   </property>
@@ -1603,7 +1603,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>787</width>
+          <width>810</width>
           <height>286</height>
          </rect>
         </property>
@@ -1690,7 +1690,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>787</width>
+          <width>810</width>
           <height>319</height>
          </rect>
         </property>
@@ -1837,7 +1837,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="button_AddSong">
             <property name="toolTip">
              <string>Create Song...</string>
             </property>
@@ -1873,7 +1873,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1225</width>
+     <width>1248</width>
      <height>24</height>
     </rect>
    </property>

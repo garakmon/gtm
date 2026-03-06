@@ -3,6 +3,7 @@
 #include "app/controller.h"
 #include "ui/colors.h"
 #include "ui/customwidgets.h"
+#include "ui/dialogs.h"
 #include "ui/graphicstrackitem.h"
 #include "ui/meters.h"
 #include "ui/minimapwidget.h"
@@ -24,6 +25,7 @@
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLoggingCategory>
+#include <QPushButton>
 #include <QRegularExpression>
 #include <QSignalBlocker>
 #include <QSlider>
@@ -283,6 +285,21 @@ void MainWindow::setupToolButtons() {
     if (ui->Button_Play) ui->Button_Play->setCheckable(true);
     if (ui->Button_Pause) ui->Button_Pause->setCheckable(true);
     if (ui->Button_Stop) ui->Button_Stop->setCheckable(true);
+
+    if (ui->button_AddSong) {
+        connect(ui->button_AddSong, &QPushButton::clicked, this, [this]() {
+            NewSongDialog dialog(this);
+            if (m_controller) {
+                dialog.setVoicegroups(m_controller->voicegroupNames());
+                dialog.setPlayers(m_controller->playerNames());
+                dialog.setExistingSongTitles(m_controller->songTitles());
+            }
+            if (dialog.exec() == QDialog::Accepted) {
+                const NewSongSettings settings = dialog.result();
+                m_controller->createSong(settings);
+            }
+        });
+    }
 }
 
 /**

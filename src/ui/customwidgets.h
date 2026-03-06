@@ -4,14 +4,18 @@
 #define CUSTOMWIDGETS_H
 
 #include <QComboBox>
+#include <QFormLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMargins>
 #include <QSpinBox>
+#include <QVector>
 
 
 
 class QSvgRenderer;
+class QKeyEvent;
+class QMouseEvent;
 class QWheelEvent;
 class GTMSvgIconWidget;
 
@@ -80,6 +84,36 @@ private:
 };
 
 
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// Custom LineEdit adding:
+///     - a fixed prefix that stays at the start of the text
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+class GTMPrefixedLineEdit : public GTMLineEdit {
+    Q_OBJECT
+
+public:
+    explicit GTMPrefixedLineEdit(QWidget *parent = nullptr);
+    GTMPrefixedLineEdit(const QString &prefix, QWidget *parent = nullptr);
+
+    void setFixedPrefix(const QString &prefix);
+    QString fixedPrefix() const { return m_fixed_prefix; }
+    QString suffixText() const;
+
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+
+private:
+    void ensureFixedPrefix();
+    int prefixBoundary() const;
+
+    QString m_fixed_prefix;
+    bool m_is_enforcing = false;
+};
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -134,6 +168,27 @@ private:
     void updateMinimumWidth();
 
     int m_target_chars = 15;
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// Custom FormLayout adding:
+///     - GTMFormLabel labels for string rows
+///     - synced field widths based on largest field
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+class GTMFormLayout : public QFormLayout {
+public:
+    explicit GTMFormLayout(QWidget *parent = nullptr);
+
+    using QFormLayout::addRow;
+    void addRow(const QString &label_text, QWidget *field);
+    void syncFieldWidths();
+
+private:
+    QVector<QWidget *> m_field_widgets;
 };
 
 #endif // CUSTOMWIDGETS_H

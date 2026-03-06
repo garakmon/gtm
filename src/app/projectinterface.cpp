@@ -608,6 +608,29 @@ smf::MidiFile ProjectInterface::loadMidi(const QString &title) {
 }
 
 /**
+ * Create a new song entry in the project.
+ */
+bool ProjectInterface::createSong(const NewSongSettings &settings) {
+    if (!m_project) {
+        return false;
+    }
+
+    // assume all the settings are validated
+    // create the song and midifile
+
+    // verify that the midi file can be saved to the path
+
+    // add entries in: song table
+
+    // save: sound/songs/midi/<title>.mid, song_table.inc, constants/songs.h, 
+
+    logging::warn("ProjectInterface::createSong is not implemented yet.",
+                  logging::LogCategory::Project);
+
+    return false;
+}
+
+/**
  * Resolve a resource path and preferred extension inside the project root.
  */
 QString ProjectInterface::resolveResourcePath(const QString &original_path,

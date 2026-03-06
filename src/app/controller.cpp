@@ -24,6 +24,7 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QScrollBar>
+#include <QSet>
 #include <QTime>
 #include <QVector>
 #include <QWheelEvent>
@@ -355,6 +356,59 @@ bool Controller::loadProject(const QString &root) {
 const QString &Controller::projectRoot() const {
     static const QString s_empty;
     return m_project ? m_project->rootPath() : s_empty;
+}
+
+bool Controller::createSong(const NewSongSettings &settings) {
+    if (!m_interface || !m_project) {
+        return false;
+    }
+    if (!m_interface->createSong(settings)) {
+        return false;
+    }
+    this->displayProject();
+    return true;
+}
+
+QStringList Controller::voicegroupNames() const {
+    if (!m_project) return {};
+
+    QStringList names = m_project->getVoiceGroups().keys();
+    names.sort(Qt::CaseInsensitive);
+    return names;
+}
+
+QStringList Controller::playerNames() const {
+    if (!m_project) return {"MUS_PLAYER"};
+
+    QSet<QString> players;
+    const int song_count = m_project->getNumSongsInTable();
+    for (int i = 0; i < song_count; ++i) {
+        const QString title = m_project->getSongTitleAt(i);
+        SongEntry &entry = m_project->getSongEntryByTitle(title);
+        if (!entry.player.isEmpty()) {
+            players.insert(entry.player);
+        }
+    }
+
+    if (players.isEmpty()) {
+        players.insert("MUS_PLAYER");
+    }
+
+    QStringList list = players.values();
+    list.sort(Qt::CaseInsensitive);
+    return list;
+}
+
+QStringList Controller::songTitles() const {
+    if (!m_project) return {};
+
+    QStringList titles;
+    const int song_count = m_project->getNumSongsInTable();
+    titles.reserve(song_count);
+    for (int i = 0; i < song_count; ++i) {
+        titles.append(m_project->getSongTitleAt(i));
+    }
+    return titles;
 }
 
 /**
