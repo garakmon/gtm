@@ -17,6 +17,9 @@ class VoicegroupEditor;
 
 class QSortFilterProxyModel;
 class QStandardItemModel;
+class QStackedWidget;
+class QTableView;
+class QCheckBox;
 class VgIntSpinDelegate;
 class VgMidiKeyDelegate;
 class VgSampleDelegate;
@@ -41,32 +44,33 @@ public:
 private:
     void setupModels();
     void setupConnections();
-    void populateEntryInspectorTypeChoices();
     void selectDefaultVoicegroup();
     void rebuildVoicegroupListModel();
+    void refreshSelectedEntity();
 
     void refreshEntryTableForSelectedVoicegroup();
+    void refreshKeysplitTableForSelectedKeysplit();
     void applyEntryFilters();
-    void syncInspectorFromSelectedEntry();
-    void syncSelectedEntryFromInspector();
-    void updateKeysplitPreview();
     void updateStatusText(const QString &text);
     void updateStatusForCurrentVoicegroup();
+    void updateStatusForCurrentKeysplit();
     void markVoicegroupDirty(const QString &voicegroup);
+    void markKeysplitDirty(const QString &keysplit);
     bool renameVoicegroupInEditModel(const QString &old_name, const QString &new_name);
     VoiceGroup *currentEditableVoicegroup();
     const VoiceGroup *currentEditableVoicegroup() const;
+    KeysplitTable *currentEditableKeysplit();
+    const KeysplitTable *currentEditableKeysplit() const;
 
     int selectedVoicegroupSourceRow() const;
-    int selectedEntryRow() const;
 
     void onVoicegroupFilterTextChanged(const QString &text);
     void onVoicegroupSelectionChanged(const QModelIndex &current, const QModelIndex &previous);
-    void onEntrySelectionChanged(const QModelIndex &current, const QModelIndex &previous);
     void onEntryModelDataChanged(const QModelIndex &top_left, const QModelIndex &bottom_right,
                                  const QList<int> &roles);
+    void onKeysplitModelDataChanged(const QModelIndex &top_left, const QModelIndex &bottom_right,
+                                    const QList<int> &roles);
     void onEntryFilterToggled(bool);
-    void onInspectorFieldChanged();
 
     void onNewVoicegroupClicked();
     void onDuplicateVoicegroupClicked();
@@ -76,7 +80,6 @@ private:
     void onValidateVoicegroupClicked();
     void onFillRangeClicked();
     void onReplaceTypeClicked();
-    void onNormalizePlaceholdersClicked();
 
 private:
     Ui::VoicegroupEditor *ui;
@@ -86,19 +89,24 @@ private:
     QPointer<QSortFilterProxyModel> m_voicegroup_filter_model;
     QPointer<QStandardItemModel> m_entry_model;
     QPointer<QStandardItemModel> m_keysplit_model;
+    QPointer<QStackedWidget> m_editor_stack;
+    QPointer<QTableView> m_keysplit_table_view;
     QPointer<VgTypeDelegate> m_type_delegate;
     QPointer<VgSampleDelegate> m_sample_delegate;
     QPointer<VgMidiKeyDelegate> m_key_delegate;
     QPointer<VgIntSpinDelegate> m_pan_delegate;
     QPointer<VgIntSpinDelegate> m_adsr_delegate;
+    QPointer<QCheckBox> m_check_show_used_indices;
 
     // important source data
     QMap<QString, VoiceGroup> m_source_voicegroups;
     QMap<QString, VoiceGroup> m_edit_voicegroups;
-    QMap<QString, KeysplitTable> m_keysplit_tables;
+    QMap<QString, KeysplitTable> m_source_keysplit_tables;
+    QMap<QString, KeysplitTable> m_edit_keysplit_tables;
     QSet<QString> m_dirty_voicegroups;
+    QSet<QString> m_dirty_keysplits;
     QString m_current_voicegroup_name;
-    bool m_updating_inspector = false;
+    QString m_current_keysplit_name;
 };
 
 #endif // VOICEGROUPEDITOR_H

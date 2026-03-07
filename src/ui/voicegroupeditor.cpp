@@ -4,8 +4,8 @@
 #include "ui_voicegroupeditor.h"
 
 #include <QCheckBox>
-#include <QComboBox>
 #include <QHeaderView>
+#include <QHBoxLayout>
 #include <QInputDialog>
 #include <QItemSelectionModel>
 #include <QLineEdit>
@@ -13,29 +13,23 @@
 #include <QPushButton>
 #include <QSet>
 #include <QSortFilterProxyModel>
-#include <QSpinBox>
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QTableView>
+#include <QVBoxLayout>
 #include <QFontMetrics>
 
 
 
-static constexpr int k_role_is_placeholder = Qt::UserRole + 1;
-static constexpr int k_role_is_used = Qt::UserRole + 2;
-static constexpr int k_role_has_error = Qt::UserRole + 3;
+static constexpr int k_role_is_used = Qt::UserRole + 1;
+static constexpr int k_role_has_error = Qt::UserRole + 2;
+static constexpr int k_role_entity_kind = Qt::UserRole + 10;
+static constexpr int k_role_entity_name = Qt::UserRole + 11;
 
-static QStringList entryTypeOptions() {
-    return {
-        "DirectSound",
-        "Square 1",
-        "Square 2",
-        "Wave",
-        "Noise",
-        "Keysplit",
-        "Placeholder",
-    };
-}
+enum class EntityKind : int {
+    Voicegroup = 0,
+    Keysplit = 1,
+};
 
 static QString displayTypeName(const Instrument &inst) {
     if (inst.type.startsWith("voice_directsound")) return "DirectSound";
@@ -85,17 +79,28 @@ VoicegroupEditor::VoicegroupEditor(QWidget *parent)
     , ui(new Ui::VoicegroupEditor) {
     ui->setupUi(this);
 
+    if (ui->horizontalLayout_EntryTableControls) {
+        m_check_show_used_indices = new QCheckBox("Show used indices", this);
+        ui->horizontalLayout_EntryTableControls->addWidget(m_check_show_used_indices);
+    }
+
+    if (ui->widget_RightPane) {
+        ui->widget_RightPane->hide();
+    }
     if (ui->splitter_Main) {
         ui->splitter_Main->setStretchFactor(0, 0);
         ui->splitter_Main->setStretchFactor(1, 1);
         ui->splitter_Main->setStretchFactor(2, 0);
-        ui->splitter_Main->setSizes({210, 760, 250});
+        ui->splitter_Main->setSizes({220, 980, 0});
     }
 
     this->setupModels();
-    this->populateEntryInspectorTypeChoices();
     this->setupConnections();
     this->rebuildVoicegroupListModel();
+
+    if (ui->checkBox_ShowUsedOnly) {
+        ui->checkBox_ShowUsedOnly->setText("Show unique");
+    }
 }
 
 VoicegroupEditor::~VoicegroupEditor() {
@@ -233,15 +238,36 @@ void VoicegroupEditor::setupModels() {
     }
 
     if (m_keysplit_model) {
-        m_keysplit_model->setColumnCount(3);
-        m_keysplit_model->setHorizontalHeaderLabels({"Note", "Program", "Target"});
+        m_keysplit_model->setColumnCount(2);
+        m_keysplit_model->setHorizontalHeaderLabels({"Note", "Program"});
     }
-    if (ui->tableView_KeysplitRanges && m_keysplit_model) {
-        ui->tableView_KeysplitRanges->setModel(m_keysplit_model);
-        ui->tableView_KeysplitRanges->setSelectionMode(QAbstractItemView::NoSelection);
-        ui->tableView_KeysplitRanges->setEditTriggers(QAbstractItemView::NoEditTriggers);
-        ui->tableView_KeysplitRanges->verticalHeader()->setVisible(false);
-        ui->tableView_KeysplitRanges->horizontalHeader()->setStretchLastSection(true);
+    if (ui->tableView_VoicegroupEntries && m_keysplit_model) {
+        m_keysplit_table_view = new QTableView(ui->tableView_VoicegroupEntries->parentWidget());
+        m_keysplit_table_view->setModel(m_keysplit_model);
+        m_keysplit_table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
+        m_keysplit_table_view->setSelectionMode(QAbstractItemView::SingleSelection);
+        m_keysplit_table_view->setEditTriggers(
+            QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed
+        );
+        m_keysplit_table_view->setAlternatingRowColors(true);
+        m_keysplit_table_view->setWordWrap(false);
+        m_keysplit_table_view->verticalHeader()->setVisible(false);
+        m_keysplit_table_view->horizontalHeader()->setStretchLastSection(true);
+        m_keysplit_table_view->setColumnWidth(
+            0, tableColumnWidthForText(m_keysplit_table_view, "127")
+        );
+        m_keysplit_table_view->setColumnWidth(
+            1, tableColumnWidthForText(m_keysplit_table_view, "127")
+        );
+    }
+
+    if (ui->tableView_VoicegroupEntries && m_keysplit_table_view
+        && ui->tableView_VoicegroupEntries->parentWidget()) {
+        if (auto *layout = qobject_cast<QVBoxLayout *>(
+                ui->tableView_VoicegroupEntries->parentWidget()->layout())) {
+            layout->addWidget(m_keysplit_table_view);
+        }
+        m_keysplit_table_view->hide();
     }
 }
 
@@ -259,64 +285,22 @@ void VoicegroupEditor::setupConnections() {
                 this, &VoicegroupEditor::onVoicegroupSelectionChanged);
     }
 
-    if (ui->tableView_VoicegroupEntries && ui->tableView_VoicegroupEntries->selectionModel()) {
-        connect(ui->tableView_VoicegroupEntries->selectionModel(),
-                &QItemSelectionModel::currentRowChanged, this,
-                &VoicegroupEditor::onEntrySelectionChanged);
-    }
     if (m_entry_model) {
         connect(m_entry_model, &QStandardItemModel::dataChanged, this,
                 &VoicegroupEditor::onEntryModelDataChanged);
+    }
+    if (m_keysplit_model) {
+        connect(m_keysplit_model, &QStandardItemModel::dataChanged, this,
+                &VoicegroupEditor::onKeysplitModelDataChanged);
     }
 
     if (ui->checkBox_ShowUsedOnly) {
         connect(ui->checkBox_ShowUsedOnly, &QCheckBox::toggled, this,
                 &VoicegroupEditor::onEntryFilterToggled);
     }
-    if (ui->checkBox_ShowPlaceholders) {
-        connect(ui->checkBox_ShowPlaceholders, &QCheckBox::toggled, this,
-                &VoicegroupEditor::onEntryFilterToggled);
-    }
     if (ui->checkBox_ShowErrorsOnly) {
         connect(ui->checkBox_ShowErrorsOnly, &QCheckBox::toggled, this,
                 &VoicegroupEditor::onEntryFilterToggled);
-    }
-
-    if (ui->spinBox_ProgramIndex) {
-        connect(ui->spinBox_ProgramIndex, qOverload<int>(&QSpinBox::valueChanged), this,
-                &VoicegroupEditor::onInspectorFieldChanged);
-    }
-    if (ui->comboBox_EntryType) {
-        connect(ui->comboBox_EntryType, &QComboBox::currentTextChanged, this,
-                &VoicegroupEditor::onInspectorFieldChanged);
-    }
-    if (ui->lineEdit_SampleOrSubgroup) {
-        connect(ui->lineEdit_SampleOrSubgroup, &QLineEdit::editingFinished, this,
-                &VoicegroupEditor::onInspectorFieldChanged);
-    }
-    if (ui->spinBox_Key) {
-        connect(ui->spinBox_Key, qOverload<int>(&QSpinBox::valueChanged), this,
-                &VoicegroupEditor::onInspectorFieldChanged);
-    }
-    if (ui->spinBox_Pan) {
-        connect(ui->spinBox_Pan, qOverload<int>(&QSpinBox::valueChanged), this,
-                &VoicegroupEditor::onInspectorFieldChanged);
-    }
-    if (ui->spinBox_Attack) {
-        connect(ui->spinBox_Attack, qOverload<int>(&QSpinBox::valueChanged), this,
-                &VoicegroupEditor::onInspectorFieldChanged);
-    }
-    if (ui->spinBox_Decay) {
-        connect(ui->spinBox_Decay, qOverload<int>(&QSpinBox::valueChanged), this,
-                &VoicegroupEditor::onInspectorFieldChanged);
-    }
-    if (ui->spinBox_Sustain) {
-        connect(ui->spinBox_Sustain, qOverload<int>(&QSpinBox::valueChanged), this,
-                &VoicegroupEditor::onInspectorFieldChanged);
-    }
-    if (ui->spinBox_Release) {
-        connect(ui->spinBox_Release, qOverload<int>(&QSpinBox::valueChanged), this,
-                &VoicegroupEditor::onInspectorFieldChanged);
     }
 
     if (ui->button_NewVoicegroup) {
@@ -355,10 +339,6 @@ void VoicegroupEditor::setupConnections() {
         connect(ui->button_ReplaceType, &QPushButton::clicked, this,
                 &VoicegroupEditor::onReplaceTypeClicked);
     }
-    if (ui->button_NormalizePlaceholders) {
-        connect(ui->button_NormalizePlaceholders, &QPushButton::clicked, this,
-                &VoicegroupEditor::onNormalizePlaceholdersClicked);
-    }
 }
 
 void VoicegroupEditor::onVoicegroupFilterTextChanged(const QString &text) {
@@ -369,11 +349,24 @@ void VoicegroupEditor::onVoicegroupFilterTextChanged(const QString &text) {
 }
 
 void VoicegroupEditor::onVoicegroupSelectionChanged(const QModelIndex &, const QModelIndex &) {
-    this->refreshEntryTableForSelectedVoicegroup();
+    this->refreshSelectedEntity();
 }
 
-void VoicegroupEditor::onEntrySelectionChanged(const QModelIndex &, const QModelIndex &) {
-    this->syncInspectorFromSelectedEntry();
+void VoicegroupEditor::refreshSelectedEntity() {
+    const int row = this->selectedVoicegroupSourceRow();
+    if (row < 0 || !m_voicegroup_model) {
+        m_current_voicegroup_name.clear();
+        m_current_keysplit_name.clear();
+        return;
+    }
+
+    const QModelIndex idx = m_voicegroup_model->index(row, 0);
+    const EntityKind kind = static_cast<EntityKind>(idx.data(k_role_entity_kind).toInt());
+    if (kind == EntityKind::Keysplit) {
+        this->refreshKeysplitTableForSelectedKeysplit();
+    } else {
+        this->refreshEntryTableForSelectedVoicegroup();
+    }
 }
 
 /**
@@ -409,15 +402,27 @@ void VoicegroupEditor::onEntryModelDataChanged(const QModelIndex &top_left,
         m_sample_delegate->setDirectSoundLabels(directSoundLabelsFromVoicegroups(m_edit_voicegroups));
     }
     this->updateStatusForCurrentVoicegroup();
-    this->syncInspectorFromSelectedEntry();
+}
+
+void VoicegroupEditor::onKeysplitModelDataChanged(const QModelIndex &top_left,
+                                                  const QModelIndex &bottom_right,
+                                                  const QList<int> &) {
+    KeysplitTable *table = this->currentEditableKeysplit();
+    if (!table || !m_keysplit_model) {
+        return;
+    }
+
+    for (int row = top_left.row(); row <= bottom_right.row(); ++row) {
+        const int note = m_keysplit_model->index(row, 0).data().toInt();
+        const int program = m_keysplit_model->index(row, 1).data().toInt();
+        table->note_map[note] = program;
+    }
+    this->markKeysplitDirty(m_current_keysplit_name);
+    this->updateStatusForCurrentKeysplit();
 }
 
 void VoicegroupEditor::onEntryFilterToggled(bool) {
     this->applyEntryFilters();
-}
-
-void VoicegroupEditor::onInspectorFieldChanged() {
-    this->syncSelectedEntryFromInspector();
 }
 
 void VoicegroupEditor::onNewVoicegroupClicked() {
@@ -425,7 +430,7 @@ void VoicegroupEditor::onNewVoicegroupClicked() {
         return;
     }
 
-    int index = m_voicegroup_model->rowCount() + 1;
+    int index = m_edit_voicegroups.size() + 1;
     QString name = QString("voicegroup_new_%1").arg(index);
     while (m_edit_voicegroups.contains(name)) {
         ++index;
@@ -448,7 +453,12 @@ void VoicegroupEditor::onDuplicateVoicegroupClicked() {
     if (row < 0) {
         return;
     }
-    const QString base = m_voicegroup_model->index(row, 0).data().toString();
+    const QModelIndex idx = m_voicegroup_model->index(row, 0);
+    const EntityKind kind = static_cast<EntityKind>(idx.data(k_role_entity_kind).toInt());
+    if (kind != EntityKind::Voicegroup) {
+        return;
+    }
+    const QString base = idx.data(k_role_entity_name).toString();
     if (!m_edit_voicegroups.contains(base)) {
         return;
     }
@@ -479,7 +489,12 @@ void VoicegroupEditor::onRenameVoicegroupClicked() {
         return;
     }
 
-    const QString old_name = m_voicegroup_model->index(row, 0).data().toString();
+    const QModelIndex idx = m_voicegroup_model->index(row, 0);
+    const EntityKind kind = static_cast<EntityKind>(idx.data(k_role_entity_kind).toInt());
+    if (kind != EntityKind::Voicegroup) {
+        return;
+    }
+    const QString old_name = idx.data(k_role_entity_name).toString();
     bool ok = false;
     const QString new_name = QInputDialog::getText(this, "Rename Voicegroup",
                                                    "New name:", QLineEdit::Normal,
@@ -511,15 +526,25 @@ void VoicegroupEditor::onDeleteVoicegroupClicked() {
         return;
     }
 
-    const QString name = m_voicegroup_model->index(row, 0).data().toString();
-    m_edit_voicegroups.remove(name);
-    m_dirty_voicegroups.remove(name);
+    const QModelIndex idx = m_voicegroup_model->index(row, 0);
+    const EntityKind kind = static_cast<EntityKind>(idx.data(k_role_entity_kind).toInt());
+    const QString name = idx.data(k_role_entity_name).toString();
+    if (kind == EntityKind::Voicegroup) {
+        m_edit_voicegroups.remove(name);
+        m_dirty_voicegroups.remove(name);
+    } else {
+        m_edit_keysplit_tables.remove(name);
+        m_dirty_keysplits.remove(name);
+    }
     if (m_sample_delegate) {
         m_sample_delegate->setVoicegroupLabels(m_edit_voicegroups.keys());
         m_sample_delegate->setDirectSoundLabels(directSoundLabelsFromVoicegroups(m_edit_voicegroups));
     }
     if (m_current_voicegroup_name == name) {
         m_current_voicegroup_name.clear();
+    }
+    if (m_current_keysplit_name == name) {
+        m_current_keysplit_name.clear();
     }
     this->rebuildVoicegroupListModel();
     this->updateStatusText(QString("Deleted %1").arg(name));
@@ -541,18 +566,6 @@ void VoicegroupEditor::onReplaceTypeClicked() {
     this->updateStatusText("Replace type");
 }
 
-void VoicegroupEditor::onNormalizePlaceholdersClicked() {
-    this->updateStatusText("Normalize placeholders");
-}
-
-void VoicegroupEditor::populateEntryInspectorTypeChoices() {
-    if (!ui->comboBox_EntryType) {
-        return;
-    }
-    ui->comboBox_EntryType->clear();
-    ui->comboBox_EntryType->addItems(entryTypeOptions());
-}
-
 void VoicegroupEditor::setVoicegroups(const QMap<QString, VoiceGroup> &voicegroups) {
     m_source_voicegroups = voicegroups;
     m_edit_voicegroups = voicegroups;
@@ -566,8 +579,11 @@ void VoicegroupEditor::setVoicegroups(const QMap<QString, VoiceGroup> &voicegrou
 }
 
 void VoicegroupEditor::setKeysplitTables(const QMap<QString, KeysplitTable> &keysplit_tables) {
-    m_keysplit_tables = keysplit_tables;
-    this->updateKeysplitPreview();
+    m_source_keysplit_tables = keysplit_tables;
+    m_edit_keysplit_tables = keysplit_tables;
+    m_dirty_keysplits.clear();
+    m_current_keysplit_name.clear();
+    this->rebuildVoicegroupListModel();
 }
 
 void VoicegroupEditor::rebuildVoicegroupListModel() {
@@ -577,16 +593,22 @@ void VoicegroupEditor::rebuildVoicegroupListModel() {
 
     m_voicegroup_model->clear();
     for (auto it = m_edit_voicegroups.constBegin(); it != m_edit_voicegroups.constEnd(); ++it) {
-        m_voicegroup_model->appendRow(new QStandardItem(it.key()));
+        auto *item = new QStandardItem(QString("VG  %1").arg(it.key()));
+        item->setData(static_cast<int>(EntityKind::Voicegroup), k_role_entity_kind);
+        item->setData(it.key(), k_role_entity_name);
+        m_voicegroup_model->appendRow(item);
+    }
+    for (auto it = m_edit_keysplit_tables.constBegin(); it != m_edit_keysplit_tables.constEnd(); ++it) {
+        auto *item = new QStandardItem(QString("KS  %1").arg(it.key()));
+        item->setData(static_cast<int>(EntityKind::Keysplit), k_role_entity_kind);
+        item->setData(it.key(), k_role_entity_name);
+        m_voicegroup_model->appendRow(item);
     }
 
     if (m_voicegroup_model->rowCount() <= 0) {
-        this->updateStatusText("No voicegroups loaded.");
+        this->updateStatusText("No voicegroups or keysplits loaded.");
         if (m_entry_model) {
             m_entry_model->removeRows(0, m_entry_model->rowCount());
-        }
-        if (m_keysplit_model) {
-            m_keysplit_model->removeRows(0, m_keysplit_model->rowCount());
         }
         return;
     }
@@ -604,7 +626,6 @@ void VoicegroupEditor::selectDefaultVoicegroup() {
 
     const QModelIndex idx = m_voicegroup_filter_model->index(0, 0);
     ui->listView_Voicegroups->setCurrentIndex(idx);
-    this->refreshEntryTableForSelectedVoicegroup();
 }
 
 /**
@@ -615,6 +636,12 @@ void VoicegroupEditor::refreshEntryTableForSelectedVoicegroup() {
     if (!m_entry_model) {
         return;
     }
+    if (ui->tableView_VoicegroupEntries) {
+        ui->tableView_VoicegroupEntries->show();
+    }
+    if (m_keysplit_table_view) {
+        m_keysplit_table_view->hide();
+    }
 
     m_entry_model->removeRows(0, m_entry_model->rowCount());
 
@@ -624,8 +651,10 @@ void VoicegroupEditor::refreshEntryTableForSelectedVoicegroup() {
         this->updateStatusText("No voicegroup selected.");
         return;
     }
-    const QString selected_name = m_voicegroup_model->index(row, 0).data().toString();
+    const QModelIndex list_idx = m_voicegroup_model->index(row, 0);
+    const QString selected_name = list_idx.data(k_role_entity_name).toString();
     m_current_voicegroup_name = selected_name;
+    m_current_keysplit_name.clear();
     const auto vg_it = m_edit_voicegroups.constFind(selected_name);
     if (vg_it == m_edit_voicegroups.constEnd()) {
         this->updateStatusText("Selected voicegroup was not found.");
@@ -669,7 +698,6 @@ void VoicegroupEditor::refreshEntryTableForSelectedVoicegroup() {
         row_items[VG_TABLE_COL_RELEASE]->setEditable(true);
         row_items[VG_TABLE_COL_FLAGS]->setEditable(true);
 
-        row_items[VG_TABLE_COL_INDEX]->setData(false, k_role_is_placeholder);
         row_items[VG_TABLE_COL_INDEX]->setData(true, k_role_is_used);
         row_items[VG_TABLE_COL_INDEX]->setData(false, k_role_has_error);
         m_entry_model->appendRow(row_items);
@@ -683,10 +711,50 @@ void VoicegroupEditor::refreshEntryTableForSelectedVoicegroup() {
         ui->tableView_VoicegroupEntries->selectionModel()->setCurrentIndex(
             first, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
         );
-        this->syncInspectorFromSelectedEntry();
     }
 
     this->updateStatusForCurrentVoicegroup();
+}
+
+void VoicegroupEditor::refreshKeysplitTableForSelectedKeysplit() {
+    if (!m_keysplit_model || !m_voicegroup_model) {
+        return;
+    }
+    if (ui->tableView_VoicegroupEntries) {
+        ui->tableView_VoicegroupEntries->hide();
+    }
+    if (m_keysplit_table_view) {
+        m_keysplit_table_view->show();
+    }
+    m_keysplit_model->removeRows(0, m_keysplit_model->rowCount());
+
+    const int row = this->selectedVoicegroupSourceRow();
+    if (row < 0) {
+        m_current_keysplit_name.clear();
+        this->updateStatusText("No keysplit selected.");
+        return;
+    }
+
+    const QModelIndex list_idx = m_voicegroup_model->index(row, 0);
+    const QString selected_name = list_idx.data(k_role_entity_name).toString();
+    m_current_keysplit_name = selected_name;
+    m_current_voicegroup_name.clear();
+
+    const auto it = m_edit_keysplit_tables.constFind(selected_name);
+    if (it == m_edit_keysplit_tables.constEnd()) {
+        this->updateStatusText("Selected keysplit was not found.");
+        return;
+    }
+
+    const KeysplitTable &table = it.value();
+    for (auto map_it = table.note_map.constBegin(); map_it != table.note_map.constEnd(); ++map_it) {
+        QList<QStandardItem *> row_items;
+        row_items.append(new QStandardItem(QString::number(map_it.key())));
+        row_items.append(new QStandardItem(QString::number(map_it.value())));
+        m_keysplit_model->appendRow(row_items);
+    }
+
+    this->updateStatusForCurrentKeysplit();
 }
 
 void VoicegroupEditor::applyEntryFilters() {
@@ -694,183 +762,38 @@ void VoicegroupEditor::applyEntryFilters() {
         return;
     }
 
-    const bool used_only = ui->checkBox_ShowUsedOnly && ui->checkBox_ShowUsedOnly->isChecked();
-    const bool show_placeholders =
-        ui->checkBox_ShowPlaceholders && ui->checkBox_ShowPlaceholders->isChecked();
+    const bool unique_only = ui->checkBox_ShowUsedOnly && ui->checkBox_ShowUsedOnly->isChecked();
     const bool errors_only = ui->checkBox_ShowErrorsOnly && ui->checkBox_ShowErrorsOnly->isChecked();
+    QSet<QString> seen_rows;
 
     for (int row = 0; row < m_entry_model->rowCount(); ++row) {
         const QModelIndex idx = m_entry_model->index(row, VG_TABLE_COL_INDEX);
-        const bool is_placeholder = idx.data(k_role_is_placeholder).toBool();
-        const bool is_used = idx.data(k_role_is_used).toBool();
         const bool has_error = idx.data(k_role_has_error).toBool();
 
+        const QString row_signature = QString("%1|%2|%3|%4|%5|%6|%7|%8|%9")
+            .arg(m_entry_model->index(row, VG_TABLE_COL_TYPE).data().toString())
+            .arg(m_entry_model->index(row, VG_TABLE_COL_SAMPLE).data().toString())
+            .arg(m_entry_model->index(row, VG_TABLE_COL_KEY).data().toString())
+            .arg(m_entry_model->index(row, VG_TABLE_COL_PAN).data().toString())
+            .arg(m_entry_model->index(row, VG_TABLE_COL_ATTACK).data().toString())
+            .arg(m_entry_model->index(row, VG_TABLE_COL_DECAY).data().toString())
+            .arg(m_entry_model->index(row, VG_TABLE_COL_SUSTAIN).data().toString())
+            .arg(m_entry_model->index(row, VG_TABLE_COL_RELEASE).data().toString())
+            .arg(m_entry_model->index(row, VG_TABLE_COL_FLAGS).data().toString());
+
         bool hide_row = false;
-        if (used_only && !is_used) {
-            hide_row = true;
-        }
-        if (!show_placeholders && is_placeholder) {
-            hide_row = true;
+        if (unique_only) {
+            if (seen_rows.contains(row_signature)) {
+                hide_row = true;
+            } else {
+                seen_rows.insert(row_signature);
+            }
         }
         if (errors_only && !has_error) {
             hide_row = true;
         }
 
         ui->tableView_VoicegroupEntries->setRowHidden(row, hide_row);
-    }
-}
-
-void VoicegroupEditor::syncInspectorFromSelectedEntry() {
-    if (m_updating_inspector) {
-        return;
-    }
-    if (!m_entry_model) {
-        return;
-    }
-
-    const int row = this->selectedEntryRow();
-    if (row < 0) {
-        return;
-    }
-
-    m_updating_inspector = true;
-
-    const int program = m_entry_model->index(row, VG_TABLE_COL_INDEX).data().toInt();
-    const QString type = m_entry_model->index(row, VG_TABLE_COL_TYPE).data().toString();
-    const QString sample = m_entry_model->index(row, VG_TABLE_COL_SAMPLE).data().toString();
-    const int key = m_entry_model->index(row, VG_TABLE_COL_KEY).data().toInt();
-    const int pan = m_entry_model->index(row, VG_TABLE_COL_PAN).data().toInt();
-    const int attack = m_entry_model->index(row, VG_TABLE_COL_ATTACK).data().toInt();
-    const int decay = m_entry_model->index(row, VG_TABLE_COL_DECAY).data().toInt();
-    const int sustain = m_entry_model->index(row, VG_TABLE_COL_SUSTAIN).data().toInt();
-    const int release = m_entry_model->index(row, VG_TABLE_COL_RELEASE).data().toInt();
-
-    if (ui->spinBox_ProgramIndex) {
-        ui->spinBox_ProgramIndex->setValue(program);
-    }
-    if (ui->comboBox_EntryType) {
-        const int idx = ui->comboBox_EntryType->findText(type);
-        if (idx >= 0) {
-            ui->comboBox_EntryType->setCurrentIndex(idx);
-        }
-    }
-    if (ui->lineEdit_SampleOrSubgroup) {
-        ui->lineEdit_SampleOrSubgroup->setText(sample);
-    }
-    if (ui->spinBox_Key) {
-        ui->spinBox_Key->setValue(key);
-    }
-    if (ui->spinBox_Pan) {
-        ui->spinBox_Pan->setValue(pan);
-    }
-    if (ui->spinBox_Attack) {
-        ui->spinBox_Attack->setValue(attack);
-    }
-    if (ui->spinBox_Decay) {
-        ui->spinBox_Decay->setValue(decay);
-    }
-    if (ui->spinBox_Sustain) {
-        ui->spinBox_Sustain->setValue(sustain);
-    }
-    if (ui->spinBox_Release) {
-        ui->spinBox_Release->setValue(release);
-    }
-
-    m_updating_inspector = false;
-    this->updateKeysplitPreview();
-}
-
-/**
- * Apply inspector widget values back into both the editable model and the
- * visible table row for the current selection.
- */
-void VoicegroupEditor::syncSelectedEntryFromInspector() {
-    if (m_updating_inspector) {
-        return;
-    }
-    if (!m_entry_model) {
-        return;
-    }
-
-    const int row = this->selectedEntryRow();
-    if (row < 0) {
-        return;
-    }
-
-    VoiceGroup *group = this->currentEditableVoicegroup();
-    if (!group || row >= group->instruments.size()) {
-        return;
-    }
-
-    Instrument &inst = group->instruments[row];
-    const QString type_display = ui->comboBox_EntryType ? ui->comboBox_EntryType->currentText() : "";
-    inst.type = internalTypeNameFromDisplay(type_display, inst.type);
-    inst.sample_label = ui->lineEdit_SampleOrSubgroup ? ui->lineEdit_SampleOrSubgroup->text() : "";
-    inst.base_key = ui->spinBox_Key ? ui->spinBox_Key->value() : 0;
-    inst.pan = ui->spinBox_Pan ? ui->spinBox_Pan->value() : 0;
-    inst.attack = ui->spinBox_Attack ? ui->spinBox_Attack->value() : 0;
-    inst.decay = ui->spinBox_Decay ? ui->spinBox_Decay->value() : 0;
-    inst.sustain = ui->spinBox_Sustain ? ui->spinBox_Sustain->value() : 0;
-    inst.release = ui->spinBox_Release ? ui->spinBox_Release->value() : 0;
-
-    m_entry_model->setData(m_entry_model->index(row, VG_TABLE_COL_INDEX),
-                           ui->spinBox_ProgramIndex ? ui->spinBox_ProgramIndex->value() : 0);
-    m_entry_model->setData(m_entry_model->index(row, VG_TABLE_COL_TYPE),
-                           ui->comboBox_EntryType ? ui->comboBox_EntryType->currentText() : "");
-    m_entry_model->setData(m_entry_model->index(row, VG_TABLE_COL_SAMPLE),
-                           ui->lineEdit_SampleOrSubgroup ? ui->lineEdit_SampleOrSubgroup->text() : "");
-    m_entry_model->setData(m_entry_model->index(row, VG_TABLE_COL_KEY),
-                           ui->spinBox_Key ? ui->spinBox_Key->value() : 0);
-    m_entry_model->setData(m_entry_model->index(row, VG_TABLE_COL_PAN),
-                           ui->spinBox_Pan ? ui->spinBox_Pan->value() : 0);
-    m_entry_model->setData(m_entry_model->index(row, VG_TABLE_COL_ATTACK),
-                           ui->spinBox_Attack ? ui->spinBox_Attack->value() : 0);
-    m_entry_model->setData(m_entry_model->index(row, VG_TABLE_COL_DECAY),
-                           ui->spinBox_Decay ? ui->spinBox_Decay->value() : 0);
-    m_entry_model->setData(m_entry_model->index(row, VG_TABLE_COL_SUSTAIN),
-                           ui->spinBox_Sustain ? ui->spinBox_Sustain->value() : 0);
-    m_entry_model->setData(m_entry_model->index(row, VG_TABLE_COL_RELEASE),
-                           ui->spinBox_Release ? ui->spinBox_Release->value() : 0);
-
-    this->markVoicegroupDirty(m_current_voicegroup_name);
-    this->updateStatusForCurrentVoicegroup();
-}
-
-/**
- * Refresh keysplit preview rows based on the selected entry metadata label.
- */
-void VoicegroupEditor::updateKeysplitPreview() {
-    if (!m_keysplit_model) {
-        return;
-    }
-
-    m_keysplit_model->clear();
-    m_keysplit_model->setHorizontalHeaderLabels({"Note", "Program", "Target"});
-
-    const int row = this->selectedEntryRow();
-    if (row < 0 || !m_entry_model) {
-        return;
-    }
-
-    const QString type = m_entry_model->index(row, VG_TABLE_COL_TYPE).data().toString();
-    if (type != "Keysplit") {
-        return;
-    }
-
-    const QString table_label = m_entry_model->index(row, VG_TABLE_COL_FLAGS).data().toString();
-    const QString target_voicegroup = m_entry_model->index(row, VG_TABLE_COL_SAMPLE).data().toString();
-    const auto table_it = m_keysplit_tables.constFind(table_label);
-    if (table_it == m_keysplit_tables.constEnd()) {
-        return;
-    }
-
-    const KeysplitTable &table = table_it.value();
-    for (auto it = table.note_map.constBegin(); it != table.note_map.constEnd(); ++it) {
-        m_keysplit_model->appendRow({
-            new QStandardItem(QString::number(it.key())),
-            new QStandardItem(QString::number(it.value())),
-            new QStandardItem(target_voicegroup),
-        });
     }
 }
 
@@ -900,11 +823,38 @@ void VoicegroupEditor::updateStatusForCurrentVoicegroup() {
     );
 }
 
+void VoicegroupEditor::updateStatusForCurrentKeysplit() {
+    if (m_current_keysplit_name.isEmpty()) {
+        this->updateStatusText("No keysplit selected.");
+        return;
+    }
+
+    const KeysplitTable *table = this->currentEditableKeysplit();
+    if (!table) {
+        this->updateStatusText("No keysplit selected.");
+        return;
+    }
+
+    const bool dirty = m_dirty_keysplits.contains(m_current_keysplit_name);
+    const QString dirty_text = dirty ? "dirty" : "clean";
+    this->updateStatusText(
+        QString("%1 (%2 mappings, %3)")
+            .arg(m_current_keysplit_name, QString::number(table->note_map.size()), dirty_text)
+    );
+}
+
 void VoicegroupEditor::markVoicegroupDirty(const QString &voicegroup) {
     if (voicegroup.isEmpty()) {
         return;
     }
     m_dirty_voicegroups.insert(voicegroup);
+}
+
+void VoicegroupEditor::markKeysplitDirty(const QString &keysplit) {
+    if (keysplit.isEmpty()) {
+        return;
+    }
+    m_dirty_keysplits.insert(keysplit);
 }
 
 bool VoicegroupEditor::renameVoicegroupInEditModel(const QString &old_name, const QString &new_name) {
@@ -949,6 +899,28 @@ const VoiceGroup *VoicegroupEditor::currentEditableVoicegroup() const {
     return &it.value();
 }
 
+KeysplitTable *VoicegroupEditor::currentEditableKeysplit() {
+    if (m_current_keysplit_name.isEmpty()) {
+        return nullptr;
+    }
+    auto it = m_edit_keysplit_tables.find(m_current_keysplit_name);
+    if (it == m_edit_keysplit_tables.end()) {
+        return nullptr;
+    }
+    return &it.value();
+}
+
+const KeysplitTable *VoicegroupEditor::currentEditableKeysplit() const {
+    if (m_current_keysplit_name.isEmpty()) {
+        return nullptr;
+    }
+    auto it = m_edit_keysplit_tables.constFind(m_current_keysplit_name);
+    if (it == m_edit_keysplit_tables.constEnd()) {
+        return nullptr;
+    }
+    return &it.value();
+}
+
 int VoicegroupEditor::selectedVoicegroupSourceRow() const {
     if (!ui->listView_Voicegroups || !m_voicegroup_filter_model) {
         return -1;
@@ -959,12 +931,4 @@ int VoicegroupEditor::selectedVoicegroupSourceRow() const {
     }
     const QModelIndex source_idx = m_voicegroup_filter_model->mapToSource(proxy_idx);
     return source_idx.isValid() ? source_idx.row() : -1;
-}
-
-int VoicegroupEditor::selectedEntryRow() const {
-    if (!ui->tableView_VoicegroupEntries) {
-        return -1;
-    }
-    const QModelIndex idx = ui->tableView_VoicegroupEntries->currentIndex();
-    return idx.isValid() ? idx.row() : -1;
 }

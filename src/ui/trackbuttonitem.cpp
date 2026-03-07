@@ -44,7 +44,7 @@ void GraphicsTrackButtonItem::paint(QPainter *painter, const QStyleOptionGraphic
         painter->drawPixmap(3, 1, pix);
     } else {
         painter->setPen(Qt::black);
-        painter->setFont(QFont("sans-serif", 7, QFont::Bold));
+        painter->setFont(QFont("IBM Plex Sans", 7, QFont::Bold));
         painter->drawText(boundingRect(), Qt::AlignCenter, "S");
     }
 }

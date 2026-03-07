@@ -101,13 +101,13 @@ void GraphicsTrackItem::paint(QPainter *painter,
     painter->setPen(Qt::NoPen);
     painter->drawRoundedRect(numRect, 3, 3);
     painter->setPen(Qt::black);
-    painter->setFont(QFont("sans-serif", 9, QFont::Bold));
+    painter->setFont(QFont("IBM Plex Sans", 9, QFont::Bold));
     painter->drawText(numRect, Qt::AlignCenter, QString::number(m_row));
 
     // draw current voice type info if playing (top half, above meter)
     if (!m_playing_voice_type.isEmpty()) {
         painter->setPen(m_color.lightness() > 100 ? Qt::black : Qt::white);
-        painter->setFont(QFont("sans-serif", 7));
+        painter->setFont(QFont("IBM Plex Sans", 7));
 
         const QString info = m_playing_voice_type;
         const qreal text_top = header_y + 1.0;

@@ -227,16 +227,6 @@
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkBox_ShowPlaceholders">
-            <property name="text">
-             <string>Placeholders</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
            <widget class="QCheckBox" name="checkBox_ShowErrorsOnly">
             <property name="text">
              <string>Errors only</string>
@@ -284,13 +274,6 @@
            <widget class="QPushButton" name="button_ReplaceType">
             <property name="text">
              <string>Replace Type</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_NormalizePlaceholders">
-            <property name="text">
-             <string>Normalize Placeholders</string>
             </property>
            </widget>
           </item>

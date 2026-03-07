@@ -20,7 +20,6 @@
 #include <QDebug>
 #include <QDir>
 #include <QFileDialog>
-#include <QFontDatabase>
 #include <QFontMetrics>
 #include <QGraphicsEllipseItem>
 #include <QGridLayout>
@@ -80,9 +79,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 
     // !TODO: silence bug in my qt version re: mac trackpads [fix: update Qt version]
     QLoggingCategory::setFilterRules(QStringLiteral("qt.pointer.dispatch=false"));
-
-    QFontDatabase::addApplicationFont(":/fonts/IBMPlexMono-Regular.ttf");
-    QFontDatabase::addApplicationFont(":/fonts/IBMPlexSans-Regular.ttf");
 
     this->loadConfig();
 
