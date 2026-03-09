@@ -371,6 +371,10 @@ bool Controller::createSong(const NewSongSettings &settings, QString *error) {
     return true;
 }
 
+bool Controller::hasUnsavedChanges() const {
+    return m_project ? m_project->hasUnsavedChanges() : false;
+}
+
 QStringList Controller::voicegroupNames() const {
     if (!m_project) return {};
 
@@ -1534,12 +1538,8 @@ void Controller::songListSongRequested(const QModelIndex &index) {
         m_song_list_model->refreshAll();
     }
 
-    // load song into ui/audio and update window title
-    if (this->loadSong()) {
-        if (auto *main_window = qobject_cast<MainWindow *>(parent())) {
-            main_window->setWindowTitle(QString("gtm - %1").arg(title));
-        }
-    }
+    // load song into ui/audio
+    this->loadSong();
 }
 
 /**

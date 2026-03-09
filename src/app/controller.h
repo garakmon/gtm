@@ -51,6 +51,7 @@ public:
     bool loadProject(const QString &root);
     const QString &projectRoot() const;
     bool createSong(const NewSongSettings &settings, QString *error = nullptr);
+    bool hasUnsavedChanges() const;
     QStringList voicegroupNames() const;
     const QMap<QString, VoiceGroup> &voicegroups() const;
     const QMap<QString, KeysplitTable> &keysplitTables() const;

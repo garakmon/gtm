@@ -87,6 +87,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
         restoreGeometry(QByteArray::fromBase64(m_config.window_geometry.toUtf8()));
     }
 
+    this->updateWindowTitle();
     this->loadProject();
 }
 
@@ -143,6 +144,7 @@ void MainWindow::setupController() {
         [this](const QString &title) {
             this->setRecentSongTitle(title);
             this->syncSongListSelectionToOpenSong(false);
+            this->updateWindowTitle();
     });
 
     if (ui->verticalLayout_InfoPanels) {
@@ -451,6 +453,17 @@ void MainWindow::syncSongListSelectionToOpenSong(bool scroll_to_center) {
 
 void MainWindow::setRecentSongTitle(const QString &title) {
     m_config.recent_song = title;
+}
+
+void MainWindow::updateWindowTitle() {
+    QString title = "gtm";
+    if (!m_config.recent_song.isEmpty()) {
+        title += QString(" - %1").arg(m_config.recent_song);
+    }
+    if (m_controller && m_controller->hasUnsavedChanges()) {
+        title += " *";
+    }
+    this->setWindowTitle(title);
 }
 
 /**

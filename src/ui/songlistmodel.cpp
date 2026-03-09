@@ -3,6 +3,7 @@
 #include "app/project.h"
 
 #include <QGuiApplication>
+#include <QFont>
 #include <QIcon>
 #include <QPalette>
 
@@ -38,6 +39,20 @@ QVariant SongListModel::data(const QModelIndex &index, int role) const {
         return QVariant();
     }
 
+    if (role == Qt::FontRole) {
+        bool unsaved = m_project->isSongUnsaved(title);
+        if (!unsaved && m_project->songLoaded(title)) {
+            auto song = m_project->getSong(title);
+            unsaved = song && !song->isClean();
+        }
+        if (unsaved) {
+            QFont font = QGuiApplication::font();
+            font.setItalic(true);
+            return font;
+        }
+        return QVariant();
+    }
+
     if (role == Qt::DecorationRole) {
         // choose an icon based on the song state in memory
         static const QIcon s_song_icon_default(":/icons/song.svg");
@@ -46,13 +61,14 @@ QVariant SongListModel::data(const QModelIndex &index, int role) const {
         static const QIcon s_song_icon_unsaved(":/icons/song-unsaved.svg");
 
         const bool loaded = m_project->songLoaded(title);
+        const bool unsaved = m_project->isSongUnsaved(title);
         if (loaded) {
             auto song = m_project->getSong(title);
             auto active = m_project->activeSong();
             if (song == active) {
                 return s_song_icon_editing;
             }
-            else if (!song->isClean()) {
+            else if (unsaved || (song && !song->isClean())) {
                 return s_song_icon_unsaved;
             }
             return s_song_icon_loaded;

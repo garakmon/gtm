@@ -69,6 +69,7 @@ private: // methods
     // ui updates
     void syncSongListSelectionToOpenSong(bool scroll_to_center);
     void setRecentSongTitle(const QString &title);
+    void updateWindowTitle();
     void setupTrackMetaControls();
     void applyTrackMetaMaskFromUi();
 
