@@ -358,14 +358,16 @@ const QString &Controller::projectRoot() const {
     return m_project ? m_project->rootPath() : s_empty;
 }
 
-bool Controller::createSong(const NewSongSettings &settings) {
-    if (!m_interface || !m_project) {
+bool Controller::createSong(const NewSongSettings &settings, QString *error) {
+    if (!m_project) {
+        if (error) *error = "No project is loaded.";
         return false;
     }
-    if (!m_interface->createSong(settings)) {
+    if (!m_project->createSong(settings, error)) {
         return false;
     }
     this->displayProject();
+    this->selectSongByTitle(settings.title.trimmed());
     return true;
 }
 

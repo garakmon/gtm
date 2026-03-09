@@ -50,7 +50,7 @@ public:
     // project + interface / loading + saving
     bool loadProject(const QString &root);
     const QString &projectRoot() const;
-    bool createSong(const NewSongSettings &settings);
+    bool createSong(const NewSongSettings &settings, QString *error = nullptr);
     QStringList voicegroupNames() const;
     const QMap<QString, VoiceGroup> &voicegroups() const;
     const QMap<QString, KeysplitTable> &keysplitTables() const;

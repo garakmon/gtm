@@ -2,7 +2,6 @@
 #ifndef PROJECTINTERFACE_H
 #define PROJECTINTERFACE_H
 
-#include "app/structs.h"
 #include "deps/midifile/MidiFile.h"
 #include "sound/soundtypes.h"
 
@@ -58,7 +57,6 @@ public:
 
     // song loading
     smf::MidiFile loadMidi(const QString &title);
-    bool createSong(const NewSongSettings &settings);
 
 private:
     // internal helpers

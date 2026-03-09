@@ -25,6 +25,18 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 class Song : public smf::MidiFile {
 public:
+    struct DefaultEventSettings {
+        double tempo_bpm = 120.0;
+        int time_sig_num = 4;
+        int time_sig_den = 4;
+        int key_fifths = 0; // C major / A minor
+        bool key_is_minor = false; // false = major, true = minor
+        int channel = 0;
+        int volume = 127;
+        int pan = 64;
+        int end_tick = 1;
+    };
+
     Song() = default;
     Song(smf::MidiFile &midifile);
     ~Song() = default;
@@ -37,6 +49,8 @@ public:
     // song loading
     bool load();
     void mergeEvents();
+    static void addDefaultEvents(smf::MidiFile &midi, const VoiceGroup *voicegroup = nullptr,
+                                 const DefaultEventSettings &settings = DefaultEventSettings());
 
     // timing
     double durationInSeconds();
@@ -83,6 +97,7 @@ public:
     void markDirty() { m_clean = false; }
 
 private:
+    static int defaultProgramFromVoicegroup(const VoiceGroup *voicegroup);
     void extractInitialState();
 
 private:

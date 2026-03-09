@@ -2,10 +2,12 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
+#include "app/structs.h"
 #include "sound/soundtypes.h"
 #include "sound/song.h"
 
 #include <QMap>
+#include <QSet>
 
 #include <memory>
 
@@ -33,10 +35,15 @@ public:
     const QString &rootPath() const;
 
     // song data stuff
+    bool createSong(const NewSongSettings &settings, QString *error = nullptr);
     std::shared_ptr<Song> addSong(const QString &title, smf::MidiFile &midi);
     std::shared_ptr<Song> getSong(const QString &title) const;
     std::shared_ptr<Song> activeSong() const;
     void setActiveSong(const QString &title);
+    bool hasUnsavedChanges() const;
+    void setUnsavedChanges(bool dirty);
+    bool isSongUnsaved(const QString &title) const;
+    void setSongUnsaved(const QString &title, bool dirty);
 
     // loading
     void addSampleMapping(const QString &label, const QString &path);
@@ -64,9 +71,22 @@ public:
     const VoiceGroup *getVoiceGroup(const QString &name) const;
 
 private:
+    struct DefaultSongSettings {
+        int tpqn = 48;
+        Song::DefaultEventSettings events;
+    };
+    static const DefaultSongSettings s_default_song_settings;
+
+    bool validateNewSongSettings(const NewSongSettings &settings, QString *error) const;
+    SongEntry buildSongEntryFromSettings(const NewSongSettings &settings) const;
+    bool insertNewSongData(const SongEntry &entry, const smf::MidiFile &midi, QString *error);
+    void removeSongInternal(const QString &title);
+
     // songs
     QMap<QString, std::shared_ptr<Song>> m_song_table;
     std::shared_ptr<Song> m_active_song;
+    bool m_has_unsaved_changes = false;
+    QSet<QString> m_unsaved_song_titles;
 
     // project resources
     QMap<QString, QString> m_sample_map; // label -> path

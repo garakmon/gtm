@@ -25,6 +25,7 @@
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLoggingCategory>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QSignalBlocker>
@@ -293,7 +294,11 @@ void MainWindow::setupToolButtons() {
             }
             if (dialog.exec() == QDialog::Accepted) {
                 const NewSongSettings settings = dialog.result();
-                m_controller->createSong(settings);
+                QString error;
+                if (!m_controller->createSong(settings, &error)) {
+                    QMessageBox::warning(this, "Create Song Failed",
+                                         error.isEmpty() ? "Failed to create song." : error);
+                }
             }
         });
     }

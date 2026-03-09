@@ -1,6 +1,132 @@
 #include "app/project.h"
 
-#include <QDebug>
+#include <QRegularExpression>
+
+
+
+static const QRegularExpression s_song_title_regex("mus_[a-z0-9_]+");
+const Project::DefaultSongSettings Project::s_default_song_settings{};
+
+
+
+bool Project::createSong(const NewSongSettings &settings, QString *error) {
+    if (!this->validateNewSongSettings(settings, error)) {
+        return false;
+    }
+
+    SongEntry entry = this->buildSongEntryFromSettings(settings);
+
+    smf::MidiFile midi;
+    midi.setTicksPerQuarterNote(s_default_song_settings.tpqn);
+    const VoiceGroup *voicegroup = this->getVoiceGroup(entry.voicegroup);
+    Song::addDefaultEvents(midi, voicegroup, s_default_song_settings.events);
+
+    return this->insertNewSongData(entry, midi, error);
+}
+
+bool Project::hasUnsavedChanges() const {
+    return m_has_unsaved_changes;
+}
+
+void Project::setUnsavedChanges(bool dirty) {
+    m_has_unsaved_changes = dirty;
+}
+
+bool Project::isSongUnsaved(const QString &title) const {
+    return m_unsaved_song_titles.contains(title);
+}
+
+void Project::setSongUnsaved(const QString &title, bool dirty) {
+    if (dirty) {
+        m_unsaved_song_titles.insert(title);
+        m_has_unsaved_changes = true;
+        return;
+    }
+
+    m_unsaved_song_titles.remove(title);
+    if (m_unsaved_song_titles.isEmpty()) {
+        m_has_unsaved_changes = false;
+    }
+}
+
+bool Project::validateNewSongSettings(const NewSongSettings &settings, QString *error) const {
+    const QString title = settings.title.trimmed();
+    if (title.isEmpty()) {
+        if (error) *error = "Song title is empty.";
+        return false;
+    }
+    if (!s_song_title_regex.match(title).hasMatch()) {
+        if (error) *error = "Song title must match mus_[a-z0-9_]+.";
+        return false;
+    }
+    if (m_song_entries.contains(title)) {
+        if (error) *error = QString("Song title '%1' already exists.").arg(title);
+        return false;
+    }
+
+    const QString voicegroup = settings.voicegroup.trimmed();
+    if (voicegroup.isEmpty()) {
+        if (error) *error = "Voicegroup is empty.";
+        return false;
+    }
+    if (!m_voicegroups.contains(voicegroup)) {
+        if (error) *error = QString("Voicegroup '%1' does not exist.").arg(voicegroup);
+        return false;
+    }
+
+    return true;
+}
+
+SongEntry Project::buildSongEntryFromSettings(const NewSongSettings &settings) const {
+    SongEntry entry;
+    entry.title = settings.title.trimmed();
+    entry.voicegroup = settings.voicegroup.trimmed();
+    entry.player = settings.player.trimmed();
+    entry.type = 0;
+    entry.volume = settings.volume;
+    entry.priority = settings.priority;
+    entry.reverb = settings.reverb;
+    entry.midifile = entry.title + ".mid";
+    return entry;
+}
+
+bool Project::insertNewSongData(const SongEntry &entry, const smf::MidiFile &midi, QString *error) {
+    if (m_song_entries.contains(entry.title)) {
+        if (error) *error = QString("Song title '%1' already exists.").arg(entry.title);
+        return false;
+    }
+
+    this->addSongEntry(entry);
+
+    smf::MidiFile midi_copy(midi);
+    std::shared_ptr<Song> song = this->addSong(entry.title, midi_copy);
+    if (!song) {
+        this->removeSongInternal(entry.title);
+        if (error) *error = QString("Failed to create in-memory song '%1'.").arg(entry.title);
+        return false;
+    }
+
+    m_active_song = song;
+    this->setSongUnsaved(entry.title, true);
+    return true;
+}
+
+void Project::removeSongInternal(const QString &title) {
+    auto loaded = m_song_table.find(title);
+    if (loaded != m_song_table.end()) {
+        if (m_active_song == loaded.value()) {
+            m_active_song.reset();
+        }
+        m_song_table.erase(loaded);
+    }
+
+    m_song_entries.remove(title);
+    m_song_table_order.removeAll(title);
+    m_unsaved_song_titles.remove(title);
+    if (m_unsaved_song_titles.isEmpty()) {
+        m_has_unsaved_changes = false;
+    }
+}
 
 
 
@@ -12,6 +138,8 @@
 void Project::reset() {
     m_song_table.clear();
     m_active_song.reset();
+    m_has_unsaved_changes = false;
+    m_unsaved_song_titles.clear();
 
     m_sample_map.clear();
     m_samples.clear();

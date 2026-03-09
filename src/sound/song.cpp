@@ -2,10 +2,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 
 namespace {
 constexpr int k_pitch_bend_center = 8192;
+constexpr int k_meta_track = 0;
+constexpr int k_music_track = 1;
 } // namespace
 
 
@@ -14,6 +17,27 @@ constexpr int k_pitch_bend_center = 8192;
  * Create this song from a parsed midi file.
  */
 Song::Song(smf::MidiFile &midifile) : smf::MidiFile(midifile) { }
+
+void Song::addDefaultEvents(smf::MidiFile &midi, const VoiceGroup *voicegroup,
+                            const DefaultEventSettings &settings) {
+    while (midi.getTrackCount() <= k_music_track) {
+        midi.addTrack(1);
+    }
+
+    const int default_program = defaultProgramFromVoicegroup(voicegroup);
+
+    midi.addTempo(k_meta_track, 0, settings.tempo_bpm);
+    midi.addTimeSignature(k_meta_track, 0, settings.time_sig_num, settings.time_sig_den);
+    midi.addKeySignature(k_meta_track, 0, settings.key_fifths, settings.key_is_minor);
+
+    midi.addPatchChange(k_music_track, 0, settings.channel, default_program);
+    midi.addController(k_music_track, 0, settings.channel, g_midi_cc_volume, settings.volume);
+    midi.addController(k_music_track, 0, settings.channel, g_midi_cc_pan, settings.pan);
+
+    midi.addMetaEvent(k_meta_track, settings.end_tick, 0x2F, std::string());
+    midi.addMetaEvent(k_music_track, settings.end_tick, 0x2F, std::string());
+    midi.sortTracks();
+}
 
 /**
  * Load song data from the MidiFile.
@@ -225,4 +249,32 @@ void Song::extractInitialState() {
             }
         }
     }
+}
+
+int Song::defaultProgramFromVoicegroup(const VoiceGroup *voicegroup) {
+    if (!voicegroup) {
+        return 0;
+    }
+
+    const auto &instruments = voicegroup->instruments;
+    if (instruments.isEmpty()) {
+        return 0;
+    }
+
+    for (int i = 0; i < instruments.size(); ++i) {
+        const Instrument &inst = instruments[i];
+        if (inst.type.startsWith("voice_directsound")) {
+            return i;
+        }
+    }
+
+    for (int i = 0; i < instruments.size(); ++i) {
+        const Instrument &inst = instruments[i];
+        if (inst.type.startsWith("voice_keysplit") || inst.type.startsWith("voice_keysplit_all")) {
+            continue;
+        }
+        return i;
+    }
+
+    return 0;
 }
