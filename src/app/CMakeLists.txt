@@ -2,6 +2,8 @@ qt_add_library(gtm-app STATIC
     project.cpp
     controller.cpp
     projectinterface.cpp
+    editcommands.cpp
+    songeditor.cpp
 )
 
 set_target_properties(gtm-app PROPERTIES

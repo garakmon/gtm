@@ -24,6 +24,7 @@ class TrackRoll;
 class MeasureRoll;
 class Song;
 class SongListModel;
+class SongEditor;
 class MinimapWidget;
 class MasterMeterWidget;
 namespace smf { class MidiEvent; }
@@ -57,8 +58,13 @@ public:
     const QMap<QString, KeysplitTable> &keysplitTables() const;
     QStringList playerNames() const;
     QStringList songTitles() const;
+    SongEditor *songEditor() const;
     bool loadSong();
     bool loadSong(std::shared_ptr<Song> song); // !TODO: return shared_ptr<Song>?
+    bool canUndoHistory() const;
+    bool canRedoHistory() const;
+    void undoHistory();
+    void redoHistory();
 
     // ui coordination
     void setupRolls();     // one time actions
@@ -113,6 +119,7 @@ private:
     std::unique_ptr<Project> m_project;
     std::unique_ptr<ProjectInterface> m_interface;
     std::unique_ptr<Player> m_player;
+    std::unique_ptr<SongEditor> m_song_editor;
 
     // non-owning references
     Ui::MainWindow *m_window = nullptr;

@@ -1,5 +1,6 @@
 #include "ui/mainwindow.h"
 
+#include "app/songeditor.h"
 #include "app/controller.h"
 #include "ui/colors.h"
 #include "ui/customwidgets.h"
@@ -16,6 +17,7 @@
 #include "util/theme.h"
 
 #include <QButtonGroup>
+#include <QAction>
 #include <QComboBox>
 #include <QDebug>
 #include <QDir>
@@ -27,6 +29,7 @@
 #include <QLoggingCategory>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QKeySequence>
 #include <QRegularExpression>
 #include <QSignalBlocker>
 #include <QSlider>
@@ -413,6 +416,7 @@ void MainWindow::loadProject(const QString &root) {
 
     this->m_controller->loadProject(root);
     m_config.most_recent_project = root;
+    this->setupEditMenuActions();
 
     if (ui->listView_songTable) {
         auto *model = ui->listView_songTable->model();
@@ -426,6 +430,27 @@ void MainWindow::loadProject(const QString &root) {
             m_song_filter->setSourceModel(model);
             ui->listView_songTable->setModel(m_song_filter);
         }
+    }
+}
+
+void MainWindow::setupEditMenuActions() {
+    if (!ui || !ui->menuEdit || !m_controller) return;
+
+    SongEditor *editor = m_controller->songEditor();
+    if (!editor) return;
+
+    QUndoGroup *history_group = editor->historyGroup();
+    if (!history_group) return;
+
+    if (!m_action_undo) {
+        m_action_undo = history_group->createUndoAction(this, "Undo");
+        m_action_undo->setShortcut(QKeySequence::Undo);
+        ui->menuEdit->addAction(m_action_undo);
+    }
+    if (!m_action_redo) {
+        m_action_redo = history_group->createRedoAction(this, "Redo");
+        m_action_redo->setShortcut(QKeySequence::Redo);
+        ui->menuEdit->addAction(m_action_redo);
     }
 }
 

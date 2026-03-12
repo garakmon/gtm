@@ -2,6 +2,7 @@
 
 #include "app/project.h"
 #include "app/projectinterface.h"
+#include "app/songeditor.h"
 #include "deps/midifile/MidiEvent.h"
 #include "sound/song.h"
 #include "ui/colors.h"
@@ -340,6 +341,9 @@ bool Controller::loadProject(const QString &root) {
     if (!m_project) {
         m_project = std::make_unique<Project>();
         m_interface = std::make_unique<ProjectInterface>(m_project.get());
+        m_song_editor = std::make_unique<SongEditor>(m_project.get(), this);
+    } else if (!m_song_editor) {
+        m_song_editor = std::make_unique<SongEditor>(m_project.get(), this);
     }
 
     if (m_interface->loadProject(root)) {
@@ -425,6 +429,28 @@ QStringList Controller::songTitles() const {
         titles.append(m_project->getSongTitleAt(i));
     }
     return titles;
+}
+
+SongEditor *Controller::songEditor() const {
+    return m_song_editor.get();
+}
+
+bool Controller::canUndoHistory() const {
+    return m_song_editor ? m_song_editor->canUndoHistory() : false;
+}
+
+bool Controller::canRedoHistory() const {
+    return m_song_editor ? m_song_editor->canRedoHistory() : false;
+}
+
+void Controller::undoHistory() {
+    if (!m_song_editor) return;
+    m_song_editor->undo();
+}
+
+void Controller::redoHistory() {
+    if (!m_song_editor) return;
+    m_song_editor->redo();
 }
 
 /**
@@ -1540,6 +1566,13 @@ void Controller::songListSongRequested(const QModelIndex &index) {
 
     // load song into ui/audio
     this->loadSong();
+    if (m_song_editor) {
+        QString error;
+        if (!m_song_editor->setActiveSong(title, &error)) {
+            logging::warn(QString("Failed to bind song editor: %1").arg(error),
+                          logging::LogCategory::General);
+        }
+    }
 }
 
 /**

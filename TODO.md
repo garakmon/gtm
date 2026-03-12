@@ -8,4 +8,5 @@
 - give sensible names to all ui elements (eg. frame_3)
 - use all the logging tools
 - voicegroup aliases for presets, and optional display midi standard for each program number
+- checkbox to play sound when moving notes
 

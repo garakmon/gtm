@@ -9,6 +9,7 @@
 #include <QList>
 #include <QMap>
 #include <QSet>
+#include <QUndoStack>
 
 #include <cstdint>
 #include <vector>
@@ -49,8 +50,8 @@ public:
     // song loading
     bool load();
     void mergeEvents();
-    static void addDefaultEvents(smf::MidiFile &midi, const VoiceGroup *voicegroup = nullptr,
-                                 const DefaultEventSettings &settings = DefaultEventSettings());
+    static void addDefaultEvents(smf::MidiFile &midi, const VoiceGroup *voicegroup,
+                                 const DefaultEventSettings &settings);
 
     // timing
     double durationInSeconds();
@@ -95,6 +96,8 @@ public:
     bool isClean() const { return m_clean; }
     void setClean(bool clean = true) { m_clean = clean; }
     void markDirty() { m_clean = false; }
+    QUndoStack *editHistory() { return &m_edit_history; }
+    const QUndoStack *editHistory() const { return &m_edit_history; }
 
 private:
     static int defaultProgramFromVoicegroup(const VoiceGroup *voicegroup);
@@ -119,6 +122,7 @@ private:
 
     // edit state
     bool m_clean = true;
+    QUndoStack m_edit_history;
 };
 
 #endif // SONG_H
