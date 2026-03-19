@@ -50,6 +50,8 @@ public:
     // song loading
     bool load();
     void mergeEvents();
+    void rebuildAfterTickEdit();
+    void rebuildAfterDelete();
     static void addDefaultEvents(smf::MidiFile &midi, const VoiceGroup *voicegroup,
                                  const DefaultEventSettings &settings);
 
@@ -102,6 +104,7 @@ public:
 private:
     static int defaultProgramFromVoicegroup(const VoiceGroup *voicegroup);
     void extractInitialState();
+    void rebuildNotesIndex();
 
 private:
     // event data

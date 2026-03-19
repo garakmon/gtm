@@ -37,7 +37,7 @@ public:
     // song binding
     bool setActiveSong(const QString &title, QString *error = nullptr);
     void unsetSong();
-    bool isSontSet() const;
+    bool isSongSet() const;
     QString activeSongTitle() const;
     Song *song() const;
     QUndoGroup *historyGroup() const;
@@ -59,6 +59,7 @@ public:
     bool moveSelectedNotes(const NoteMoveSettings &settings, QString *error = nullptr);
     bool resizeSelectedNotes(const NoteResizeSettings &settings, QString *error = nullptr);
     bool deleteSelectedEvents(QString *error = nullptr);
+    bool createNotes(const QVector<NoteCreateSettings> &notes, QString *error = nullptr);
     bool duplicateSelectedNotes(const NoteMoveSettings &settings, QString *error = nullptr);
 
     // event edits
@@ -89,6 +90,7 @@ private:
 
     void markSongDirty();
     void rebuildCachesAfterEdit();
+    void onHistoryCleanChanged(bool clean);
 
 private:
     Project *m_project = nullptr;

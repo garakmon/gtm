@@ -1,5 +1,6 @@
 #include "app/songeditor.h"
 
+#include "app/editcommands.h"
 #include "app/project.h"
 #include "sound/song.h"
 
@@ -30,6 +31,8 @@ bool SongEditor::setActiveSong(const QString &title, QString *error) {
         m_history_group.addStack(history);
     }
     m_history_group.setActiveStack(history);
+    connect(history, &QUndoStack::cleanChanged,
+            this, &SongEditor::onHistoryCleanChanged, Qt::UniqueConnection);
 
     m_song = song.get();
     m_selected_events.clear();
@@ -44,7 +47,7 @@ void SongEditor::unsetSong() {
     emit selectionChanged();
 }
 
-bool SongEditor::isSontSet() const {
+bool SongEditor::isSongSet() const {
     return m_song != nullptr;
 }
 
@@ -104,24 +107,87 @@ QVector<smf::MidiEvent *> SongEditor::selectedEvents() const {
     return m_selected_events;
 }
 
-bool SongEditor::moveSelectedNotes(const NoteMoveSettings &, QString *error) {
-    if (error) *error = "Move selected notes is not implemented yet.";
-    return false;
+bool SongEditor::moveSelectedNotes(const NoteMoveSettings &settings, QString *error) {
+    if (!validateSong(error)) return false;
+
+    if (m_selected_events.isEmpty()) {
+        if (error) *error = "No notes are selected.";
+        return false;
+    }
+
+    if (settings.delta_tick == 0 && settings.delta_key == 0) {
+        return true;
+    }
+
+    auto *cmd = new MoveNotes(m_song, m_selected_events,
+                              settings.delta_tick, settings.delta_key);
+    editHistory()->push(cmd);
+    emit songEdited(activeSongTitle());
+    return true;
 }
 
-bool SongEditor::resizeSelectedNotes(const NoteResizeSettings &, QString *error) {
-    if (error) *error = "Resize selected notes is not implemented yet.";
-    return false;
+bool SongEditor::resizeSelectedNotes(const NoteResizeSettings &settings, QString *error) {
+    if (!validateSong(error)) return false;
+
+    if (m_selected_events.isEmpty()) {
+        if (error) *error = "No notes are selected.";
+        return false;
+    }
+
+    if (settings.delta_tick == 0) {
+        return true;
+    }
+
+    auto *cmd = new ResizeNotes(m_song, m_selected_events,
+                                settings.delta_tick, settings.resize_end);
+    editHistory()->push(cmd);
+    emit songEdited(activeSongTitle());
+    return true;
 }
 
 bool SongEditor::deleteSelectedEvents(QString *error) {
-    if (error) *error = "Delete selected events is not implemented yet.";
-    return false;
+    if (!validateSong(error)) return false;
+
+    if (m_selected_events.isEmpty()) {
+        if (error) *error = "No events are selected.";
+        return false;
+    }
+
+    auto *cmd = new DeleteNotes(m_song, m_selected_events);
+    editHistory()->push(cmd);
+    m_selected_events.clear();
+    emit selectionChanged();
+    emit songEdited(activeSongTitle());
+    return true;
 }
 
-bool SongEditor::duplicateSelectedNotes(const NoteMoveSettings &, QString *error) {
-    if (error) *error = "Duplicate selected notes is not implemented yet.";
-    return false;
+bool SongEditor::createNotes(const QVector<NoteCreateSettings> &notes, QString *error) {
+    if (!validateSong(error)) return false;
+
+    if (notes.isEmpty()) {
+        if (error) *error = "No notes to create.";
+        return false;
+    }
+
+    auto *cmd = new CreateNotes(m_song, notes);
+    editHistory()->push(cmd);
+    emit songEdited(activeSongTitle());
+    return true;
+}
+
+bool SongEditor::duplicateSelectedNotes(const NoteMoveSettings &settings, QString *error) {
+    if (!validateSong(error)) return false;
+
+    if (m_selected_events.isEmpty()) {
+        if (error) *error = "No notes are selected.";
+        return false;
+    }
+
+    auto *cmd = new DuplicateNotes(m_song, m_selected_events,
+                                   settings.delta_tick, settings.delta_key);
+    editHistory()->push(cmd);
+    emit songEdited(activeSongTitle());
+    return true;
 }
 
 bool SongEditor::addMetaTempo(const TempoEventSettings &, QString *error) {
@@ -172,30 +238,50 @@ bool SongEditor::validateSong(QString *error) const {
     return false;
 }
 
-bool SongEditor::validateTick(int, QString *error) const {
-    if (error) *error = "Tick validation is not implemented yet.";
+bool SongEditor::validateTick(int tick, QString *error) const {
+    if (tick >= 0) {
+        return true;
+    }
+    if (error) *error = QString("Invalid tick value: %1").arg(tick);
     return false;
 }
 
-bool SongEditor::validateChannel(int, QString *error) const {
-    if (error) *error = "Channel validation is not implemented yet.";
+bool SongEditor::validateChannel(int channel, QString *error) const {
+    if (channel >= 0 && channel <= 15) {
+        return true;
+    }
+    if (error) *error = QString("Invalid channel: %1 (must be 0-15)").arg(channel);
     return false;
 }
 
-bool SongEditor::validateNoteKey(int, QString *error) const {
-    if (error) *error = "Note key validation is not implemented yet.";
+bool SongEditor::validateNoteKey(int key, QString *error) const {
+    if (key >= 0 && key <= 127) {
+        return true;
+    }
+    if (error) *error = QString("Invalid note key: %1 (must be 0-127)").arg(key);
     return false;
 }
 
-bool SongEditor::validateControllerValue(int, QString *error) const {
-    if (error) *error = "Controller value validation is not implemented yet.";
+bool SongEditor::validateControllerValue(int value, QString *error) const {
+    if (value >= 0 && value <= 127) {
+        return true;
+    }
+    if (error) *error = QString("Invalid controller value: %1 (must be 0-127)").arg(value);
     return false;
 }
 
 void SongEditor::markSongDirty() {
-    //
+    if (m_song) {
+        m_song->markDirty();
+    }
 }
 
 void SongEditor::rebuildCachesAfterEdit() {
-    //
+    // commands handle their own rebuilds
+}
+
+void SongEditor::onHistoryCleanChanged(bool clean) {
+    if (!m_song) return;
+    m_song->setClean(clean);
+    emit songEdited(activeSongTitle());
 }

@@ -124,6 +124,26 @@ void Song::mergeEvents() {
     );
 }
 
+/**
+ * Rebuild after an edit that changed tick values (move, resize, add).
+ * Re-sorts tracks, recalculates time, and rebuilds the merged event list.
+ */
+void Song::rebuildAfterTickEdit() {
+    this->sortTracks();
+    this->rebuildNotesIndex();
+    this->doTimeAnalysis();
+    this->mergeEvents();
+}
+
+/**
+ * Rebuild after a delete operation where no tick values changed on remaining events.
+ * Only needs to rebuild the merged event list.
+ */
+void Song::rebuildAfterDelete() {
+    this->rebuildNotesIndex();
+    this->mergeEvents();
+}
+
 double Song::durationInSeconds() {
     this->doTimeAnalysis();
     this->joinTracks();
@@ -246,6 +266,27 @@ void Song::extractInitialState() {
                 m_initial_channel_states[ch].pitch_bend =
                     static_cast<int16_t>(bend - k_pitch_bend_center);
                 found_pitch_bend[ch] = true;
+            }
+        }
+    }
+}
+
+void Song::rebuildNotesIndex() {
+    m_notes.clear();
+
+    const int track_count = this->getTrackCount();
+    for (int track_index = 0; track_index < track_count; track_index++) {
+        if (this->isMetaTrack(track_index)) continue;
+
+        smf::MidiEventList *track = m_events[track_index];
+        if (!track) continue;
+
+        const int event_count = track->size();
+        for (int i = 0; i < event_count; i++) {
+            smf::MidiEvent *event = &(*track)[i];
+            if (!event || event->size() == 0) continue;
+            if (event->isNoteOn()) {
+                m_notes.append({track_index, event});
             }
         }
     }

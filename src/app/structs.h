@@ -64,4 +64,13 @@ struct KeySignatureSettings {
     bool minor = false;
 };
 
+struct NoteCreateSettings {
+    int track = 1;
+    int channel = 0;
+    int key = 60;
+    int velocity = 100;
+    int tick = 0;
+    int duration = 48;
+};
+
 #endif // STRUCTS_H
