@@ -342,8 +342,12 @@ bool Controller::loadProject(const QString &root) {
         m_project = std::make_unique<Project>();
         m_interface = std::make_unique<ProjectInterface>(m_project.get());
         m_song_editor = std::make_unique<SongEditor>(m_project.get(), this);
+        connect(m_song_editor.get(), &SongEditor::songNeedsRedrawing,
+                this, &Controller::onSongNeedsRedrawing, Qt::UniqueConnection);
     } else if (!m_song_editor) {
         m_song_editor = std::make_unique<SongEditor>(m_project.get(), this);
+        connect(m_song_editor.get(), &SongEditor::songNeedsRedrawing,
+                this, &Controller::onSongNeedsRedrawing, Qt::UniqueConnection);
     }
 
     if (m_interface->loadProject(root)) {
@@ -700,6 +704,21 @@ void Controller::displayRolls() {
     }
 }
 
+void Controller::redrawCurrentSong() {
+    if (!m_song) {
+        return;
+    }
+
+    m_track_roll->setSong(m_song);
+    m_piano_roll->setSong(m_song);
+    m_measure_roll->setSong(m_song);
+    this->displayRolls();
+    if (m_song_editor) {
+        m_piano_roll->selectEvents(m_song_editor->selectedEvents());
+    }
+    this->updateSongMetaDisplay();
+}
+
 /**
  * On project open, populate some project-related ui.
  */
@@ -718,6 +737,10 @@ void Controller::connectSignals() {
     // user clicks a note item in the piano roll
     connect(m_piano_roll, &PianoRoll::eventItemSelected,
             this, &Controller::displayEvent, Qt::UniqueConnection);
+    connect(m_piano_roll, &PianoRoll::onSelectedEventsChanged,
+            this, &Controller::onSelectedEventsChanged, Qt::UniqueConnection);
+    connect(m_piano_roll, &PianoRoll::onNoteMoveRequested,
+            this, &Controller::onNoteMoveRequested, Qt::UniqueConnection);
 
     // user clicks the mute button on a track widget in the track list
     connect(m_track_roll, &TrackRoll::trackMuteToggled,
@@ -744,6 +767,29 @@ void Controller::connectSignals() {
         connect(m_window->listView_songTable, &QListView::doubleClicked,
                 this, &Controller::songListSongRequested, Qt::UniqueConnection);
     }
+}
+
+void Controller::onSelectedEventsChanged(const QVector<smf::MidiEvent *> &events) {
+    if (!m_song_editor) {
+        return;
+    }
+
+    m_song_editor->setSelectedEvents(events);
+}
+
+void Controller::onNoteMoveRequested(const NoteMoveSettings &settings) {
+    if (!m_song_editor) {
+        return;
+    }
+
+    QString error;
+    if (!m_song_editor->moveSelectedNotes(settings, &error) && !error.isEmpty()) {
+        logging::warn(error, logging::LogCategory::Ui);
+    }
+}
+
+void Controller::onSongNeedsRedrawing() {
+    this->redrawCurrentSong();
 }
 
 /**

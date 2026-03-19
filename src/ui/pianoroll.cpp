@@ -8,13 +8,17 @@
 
 #include <QPainter>
 #include <QPixmap>
+#include <QApplication>
 
 #include <cmath>
+#include <limits>
 
 
 
 PianoRoll::PianoRoll(QObject *parent) : QObject(parent) {
     m_scene_piano.setParent(this);
+    connect(&m_scene_roll, &QGraphicsScene::selectionChanged,
+            this, &PianoRoll::updateSelectedEvents);
     this->drawPiano();
 }
 
@@ -38,10 +42,13 @@ QList<QGraphicsRectItem *> PianoRoll::lines() {
  * Set the active song and clear the current roll items.
  */
 void PianoRoll::setSong(std::shared_ptr<Song> song) {
+    clearNoteDrag();
+    m_ignore_selection_updates = true;
     m_score_bg = nullptr;
     m_scene_roll.clear();
     m_track_note_groups.clear();
     m_active_song = song;
+    m_ignore_selection_updates = false;
 }
 
 /**
@@ -83,6 +90,9 @@ void PianoRoll::display() {
  */
 void PianoRoll::setEditsEnabled(bool enabled) {
     m_edits_enabled = enabled;
+    if (!enabled) {
+        cancelNoteDrag();
+    }
 
     for (TrackNoteGroup *group : m_track_note_groups) {
         if (!group) continue;
@@ -119,6 +129,53 @@ void PianoRoll::selectNotesForTrack(int track, bool clearOthers) {
     }
 
     m_scene_roll.update();
+}
+
+void PianoRoll::selectEvents(const QVector<smf::MidiEvent *> &events, bool clear_others) {
+    QSet<smf::MidiEvent *> selected_events(events.begin(), events.end());
+
+    m_ignore_selection_updates = true;
+
+    if (clear_others) {
+        m_scene_roll.clearSelection();
+    }
+
+    for (TrackNoteGroup *group : m_track_note_groups) {
+        if (!group) {
+            continue;
+        }
+
+        for (GraphicsScoreNoteItem *note : group->notes()) {
+            if (!note || !note->noteOn()) {
+                continue;
+            }
+
+            if (!note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
+                continue;
+            }
+
+            note->setSelected(selected_events.contains(note->noteOn()));
+        }
+    }
+
+    m_ignore_selection_updates = false;
+    updateSelectedEvents();
+    m_scene_roll.update();
+}
+
+void PianoRoll::handleNoteMousePress(GraphicsScoreNoteItem *item, const QPointF &scene_pos) {
+    beginNoteDrag(item, scene_pos);
+}
+
+void PianoRoll::handleNoteMouseMove(GraphicsScoreNoteItem *, const QPointF &scene_pos) {
+    updateNoteDrag(scene_pos);
+}
+
+void PianoRoll::handleNoteMouseRelease(GraphicsScoreNoteItem *, const QPointF &scene_pos) {
+    if (m_note_drag.pressed) {
+        updateNoteDrag(scene_pos);
+        commitNoteDrag();
+    }
 }
 
 /**
@@ -255,4 +312,197 @@ void PianoRoll::drawScoreNotes() {
         int row = m_active_song->getDisplayRow(track);
         this->addNote(track, row, note_event);
     }
+}
+
+void PianoRoll::beginNoteDrag(GraphicsScoreNoteItem *item, const QPointF &scene_pos) {
+    if (!m_edits_enabled || !item) {
+        return;
+    }
+
+    m_note_drag.pressed = true;
+    m_note_drag.dragging = false;
+    m_note_drag.anchor_item = item;
+    m_note_drag.drag_start_scene_pos = scene_pos;
+    m_note_drag.anchor_start_tick = item->noteOn()->tick;
+    m_note_drag.anchor_start_key = item->noteOn()->getKeyNumber();
+    m_note_drag.delta_tick = 0;
+    m_note_drag.delta_key = 0;
+    m_note_drag.notes.clear();
+
+    const QVector<GraphicsScoreNoteItem *> notes = selectedNoteItems();
+    m_note_drag.notes.reserve(notes.size());
+    for (GraphicsScoreNoteItem *note : notes) {
+        if (!note) {
+            continue;
+        }
+
+        DraggedNoteState state;
+        state.item = note;
+        state.note_on = note->noteOn();
+        state.start_tick = note->noteOn()->tick;
+        state.start_key = note->noteOn()->getKeyNumber();
+        state.start_pos = note->pos();
+        m_note_drag.notes.append(state);
+    }
+}
+
+void PianoRoll::updateNoteDrag(const QPointF &scene_pos) {
+    if (!m_note_drag.pressed || !m_note_drag.anchor_item || m_note_drag.notes.isEmpty()) {
+        return;
+    }
+
+    const QPointF delta = scene_pos - m_note_drag.drag_start_scene_pos;
+    if (!m_note_drag.dragging && delta.manhattanLength() < QApplication::startDragDistance()) {
+        return;
+    }
+
+    m_note_drag.dragging = true;
+
+    int delta_tick = snapTickDelta(delta.x());
+    int delta_key = snapKeyDelta(delta.y());
+    clampDraggedDelta(&delta_tick, &delta_key);
+
+    m_note_drag.delta_tick = delta_tick;
+    m_note_drag.delta_key = delta_key;
+
+    for (const DraggedNoteState &state : m_note_drag.notes) {
+        if (!state.item) {
+            continue;
+        }
+
+        const int tick = state.start_tick + delta_tick;
+        const int key = state.start_key + delta_key;
+        const int x = tick * ui_tick_x_scale;
+        const int y = scoreNotePosition(key).y + 2;
+        state.item->setPos(QPointF(x, y));
+    }
+}
+
+void PianoRoll::commitNoteDrag() {
+    if (!m_note_drag.pressed) {
+        return;
+    }
+
+    const bool dragging = m_note_drag.dragging;
+    const int delta_tick = m_note_drag.delta_tick;
+    const int delta_key = m_note_drag.delta_key;
+
+    if (!dragging || (delta_tick == 0 && delta_key == 0)) {
+        restoreDraggedNotesToStart();
+        clearNoteDrag();
+        return;
+    }
+
+    NoteMoveSettings settings;
+    settings.delta_tick = delta_tick;
+    settings.delta_key = delta_key;
+    emit onNoteMoveRequested(settings);
+
+    clearNoteDrag();
+}
+
+void PianoRoll::cancelNoteDrag() {
+    restoreDraggedNotesToStart();
+    clearNoteDrag();
+}
+
+void PianoRoll::clearNoteDrag() {
+    m_note_drag.pressed = false;
+    m_note_drag.dragging = false;
+    m_note_drag.anchor_item = nullptr;
+    m_note_drag.drag_start_scene_pos = QPointF();
+    m_note_drag.anchor_start_tick = 0;
+    m_note_drag.anchor_start_key = 0;
+    m_note_drag.delta_tick = 0;
+    m_note_drag.delta_key = 0;
+    m_note_drag.notes.clear();
+}
+
+void PianoRoll::restoreDraggedNotesToStart() {
+    for (const DraggedNoteState &state : m_note_drag.notes) {
+        if (!state.item) {
+            continue;
+        }
+        state.item->setPos(state.start_pos);
+    }
+}
+
+void PianoRoll::updateSelectedEvents() {
+    if (m_ignore_selection_updates) {
+        return;
+    }
+
+    QVector<smf::MidiEvent *> events;
+    const QVector<GraphicsScoreNoteItem *> notes = selectedNoteItems();
+    events.reserve(notes.size());
+
+    for (GraphicsScoreNoteItem *note : notes) {
+        if (!note || !note->noteOn()) {
+            continue;
+        }
+        events.append(note->noteOn());
+    }
+
+    emit onSelectedEventsChanged(events);
+}
+
+QVector<GraphicsScoreNoteItem *> PianoRoll::selectedNoteItems() const {
+    QVector<GraphicsScoreNoteItem *> notes;
+    const QList<QGraphicsItem *> items = m_scene_roll.selectedItems();
+    notes.reserve(items.size());
+
+    for (QGraphicsItem *item : items) {
+        GraphicsScoreNoteItem *note = dynamic_cast<GraphicsScoreNoteItem *>(item);
+        if (!note) {
+            continue;
+        }
+        notes.append(note);
+    }
+
+    return notes;
+}
+
+int PianoRoll::snapTickDelta(double delta_x) const {
+    return qRound(delta_x / ui_tick_x_scale);
+}
+
+int PianoRoll::snapKeyDelta(double delta_y) const {
+    const double anchor_y = scoreNotePosition(m_note_drag.anchor_start_key).y + 2;
+    const int target_key = keyForSceneY(anchor_y + delta_y);
+    return target_key - m_note_drag.anchor_start_key;
+}
+
+int PianoRoll::keyForSceneY(double scene_y) const {
+    int best_key = 0;
+    double best_distance = std::numeric_limits<double>::max();
+
+    for (int key = 0; key < g_num_notes_piano; key++) {
+        const double key_y = scoreNotePosition(key).y + 2;
+        const double distance = std::abs(scene_y - key_y);
+        if (distance < best_distance) {
+            best_distance = distance;
+            best_key = key;
+        }
+    }
+
+    return best_key;
+}
+
+void PianoRoll::clampDraggedDelta(int *delta_tick, int *delta_key) const {
+    if (!delta_tick || !delta_key) {
+        return;
+    }
+
+    int min_tick_delta = *delta_tick;
+    int min_key_delta = *delta_key;
+    int max_key_delta = *delta_key;
+
+    for (const DraggedNoteState &state : m_note_drag.notes) {
+        min_tick_delta = std::max(min_tick_delta, -state.start_tick);
+        min_key_delta = std::max(min_key_delta, -state.start_key);
+        max_key_delta = std::min(max_key_delta, 127 - state.start_key);
+    }
+
+    *delta_tick = min_tick_delta;
+    *delta_key = std::clamp(*delta_key, min_key_delta, max_key_delta);
 }

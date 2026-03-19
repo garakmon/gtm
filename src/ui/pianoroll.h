@@ -3,11 +3,13 @@
 #define PIANOROLL_H
 
 #include "ui/graphicspianokeyitem.h"
+#include "app/structs.h"
 
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
 #include <QMap>
 #include <QObject>
+#include <QSet>
 
 #include <memory>
 
@@ -96,15 +98,53 @@ public:
     // edit state
     void setEditsEnabled(bool enabled);
     void selectNotesForTrack(int track, bool clearOthers = true);
+    void selectEvents(const QVector<smf::MidiEvent *> &events, bool clear_others = true);
+    void handleNoteMousePress(GraphicsScoreNoteItem *item, const QPointF &scene_pos);
+    void handleNoteMouseMove(GraphicsScoreNoteItem *item, const QPointF &scene_pos);
+    void handleNoteMouseRelease(GraphicsScoreNoteItem *item, const QPointF &scene_pos);
 
 signals:
     void eventItemSelected(smf::MidiEvent *event);
+    void onSelectedEventsChanged(const QVector<smf::MidiEvent *> &events);
+    void onNoteMoveRequested(const NoteMoveSettings &settings);
 
 private:
+    struct DraggedNoteState {
+        GraphicsScoreNoteItem *item = nullptr;
+        smf::MidiEvent *note_on = nullptr;
+        int start_tick = 0;
+        int start_key = 0;
+        QPointF start_pos;
+    };
+
+    struct NoteDragState {
+        bool pressed = false;
+        bool dragging = false;
+        GraphicsScoreNoteItem *anchor_item = nullptr;
+        QPointF drag_start_scene_pos;
+        int anchor_start_tick = 0;
+        int anchor_start_key = 0;
+        int delta_tick = 0;
+        int delta_key = 0;
+        QVector<DraggedNoteState> notes;
+    };
+
     // drawing helpers
     void drawPiano();
     void drawScoreArea();
     void drawScoreNotes();
+    void beginNoteDrag(GraphicsScoreNoteItem *item, const QPointF &scene_pos);
+    void updateNoteDrag(const QPointF &scene_pos);
+    void commitNoteDrag();
+    void cancelNoteDrag();
+    void clearNoteDrag();
+    void restoreDraggedNotesToStart();
+    void updateSelectedEvents();
+    QVector<GraphicsScoreNoteItem *> selectedNoteItems() const;
+    int snapTickDelta(double delta_x) const;
+    int snapKeyDelta(double delta_y) const;
+    int keyForSceneY(double scene_y) const;
+    void clampDraggedDelta(int *delta_tick, int *delta_key) const;
 
 private:
     // scenes
@@ -118,8 +158,10 @@ private:
 
     std::shared_ptr<Song> m_active_song;
     QMap<int, TrackNoteGroup *> m_track_note_groups;
+    NoteDragState m_note_drag;
 
     bool m_edits_enabled = true;
+    bool m_ignore_selection_updates = false;
 };
 
 #endif // PIANOROLL_H

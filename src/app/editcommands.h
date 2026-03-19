@@ -38,6 +38,8 @@ public:
     EditNote(EditNote &&) = delete;
     EditNote &operator=(EditNote &&) = delete;
 
+    virtual QVector<smf::MidiEvent *> affectedNoteEvents() const = 0;
+
 protected:
     Song *m_song = nullptr;
 };
@@ -57,6 +59,7 @@ public:
     void undo() override;
     int id() const override { return ID_MoveNotes; }
     bool mergeWith(const QUndoCommand *other) override;
+    QVector<smf::MidiEvent *> affectedNoteEvents() const override;
 
 private:
     struct NoteState {
@@ -86,9 +89,11 @@ public:
     void undo() override;
     int id() const override { return ID_ResizeNotes; }
     bool mergeWith(const QUndoCommand *other) override;
+    QVector<smf::MidiEvent *> affectedNoteEvents() const override;
 
 private:
     struct NoteState {
+        smf::MidiEvent *note_on;
         smf::MidiEvent *target; // note-off if resize_end, note-on otherwise
         smf::MidiEvent *other;  // the paired event, for min duration clamping
         int orig_tick;
@@ -110,6 +115,7 @@ public:
     void redo() override;
     void undo() override;
     int id() const override { return ID_DeleteNotes; }
+    QVector<smf::MidiEvent *> affectedNoteEvents() const override;
 
 private:
     struct DeletedNote {
@@ -137,6 +143,7 @@ public:
     void redo() override;
     void undo() override;
     int id() const override { return ID_CreateNotes; }
+    QVector<smf::MidiEvent *> affectedNoteEvents() const override;
 
 private:
     QVector<NoteCreateSettings> m_settings;
@@ -158,6 +165,7 @@ public:
     void redo() override;
     void undo() override;
     int id() const override { return ID_DuplicateNotes; }
+    QVector<smf::MidiEvent *> affectedNoteEvents() const override;
 
 private:
     struct SourceNote {

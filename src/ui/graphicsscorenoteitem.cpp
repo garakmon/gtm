@@ -7,6 +7,7 @@
 #include "util/util.h"
 
 #include <QPainter>
+#include <QGraphicsScene>
 #include <QStyleOptionGraphicsItem>
 
 
@@ -66,4 +67,27 @@ QVariant GraphicsScoreNoteItem::itemChange(GraphicsItemChange change, const QVar
     }
 
     return QGraphicsItem::itemChange(change, value);
+}
+
+void GraphicsScoreNoteItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+    if (!this->isSelected()) {
+        QGraphicsScene *item_scene = this->scene();
+        if (item_scene) {
+            item_scene->clearSelection();
+        }
+        this->setSelected(true);
+    }
+
+    m_piano_roll->handleNoteMousePress(this, event->scenePos());
+    event->accept();
+}
+
+void GraphicsScoreNoteItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
+    m_piano_roll->handleNoteMouseMove(this, event->scenePos());
+    event->accept();
+}
+
+void GraphicsScoreNoteItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
+    m_piano_roll->handleNoteMouseRelease(this, event->scenePos());
+    event->accept();
 }

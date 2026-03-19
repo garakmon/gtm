@@ -33,8 +33,11 @@ bool SongEditor::setActiveSong(const QString &title, QString *error) {
     m_history_group.setActiveStack(history);
     connect(history, &QUndoStack::cleanChanged,
             this, &SongEditor::onHistoryCleanChanged, Qt::UniqueConnection);
+    connect(history, &QUndoStack::indexChanged,
+            this, &SongEditor::onHistoryIndexChanged, Qt::UniqueConnection);
 
     m_song = song.get();
+    m_last_history_index = history->index();
     m_selected_events.clear();
     emit selectionChanged();
     return true;
@@ -43,6 +46,7 @@ bool SongEditor::setActiveSong(const QString &title, QString *error) {
 void SongEditor::unsetSong() {
     m_history_group.setActiveStack(nullptr);
     m_song = nullptr;
+    m_last_history_index = 0;
     m_selected_events.clear();
     emit selectionChanged();
 }
@@ -284,4 +288,28 @@ void SongEditor::onHistoryCleanChanged(bool clean) {
     if (!m_song) return;
     m_song->setClean(clean);
     emit songEdited(activeSongTitle());
+}
+
+void SongEditor::onHistoryIndexChanged(int) {
+    QUndoStack *history = editHistory();
+    if (!history) {
+        emit songNeedsRedrawing();
+        return;
+    }
+
+    const int current_index = history->index();
+    const EditNote *command = nullptr;
+    if (current_index > m_last_history_index && current_index > 0) {
+        command = dynamic_cast<const EditNote *>(history->command(current_index - 1));
+    } else if (current_index < m_last_history_index && current_index < history->count()) {
+        command = dynamic_cast<const EditNote *>(history->command(current_index));
+    }
+
+    if (command) {
+        m_selected_events = command->affectedNoteEvents();
+        emit selectionChanged();
+    }
+
+    m_last_history_index = current_index;
+    emit songNeedsRedrawing();
 }

@@ -78,6 +78,7 @@ public:
 
 signals:
     void songEdited(const QString &title);
+    void songNeedsRedrawing();
     void selectionChanged();
 
 private:
@@ -91,12 +92,14 @@ private:
     void markSongDirty();
     void rebuildCachesAfterEdit();
     void onHistoryCleanChanged(bool clean);
+    void onHistoryIndexChanged(int);
 
 private:
     Project *m_project = nullptr;
     QUndoGroup m_history_group;
 
     Song *m_song = nullptr;
+    int m_last_history_index = 0;
 
     QVector<smf::MidiEvent *> m_selected_events;
 };

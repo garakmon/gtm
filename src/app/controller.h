@@ -99,6 +99,7 @@ private:
     void updateSongPositionDisplay(int tick);
     void rebuildInferredKeySignatureCache();
     QPair<int, bool> keySignatureForTick(int tick) const;
+    void redrawCurrentSong();
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override; // user scroll override
@@ -108,6 +109,9 @@ signals:
 
 private slots:
     void displayEvent(smf::MidiEvent *event);
+    void onSelectedEventsChanged(const QVector<smf::MidiEvent *> &events);
+    void onNoteMoveRequested(const NoteMoveSettings &settings);
+    void onSongNeedsRedrawing();
     void songListSongRequested(const QModelIndex &index);
     void onTrackMuteToggled(int channel, bool muted);
     void onTrackSoloToggled(int channel, bool soloed);

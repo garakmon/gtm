@@ -94,6 +94,17 @@ bool MoveNotes::mergeWith(const QUndoCommand *other) {
     return true;
 }
 
+QVector<smf::MidiEvent *> MoveNotes::affectedNoteEvents() const {
+    QVector<smf::MidiEvent *> events;
+    events.reserve(m_states.size());
+
+    for (const NoteState &state : m_states) {
+        events.append(state.note_on);
+    }
+
+    return events;
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -110,6 +121,7 @@ ResizeNotes::ResizeNotes(Song *song, const QVector<smf::MidiEvent *> &notes,
         Q_ASSERT(note_off != nullptr);
 
         NoteState state;
+        state.note_on = note_on;
         if (resize_end) {
             state.target = note_off;
             state.other = note_on;
@@ -174,6 +186,17 @@ bool ResizeNotes::mergeWith(const QUndoCommand *other) {
 
     m_delta_tick += cmd->m_delta_tick;
     return true;
+}
+
+QVector<smf::MidiEvent *> ResizeNotes::affectedNoteEvents() const {
+    QVector<smf::MidiEvent *> events;
+    events.reserve(m_states.size());
+
+    for (const NoteState &state : m_states) {
+        events.append(state.note_on);
+    }
+
+    return events;
 }
 
 
@@ -244,6 +267,17 @@ void DeleteNotes::undo() {
     }
 
     m_song->rebuildAfterDelete();
+}
+
+QVector<smf::MidiEvent *> DeleteNotes::affectedNoteEvents() const {
+    QVector<smf::MidiEvent *> events;
+    events.reserve(m_notes.size());
+
+    for (const DeletedNote &note : m_notes) {
+        events.append(note.note_on);
+    }
+
+    return events;
 }
 
 
@@ -317,6 +351,10 @@ void CreateNotes::undo() {
     }
 
     m_song->rebuildAfterDelete();
+}
+
+QVector<smf::MidiEvent *> CreateNotes::affectedNoteEvents() const {
+    return m_created_on;
 }
 
 
@@ -412,4 +450,8 @@ void DuplicateNotes::undo() {
     }
 
     m_song->rebuildAfterDelete();
+}
+
+QVector<smf::MidiEvent *> DuplicateNotes::affectedNoteEvents() const {
+    return m_created_on;
 }

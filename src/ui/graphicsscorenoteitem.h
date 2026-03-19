@@ -4,6 +4,7 @@
 
 #include <QColor>
 #include <QGraphicsItem>
+#include <QGraphicsSceneMouseEvent>
 
 
 
@@ -25,6 +26,8 @@ public:
     virtual QColor color() { return QColor(); }
     virtual QSize dimensions() const { return QSize(0, 0); }
     virtual QPoint updatePosition() { return QPoint(0, 0); }
+    int track() const { return m_track; }
+    smf::MidiEvent *event() const { return m_event; }
 
     //virtual void remove(); // clear object, call removeEmpties()
 
@@ -47,6 +50,12 @@ public:
     QPoint updatePosition() override; // update & get position
 
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+
+    smf::MidiEvent *noteOn() const { return m_event; }
+    smf::MidiEvent *noteOff() const { return m_note_off; }
 
 private:
     int m_row;
