@@ -19,6 +19,7 @@ GraphicsScoreNoteItem::GraphicsScoreNoteItem(PianoRoll *piano_roll, int track, i
     this->updatePosition();
 
     this->setFlags(QGraphicsItem::ItemIsSelectable);
+    this->setAcceptHoverEvents(true);
 }
 
 QRectF GraphicsScoreNoteItem::boundingRect() const {
@@ -40,13 +41,16 @@ QColor GraphicsScoreNoteItem::color() {
 }
 
 QSize GraphicsScoreNoteItem::dimensions() const {
-    return QSize(this->m_event->getTickDuration() * ui_tick_x_scale, ui_score_line_height);
+    const int duration_ticks = m_preview_duration_ticks >= 0
+                             ? m_preview_duration_ticks
+                             : this->m_event->getTickDuration();
+    return QSize(duration_ticks * ui_tick_x_scale, ui_score_line_height);
 };
 
 QPoint GraphicsScoreNoteItem::updatePosition() {
     int note = this->m_event->getKeyNumber();
     int x = this->m_event->tick * ui_tick_x_scale;
-    int y = scoreNotePosition(note).y + 2; //! INVESTIGATE: why is +2 necessary?
+    int y = scoreNotePosition(note).y + 2; // !TODO INVESTIGATE: why is +2 necessary?
 
     QPoint pos(x, y);
     this->setPos(pos);
@@ -69,6 +73,30 @@ QVariant GraphicsScoreNoteItem::itemChange(GraphicsItemChange change, const QVar
     return QGraphicsItem::itemChange(change, value);
 }
 
+/**
+ * Show a resize cursor only when hovering a note edge handle.
+ */
+void GraphicsScoreNoteItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
+    if (this->isStartResizeHandle(event->pos()) || this->isEndResizeHandle(event->pos())) {
+        this->setCursor(Qt::SizeHorCursor);
+    } else {
+        this->unsetCursor();
+    }
+
+    QGraphicsItem::hoverMoveEvent(event);
+}
+
+/**
+ * Restore the default cursor when leaving the note.
+ */
+void GraphicsScoreNoteItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event) {
+    this->unsetCursor();
+    QGraphicsItem::hoverLeaveEvent(event);
+}
+
+/**
+ * Start either a move drag or a resize drag for this note.
+ */
 void GraphicsScoreNoteItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
     if (!this->isSelected()) {
         QGraphicsScene *item_scene = this->scene();
@@ -78,16 +106,69 @@ void GraphicsScoreNoteItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
         this->setSelected(true);
     }
 
-    m_piano_roll->handleNoteMousePress(this, event->scenePos());
+    const bool force_resize = event->modifiers().testFlag(Qt::ShiftModifier);
+    bool resize_start = this->isStartResizeHandle(event->pos());
+    bool resize_end = !resize_start && this->isEndResizeHandle(event->pos());
+    if (force_resize && !resize_start && !resize_end) {
+        // holding SHIFT turns the whole note into a resize target
+        // this is important because small/short duration notes haven't enough room to
+        // detect both drag and resize hovers (drag will always win)
+        resize_start = this->isCloserToStartEdge(event->pos());
+        resize_end = !resize_start;
+    }
+
+    m_piano_roll->handleNoteMousePress(this, event->scenePos(),
+                                       resize_start, resize_end);
     event->accept();
 }
 
+/**
+ * Forward drag updates to the piano roll interaction state.
+ */
 void GraphicsScoreNoteItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
     m_piano_roll->handleNoteMouseMove(this, event->scenePos());
     event->accept();
 }
 
+/**
+ * Commit or cancel the current note drag interaction.
+ */
 void GraphicsScoreNoteItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
     m_piano_roll->handleNoteMouseRelease(this, event->scenePos());
     event->accept();
+}
+
+int GraphicsScoreNoteItem::tickDuration() const {
+    return m_event->getTickDuration();
+}
+
+bool GraphicsScoreNoteItem::isStartResizeHandle(const QPointF &pos) const {
+    return this->dimensions().width() > ui_note_resize_margin * 2
+        && pos.x() <= ui_note_resize_margin;
+}
+
+bool GraphicsScoreNoteItem::isEndResizeHandle(const QPointF &pos) const {
+    return this->dimensions().width() > ui_note_resize_margin * 2
+        && pos.x() >= this->dimensions().width() - ui_note_resize_margin;
+}
+
+bool GraphicsScoreNoteItem::isCloserToStartEdge(const QPointF &pos) const {
+    return pos.x() <= this->dimensions().width() * 0.5;
+}
+
+/**
+ * Use a temporary duration while previewing note resize.
+ */
+void GraphicsScoreNoteItem::setPreviewDurationTicks(int duration_ticks) {
+    if (m_preview_duration_ticks == duration_ticks) {
+        return;
+    }
+
+    this->prepareGeometryChange();
+    m_preview_duration_ticks = duration_ticks;
+    this->update();
+}
+
+void GraphicsScoreNoteItem::clearPreviewDurationTicks() {
+    this->setPreviewDurationTicks(-1);
 }

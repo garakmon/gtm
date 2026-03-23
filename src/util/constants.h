@@ -43,6 +43,7 @@ const int ui_piano_key_black_width = 60;
 
 const int ui_track_item_height = 30;
 const int ui_track_item_width = 98;
+const int ui_note_resize_margin = 6;
 static constexpr int ui_track_number_block_w = 20;
 static constexpr int ui_track_number_block_x = 5;
 static constexpr int ui_track_button_h = 12;

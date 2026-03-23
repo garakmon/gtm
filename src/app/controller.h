@@ -111,6 +111,7 @@ private slots:
     void displayEvent(smf::MidiEvent *event);
     void onSelectedEventsChanged(const QVector<smf::MidiEvent *> &events);
     void onNoteMoveRequested(const NoteMoveSettings &settings);
+    void onNoteResizeRequested(const NoteResizeSettings &settings);
     void onSongNeedsRedrawing();
     void songListSongRequested(const QModelIndex &index);
     void onTrackMuteToggled(int channel, bool muted);

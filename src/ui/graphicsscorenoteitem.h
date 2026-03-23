@@ -4,6 +4,7 @@
 
 #include <QColor>
 #include <QGraphicsItem>
+#include <QGraphicsSceneHoverEvent>
 #include <QGraphicsSceneMouseEvent>
 
 
@@ -50,16 +51,24 @@ public:
     QPoint updatePosition() override; // update & get position
 
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
 
     smf::MidiEvent *noteOn() const { return m_event; }
     smf::MidiEvent *noteOff() const { return m_note_off; }
+    int tickDuration() const;
+    bool isStartResizeHandle(const QPointF &pos) const;
+    bool isEndResizeHandle(const QPointF &pos) const;
+    bool isCloserToStartEdge(const QPointF &pos) const;
+    void setPreviewDurationTicks(int duration_ticks);
+    void clearPreviewDurationTicks();
 
 private:
     int m_row;
-    int m_tick_duration;
+    int m_preview_duration_ticks = -1;
     smf::MidiEvent *m_note_off = nullptr;
 
     PianoRoll *m_piano_roll = nullptr;

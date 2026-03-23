@@ -42,7 +42,7 @@ QList<QGraphicsRectItem *> PianoRoll::lines() {
  * Set the active song and clear the current roll items.
  */
 void PianoRoll::setSong(std::shared_ptr<Song> song) {
-    clearNoteDrag();
+    this->clearNoteDrag();
     m_ignore_selection_updates = true;
     m_score_bg = nullptr;
     m_scene_roll.clear();
@@ -91,7 +91,7 @@ void PianoRoll::display() {
 void PianoRoll::setEditsEnabled(bool enabled) {
     m_edits_enabled = enabled;
     if (!enabled) {
-        cancelNoteDrag();
+        this->cancelNoteDrag();
     }
 
     for (TrackNoteGroup *group : m_track_note_groups) {
@@ -159,22 +159,40 @@ void PianoRoll::selectEvents(const QVector<smf::MidiEvent *> &events, bool clear
     }
 
     m_ignore_selection_updates = false;
-    updateSelectedEvents();
+    this->updateSelectedEvents();
     m_scene_roll.update();
 }
 
-void PianoRoll::handleNoteMousePress(GraphicsScoreNoteItem *item, const QPointF &scene_pos) {
-    beginNoteDrag(item, scene_pos);
+/**
+ * Resolve the drag mode for a note press and begin the interaction.
+ */
+void PianoRoll::handleNoteMousePress(GraphicsScoreNoteItem *item,
+                                     const QPointF &scene_pos,
+                                     bool resize_start, bool resize_end) {
+    if (resize_start) {
+        m_note_drag.mode = NoteDragMode::ResizeStart;
+    } else if (resize_end) {
+        m_note_drag.mode = NoteDragMode::ResizeEnd;
+    } else {
+        m_note_drag.mode = NoteDragMode::Move;
+    }
+    this->beginNoteDrag(item, scene_pos);
 }
 
+/**
+ * Update the active note drag preview from the latest mouse position.
+ */
 void PianoRoll::handleNoteMouseMove(GraphicsScoreNoteItem *, const QPointF &scene_pos) {
-    updateNoteDrag(scene_pos);
+    this->updateNoteDrag(scene_pos);
 }
 
+/**
+ * Finalize the active note drag interaction.
+ */
 void PianoRoll::handleNoteMouseRelease(GraphicsScoreNoteItem *, const QPointF &scene_pos) {
     if (m_note_drag.pressed) {
-        updateNoteDrag(scene_pos);
-        commitNoteDrag();
+        this->updateNoteDrag(scene_pos);
+        this->commitNoteDrag();
     }
 }
 
@@ -314,6 +332,9 @@ void PianoRoll::drawScoreNotes() {
     }
 }
 
+/**
+ * Get the selected notes and their starting geometry for one drag movement.
+ */
 void PianoRoll::beginNoteDrag(GraphicsScoreNoteItem *item, const QPointF &scene_pos) {
     if (!m_edits_enabled || !item) {
         return;
@@ -329,7 +350,7 @@ void PianoRoll::beginNoteDrag(GraphicsScoreNoteItem *item, const QPointF &scene_
     m_note_drag.delta_key = 0;
     m_note_drag.notes.clear();
 
-    const QVector<GraphicsScoreNoteItem *> notes = selectedNoteItems();
+    const QVector<GraphicsScoreNoteItem *> notes = this->selectedNoteItems();
     m_note_drag.notes.reserve(notes.size());
     for (GraphicsScoreNoteItem *note : notes) {
         if (!note) {
@@ -341,11 +362,15 @@ void PianoRoll::beginNoteDrag(GraphicsScoreNoteItem *item, const QPointF &scene_
         state.note_on = note->noteOn();
         state.start_tick = note->noteOn()->tick;
         state.start_key = note->noteOn()->getKeyNumber();
+        state.start_duration = note->tickDuration();
         state.start_pos = note->pos();
         m_note_drag.notes.append(state);
     }
 }
 
+/**
+ * Update the drag preview for either moving or resizing notes.
+ */
 void PianoRoll::updateNoteDrag(const QPointF &scene_pos) {
     if (!m_note_drag.pressed || !m_note_drag.anchor_item || m_note_drag.notes.isEmpty()) {
         return;
@@ -353,31 +378,42 @@ void PianoRoll::updateNoteDrag(const QPointF &scene_pos) {
 
     const QPointF delta = scene_pos - m_note_drag.drag_start_scene_pos;
     if (!m_note_drag.dragging && delta.manhattanLength() < QApplication::startDragDistance()) {
+        // ignore click jitter until the drag threshold is crossed
         return;
     }
 
     m_note_drag.dragging = true;
 
-    int delta_tick = snapTickDelta(delta.x());
-    int delta_key = snapKeyDelta(delta.y());
-    clampDraggedDelta(&delta_tick, &delta_key);
+    int delta_tick = this->snapTickDelta(delta.x());
+    if (m_note_drag.mode == NoteDragMode::Move) {
+        int delta_key = this->snapKeyDelta(delta.y());
+        this->clampDraggedDelta(&delta_tick, &delta_key);
 
-    m_note_drag.delta_tick = delta_tick;
-    m_note_drag.delta_key = delta_key;
+        m_note_drag.delta_tick = delta_tick;
+        m_note_drag.delta_key = delta_key;
 
-    for (const DraggedNoteState &state : m_note_drag.notes) {
-        if (!state.item) {
-            continue;
+        for (const DraggedNoteState &state : m_note_drag.notes) {
+            if (!state.item) {
+                continue;
+            }
+
+            const int tick = state.start_tick + delta_tick;
+            const int key = state.start_key + delta_key;
+            const int x = tick * ui_tick_x_scale;
+            const int y = scoreNotePosition(key).y + 2;
+            state.item->setPos(QPointF(x, y));
         }
-
-        const int tick = state.start_tick + delta_tick;
-        const int key = state.start_key + delta_key;
-        const int x = tick * ui_tick_x_scale;
-        const int y = scoreNotePosition(key).y + 2;
-        state.item->setPos(QPointF(x, y));
+        return;
     }
+
+    m_note_drag.delta_tick = this->clampResizeDelta(delta_tick);
+    m_note_drag.delta_key = 0;
+    this->updateResizePreview();
 }
 
+/**
+ * Commit the current drag gesture as one edit command.
+ */
 void PianoRoll::commitNoteDrag() {
     if (!m_note_drag.pressed) {
         return;
@@ -388,28 +424,42 @@ void PianoRoll::commitNoteDrag() {
     const int delta_key = m_note_drag.delta_key;
 
     if (!dragging || (delta_tick == 0 && delta_key == 0)) {
-        restoreDraggedNotesToStart();
-        clearNoteDrag();
+        this->restoreDraggedNotesToStart();
+        this->clearNoteDrag();
         return;
     }
 
-    NoteMoveSettings settings;
-    settings.delta_tick = delta_tick;
-    settings.delta_key = delta_key;
-    emit onNoteMoveRequested(settings);
+    if (m_note_drag.mode == NoteDragMode::Move) {
+        NoteMoveSettings settings;
+        settings.delta_tick = delta_tick;
+        settings.delta_key = delta_key;
+        emit onNoteMoveRequested(settings);
+    } else {
+        NoteResizeSettings settings;
+        settings.delta_tick = delta_tick;
+        settings.resize_end = m_note_drag.mode == NoteDragMode::ResizeEnd;
+        emit onNoteResizeRequested(settings);
+    }
 
-    clearNoteDrag();
+    this->clearNoteDrag();
 }
 
+/**
+ * Cancel the active drag and restore the previewed notes.
+ */
 void PianoRoll::cancelNoteDrag() {
-    restoreDraggedNotesToStart();
-    clearNoteDrag();
+    this->restoreDraggedNotesToStart();
+    this->clearNoteDrag();
 }
 
+/**
+ * Reset the stored drag session state.
+ */
 void PianoRoll::clearNoteDrag() {
     m_note_drag.pressed = false;
     m_note_drag.dragging = false;
     m_note_drag.anchor_item = nullptr;
+    m_note_drag.mode = NoteDragMode::Move;
     m_note_drag.drag_start_scene_pos = QPointF();
     m_note_drag.anchor_start_tick = 0;
     m_note_drag.anchor_start_key = 0;
@@ -418,22 +468,29 @@ void PianoRoll::clearNoteDrag() {
     m_note_drag.notes.clear();
 }
 
+/**
+ * Restore note positions and temporary widths after a canceled drag.
+ */
 void PianoRoll::restoreDraggedNotesToStart() {
     for (const DraggedNoteState &state : m_note_drag.notes) {
         if (!state.item) {
             continue;
         }
         state.item->setPos(state.start_pos);
+        state.item->clearPreviewDurationTicks();
     }
 }
 
+/**
+ * Sync the editor selection with the currently selected note items.
+ */
 void PianoRoll::updateSelectedEvents() {
     if (m_ignore_selection_updates) {
         return;
     }
 
     QVector<smf::MidiEvent *> events;
-    const QVector<GraphicsScoreNoteItem *> notes = selectedNoteItems();
+    const QVector<GraphicsScoreNoteItem *> notes = this->selectedNoteItems();
     events.reserve(notes.size());
 
     for (GraphicsScoreNoteItem *note : notes) {
@@ -468,7 +525,7 @@ int PianoRoll::snapTickDelta(double delta_x) const {
 
 int PianoRoll::snapKeyDelta(double delta_y) const {
     const double anchor_y = scoreNotePosition(m_note_drag.anchor_start_key).y + 2;
-    const int target_key = keyForSceneY(anchor_y + delta_y);
+    const int target_key = this->keyForSceneY(anchor_y + delta_y);
     return target_key - m_note_drag.anchor_start_key;
 }
 
@@ -505,4 +562,50 @@ void PianoRoll::clampDraggedDelta(int *delta_tick, int *delta_key) const {
 
     *delta_tick = min_tick_delta;
     *delta_key = std::clamp(*delta_key, min_key_delta, max_key_delta);
+}
+
+/**
+ * Clamp a resize delta so every affected note remains valid.
+ */
+int PianoRoll::clampResizeDelta(int delta_tick) const {
+    int min_delta = delta_tick;
+    int max_delta = delta_tick;
+
+    for (const DraggedNoteState &state : m_note_drag.notes) {
+        if (m_note_drag.mode == NoteDragMode::ResizeEnd) {
+            // note length must stay at least one tick
+            min_delta = std::max(min_delta, 1 - state.start_duration);
+            continue;
+        }
+
+        min_delta = std::max(min_delta, -state.start_tick);
+        max_delta = std::min(max_delta, state.start_duration - 1);
+    }
+
+    return std::clamp(delta_tick, min_delta, max_delta);
+}
+
+/**
+ * Preview note widths and note starts during a resize drag.
+ */
+void PianoRoll::updateResizePreview() {
+    for (const DraggedNoteState &state : m_note_drag.notes) {
+        if (!state.item) {
+            continue;
+        }
+
+        int start_tick = state.start_tick;
+        int duration = state.start_duration;
+        if (m_note_drag.mode == NoteDragMode::ResizeEnd) {
+            duration += m_note_drag.delta_tick;
+        } else {
+            // resizing the start shifts the note and shortens from the left
+            start_tick += m_note_drag.delta_tick;
+            duration -= m_note_drag.delta_tick;
+        }
+
+        const int x = start_tick * ui_tick_x_scale;
+        state.item->setPos(QPointF(x, state.start_pos.y()));
+        state.item->setPreviewDurationTicks(duration);
+    }
 }

@@ -99,7 +99,12 @@ public:
     void setEditsEnabled(bool enabled);
     void selectNotesForTrack(int track, bool clearOthers = true);
     void selectEvents(const QVector<smf::MidiEvent *> &events, bool clear_others = true);
-    void handleNoteMousePress(GraphicsScoreNoteItem *item, const QPointF &scene_pos);
+    void handleNoteMousePress(
+        GraphicsScoreNoteItem *item,
+        const QPointF &scene_pos,
+        bool resize_start,
+        bool resize_end
+    );
     void handleNoteMouseMove(GraphicsScoreNoteItem *item, const QPointF &scene_pos);
     void handleNoteMouseRelease(GraphicsScoreNoteItem *item, const QPointF &scene_pos);
 
@@ -107,13 +112,21 @@ signals:
     void eventItemSelected(smf::MidiEvent *event);
     void onSelectedEventsChanged(const QVector<smf::MidiEvent *> &events);
     void onNoteMoveRequested(const NoteMoveSettings &settings);
+    void onNoteResizeRequested(const NoteResizeSettings &settings);
 
 private:
+    enum class NoteDragMode {
+        Move,
+        ResizeStart,
+        ResizeEnd,
+    };
+
     struct DraggedNoteState {
         GraphicsScoreNoteItem *item = nullptr;
         smf::MidiEvent *note_on = nullptr;
         int start_tick = 0;
         int start_key = 0;
+        int start_duration = 0;
         QPointF start_pos;
     };
 
@@ -121,6 +134,7 @@ private:
         bool pressed = false;
         bool dragging = false;
         GraphicsScoreNoteItem *anchor_item = nullptr;
+        NoteDragMode mode = NoteDragMode::Move;
         QPointF drag_start_scene_pos;
         int anchor_start_tick = 0;
         int anchor_start_key = 0;
@@ -145,6 +159,8 @@ private:
     int snapKeyDelta(double delta_y) const;
     int keyForSceneY(double scene_y) const;
     void clampDraggedDelta(int *delta_tick, int *delta_key) const;
+    int clampResizeDelta(int delta_tick) const;
+    void updateResizePreview();
 
 private:
     // scenes

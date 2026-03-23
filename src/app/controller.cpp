@@ -741,6 +741,8 @@ void Controller::connectSignals() {
             this, &Controller::onSelectedEventsChanged, Qt::UniqueConnection);
     connect(m_piano_roll, &PianoRoll::onNoteMoveRequested,
             this, &Controller::onNoteMoveRequested, Qt::UniqueConnection);
+    connect(m_piano_roll, &PianoRoll::onNoteResizeRequested,
+            this, &Controller::onNoteResizeRequested, Qt::UniqueConnection);
 
     // user clicks the mute button on a track widget in the track list
     connect(m_track_roll, &TrackRoll::trackMuteToggled,
@@ -784,6 +786,17 @@ void Controller::onNoteMoveRequested(const NoteMoveSettings &settings) {
 
     QString error;
     if (!m_song_editor->moveSelectedNotes(settings, &error) && !error.isEmpty()) {
+        logging::warn(error, logging::LogCategory::Ui);
+    }
+}
+
+void Controller::onNoteResizeRequested(const NoteResizeSettings &settings) {
+    if (!m_song_editor) {
+        return;
+    }
+
+    QString error;
+    if (!m_song_editor->resizeSelectedNotes(settings, &error) && !error.isEmpty()) {
         logging::warn(error, logging::LogCategory::Ui);
     }
 }
