@@ -12,21 +12,19 @@
 
 
 
-GraphicsScoreNoteItem::GraphicsScoreNoteItem(PianoRoll *piano_roll, int track, int row, smf::MidiEvent *on, smf::MidiEvent *off)
- : GraphicsMidiEventItem(track, on), m_row(row) {
-    this->m_piano_roll = piano_roll;
-    this->m_note_off = off;
+GraphicsNoteVisualItem::GraphicsNoteVisualItem(int track, int row, int tick, int key,
+                                               int duration_ticks)
+    : m_track(track), m_row(row), m_tick(tick), m_key(key), m_duration_ticks(duration_ticks) {
     this->updatePosition();
-
-    this->setFlags(QGraphicsItem::ItemIsSelectable);
-    this->setAcceptHoverEvents(true);
 }
 
-QRectF GraphicsScoreNoteItem::boundingRect() const {
+QRectF GraphicsNoteVisualItem::boundingRect() const {
     return QRectF(0, 0, this->dimensions().width(), this->dimensions().height());
 }
 
-void GraphicsScoreNoteItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
+void GraphicsNoteVisualItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
+                                   QWidget *widget) {
+    Q_UNUSED(widget);
     if (option->state & QStyle::State_Selected) {
         static QPen highlighter(Qt::white, 3, Qt::SolidLine);
         painter->setPen(highlighter);
@@ -35,9 +33,58 @@ void GraphicsScoreNoteItem::paint(QPainter *painter, const QStyleOptionGraphicsI
     painter->drawRoundedRect(this->boundingRect(), 3, 2);
 }
 
-QColor GraphicsScoreNoteItem::color() {
+QColor GraphicsNoteVisualItem::color() const {
     int index = m_row < g_max_num_tracks ? m_row : g_max_num_tracks - 1;
     return ui_track_color_array[index];
+}
+
+QSize GraphicsNoteVisualItem::dimensions() const {
+    return QSize(m_duration_ticks * ui_tick_x_scale, ui_score_line_height);
+}
+
+QPoint GraphicsNoteVisualItem::updatePosition() {
+    int x = m_tick * ui_tick_x_scale;
+    int y = scoreNotePosition(m_key).y + 2; // !TODO INVESTIGATE: why is +2 necessary?
+
+    QPoint pos(x, y);
+    this->setPos(pos);
+    return pos;
+}
+
+void GraphicsNoteVisualItem::setTickDuration(int duration_ticks) {
+    if (m_duration_ticks == duration_ticks) {
+        return;
+    }
+
+    this->prepareGeometryChange();
+    m_duration_ticks = duration_ticks;
+    this->update();
+}
+
+GraphicsScoreNoteItem::GraphicsScoreNoteItem(PianoRoll *piano_roll, int track, int row,
+                                             smf::MidiEvent *on, smf::MidiEvent *off)
+ : GraphicsMidiEventItem(track, on),
+   m_note_off(off),
+   m_piano_roll(piano_roll),
+   m_visual_item(track, row, on->tick, on->getKeyNumber(), on->getTickDuration()) {
+    this->updatePosition();
+
+    this->setFlags(QGraphicsItem::ItemIsSelectable);
+    this->setAcceptHoverEvents(true);
+}
+
+QRectF GraphicsScoreNoteItem::boundingRect() const {
+    return m_visual_item.boundingRect();
+}
+
+void GraphicsScoreNoteItem::paint(QPainter *painter,
+                                  const QStyleOptionGraphicsItem *option,
+                                  QWidget *widget) {
+    m_visual_item.paint(painter, option, widget);
+}
+
+QColor GraphicsScoreNoteItem::color() {
+    return m_visual_item.color();
 }
 
 QSize GraphicsScoreNoteItem::dimensions() const {
@@ -45,19 +92,19 @@ QSize GraphicsScoreNoteItem::dimensions() const {
                              ? m_preview_duration_ticks
                              : this->m_event->getTickDuration();
     return QSize(duration_ticks * ui_tick_x_scale, ui_score_line_height);
-};
+}
 
 QPoint GraphicsScoreNoteItem::updatePosition() {
-    int note = this->m_event->getKeyNumber();
-    int x = this->m_event->tick * ui_tick_x_scale;
-    int y = scoreNotePosition(note).y + 2; // !TODO INVESTIGATE: why is +2 necessary?
-
-    QPoint pos(x, y);
+    m_visual_item.setTick(this->m_event->tick);
+    m_visual_item.setKey(this->m_event->getKeyNumber());
+    m_visual_item.setTickDuration(this->m_event->getTickDuration());
+    const QPoint pos = m_visual_item.updatePosition();
     this->setPos(pos);
     return pos;
-};
+}
 
-QVariant GraphicsScoreNoteItem::itemChange(GraphicsItemChange change, const QVariant &value) {
+QVariant GraphicsScoreNoteItem::itemChange(GraphicsItemChange change,
+                                           const QVariant &value) {
     switch(change) {
     case QGraphicsItem::ItemSelectedHasChanged:
         if (value.toBool()) {
@@ -166,9 +213,15 @@ void GraphicsScoreNoteItem::setPreviewDurationTicks(int duration_ticks) {
 
     this->prepareGeometryChange();
     m_preview_duration_ticks = duration_ticks;
+    m_visual_item.setTickDuration(duration_ticks >= 0 ?
+                                  duration_ticks : this->m_event->getTickDuration());
     this->update();
 }
 
 void GraphicsScoreNoteItem::clearPreviewDurationTicks() {
     this->setPreviewDurationTicks(-1);
 }
+
+GraphicsPreviewNoteItem::GraphicsPreviewNoteItem(int track, int row, int tick, int key,
+                                                 int duration_ticks)
+    : GraphicsNoteVisualItem(track, row, tick, key, duration_ticks) { }
