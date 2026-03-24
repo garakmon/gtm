@@ -27,6 +27,7 @@
 #include <QScrollBar>
 #include <QSet>
 #include <QTime>
+#include <QToolButton>
 #include <QVector>
 #include <QWheelEvent>
 
@@ -489,6 +490,7 @@ bool Controller::loadSong(std::shared_ptr<Song> song) {
 
     m_track_roll->setSong(song);
     m_piano_roll->setSong(song);
+    m_piano_roll->setActiveTrack(-1);
     m_measure_roll->setSong(song);
 
     this->displayRolls();
@@ -704,17 +706,40 @@ void Controller::displayRolls() {
     }
 }
 
-void Controller::redrawCurrentSong() {
+void Controller::redrawCurrentSong(bool rebuild_rolls) {
     if (!m_song) {
         return;
     }
 
-    m_track_roll->setSong(m_song);
+    int piano_hscroll = 0;
+    int piano_vscroll = 0;
+    if (!rebuild_rolls && m_window) {
+        // preserve scroll position during redraws so restoring selection
+        // does not make the views jump to the edited note
+        if (m_window->hscroll_pianoRoll) {
+            piano_hscroll = m_window->hscroll_pianoRoll->value();
+        }
+        if (m_window->vscroll_pianoRoll) {
+            piano_vscroll = m_window->vscroll_pianoRoll->value();
+        }
+    }
+
+    if (rebuild_rolls) {
+        m_track_roll->setSong(m_song);
+    }
     m_piano_roll->setSong(m_song);
     m_measure_roll->setSong(m_song);
     this->displayRolls();
     if (m_song_editor) {
         m_piano_roll->selectEvents(m_song_editor->selectedEvents());
+    }
+    if (!rebuild_rolls && m_window) {
+        if (m_window->hscroll_pianoRoll) {
+            m_window->hscroll_pianoRoll->setValue(piano_hscroll);
+        }
+        if (m_window->vscroll_pianoRoll) {
+            m_window->vscroll_pianoRoll->setValue(piano_vscroll);
+        }
     }
     this->updateSongMetaDisplay();
 }
@@ -743,6 +768,8 @@ void Controller::connectSignals() {
             this, &Controller::onNoteMoveRequested, Qt::UniqueConnection);
     connect(m_piano_roll, &PianoRoll::onNoteResizeRequested,
             this, &Controller::onNoteResizeRequested, Qt::UniqueConnection);
+    connect(m_piano_roll, &PianoRoll::onNoteCreateRequested,
+            this, &Controller::onNoteCreateRequested, Qt::UniqueConnection);
 
     // user clicks the mute button on a track widget in the track list
     connect(m_track_roll, &TrackRoll::trackMuteToggled,
@@ -755,6 +782,8 @@ void Controller::connectSignals() {
     // user clicks anywhere outside the buttons on the track widget
     connect(m_track_roll, &TrackRoll::trackSelected,
             this, &Controller::onTrackSelected, Qt::UniqueConnection);
+    connect(m_track_roll, &TrackRoll::trackRightClicked,
+            this, &Controller::onTrackRightClicked, Qt::UniqueConnection);
 
     // signal comes from expanding/collapsing track widgets, or when tracks are redrawn
     connect(m_track_roll, &TrackRoll::layoutChanged,
@@ -768,6 +797,12 @@ void Controller::connectSignals() {
     if (m_window && m_window->listView_songTable) {
         connect(m_window->listView_songTable, &QListView::doubleClicked,
                 this, &Controller::songListSongRequested, Qt::UniqueConnection);
+    }
+
+    if (m_window && m_window->button_note_add) {
+        m_piano_roll->setCreateNotesEnabled(m_window->button_note_add->isChecked());
+        connect(m_window->button_note_add, &QToolButton::toggled,
+                m_piano_roll, &PianoRoll::setCreateNotesEnabled, Qt::UniqueConnection);
     }
 }
 
@@ -801,8 +836,19 @@ void Controller::onNoteResizeRequested(const NoteResizeSettings &settings) {
     }
 }
 
+void Controller::onNoteCreateRequested(const QVector<NoteCreateSettings> &notes) {
+    if (!m_song_editor) {
+        return;
+    }
+
+    QString error;
+    if (!m_song_editor->createNotes(notes, &error) && !error.isEmpty()) {
+        logging::warn(error, logging::LogCategory::Ui);
+    }
+}
+
 void Controller::onSongNeedsRedrawing() {
-    this->redrawCurrentSong();
+    this->redrawCurrentSong(false);
 }
 
 /**
@@ -1676,6 +1722,15 @@ void Controller::onTrackSoloToggled(int channel, bool soloed) {
 }
 
 void Controller::onTrackSelected(int track) {
+    if (m_piano_roll) {
+        m_piano_roll->setActiveTrack(track);
+    }
+}
+
+void Controller::onTrackRightClicked(int track) {
+    if (m_piano_roll) {
+        m_piano_roll->setActiveTrack(track);
+    }
     if (m_piano_roll) {
         m_piano_roll->selectNotesForTrack(track, true);
     }

@@ -274,6 +274,7 @@ void Song::extractInitialState() {
 void Song::rebuildNotesIndex() {
     m_notes.clear();
 
+    const bool joined_tracks = this->hasJoinedTracks();
     const int track_count = this->getTrackCount();
     for (int track_index = 0; track_index < track_count; track_index++) {
         if (this->isMetaTrack(track_index)) continue;
@@ -286,10 +287,13 @@ void Song::rebuildNotesIndex() {
             smf::MidiEvent *event = &(*track)[i];
             if (!event || event->size() == 0) continue;
             if (event->isNoteOn()) {
-                m_notes.append({track_index, event});
+                const int event_track = joined_tracks ? event->track : track_index;
+                if (this->isMetaTrack(event_track)) continue;
+                m_notes.append({event_track, event});
             }
         }
     }
+
 }
 
 int Song::defaultProgramFromVoicegroup(const VoiceGroup *voicegroup) {

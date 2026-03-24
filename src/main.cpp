@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 
+#include "util/logging.h"
+
 #include <QApplication>
 #include <QFontDatabase>
 
@@ -12,5 +14,10 @@ int main(int argc, char *argv[]) {
     a.setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     MainWindow w;
     w.show();
+
+    // toggle debug output
+    logging::setDebugging(true);
+    logging::setLevel(logging::LogLevel::Debug);
+
     return a.exec();
 }

@@ -79,6 +79,7 @@ signals:
     void trackMuteToggled(int channel, bool muted);
     void trackSoloToggled(int channel, bool soloed);
     void trackSelected(int track);
+    void trackRightClicked(int track);
     void layoutChanged();
 
 private slots:

@@ -90,6 +90,7 @@ signals:
     void muteToggled(int channel, bool muted);
     void soloToggled(int channel, bool soloed);
     void trackClicked(int track);
+    void trackRightClicked(int track);
 
 private:
     // track identity and layout

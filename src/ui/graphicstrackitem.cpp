@@ -152,11 +152,16 @@ void GraphicsTrackItem::paint(QPainter *painter,
 }
 
 /**
- * Emit track selection when the row is clicked.
+ * Emit left and right click actions for the track row.
  */
 void GraphicsTrackItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
     if (event && event->button() == Qt::LeftButton) {
         emit trackClicked(m_track);
+        event->accept();
+        return;
+    }
+    if (event && event->button() == Qt::RightButton) {
+        emit trackRightClicked(m_track);
         event->accept();
         return;
     }

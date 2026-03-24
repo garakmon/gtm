@@ -304,11 +304,14 @@ void CreateNotes::redo() {
                                                     s.channel, s.key, s.velocity);
             smf::MidiEvent *off = m_song->addNoteOff(s.track, s.tick + s.duration,
                                                      s.channel, s.key);
+            on->track = s.track;
+            off->track = s.track;
             on->linkEvent(off);
             m_created_on.append(on);
             m_created_off.append(off);
 
             song_notes.append({s.track, on});
+
         }
         m_first_redo = false;
     } else {
@@ -320,11 +323,14 @@ void CreateNotes::redo() {
 
             on->makeNoteOn(s.channel, s.key, s.velocity);
             on->tick = s.tick;
+            on->track = s.track;
             off->makeNoteOff(s.channel, s.key);
             off->tick = s.tick + s.duration;
+            off->track = s.track;
             on->linkEvent(off);
 
             song_notes.append({s.track, on});
+
         }
     }
 

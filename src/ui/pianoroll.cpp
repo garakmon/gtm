@@ -4,19 +4,81 @@
 #include "ui/colors.h"
 #include "ui/graphicsscorenoteitem.h"
 #include "util/constants.h"
+#include "util/logging.h"
 #include "util/util.h"
 
 #include <QPainter>
 #include <QPixmap>
 #include <QApplication>
+#include <QGraphicsSceneMouseEvent>
 
 #include <cmath>
 #include <limits>
 
 
 
+static bool isScoreNoteItemOrChild(QGraphicsItem *item) {
+    QGraphicsItem *current = item;
+    while (current) {
+        if (dynamic_cast<GraphicsScoreNoteItem *>(current)) {
+            return true;
+        }
+        current = current->parentItem();
+    }
+
+    return false;
+}
+
+
+
+PianoRollScene::PianoRollScene(QObject *parent) : QGraphicsScene(parent) {}
+
+void PianoRollScene::setPianoRoll(PianoRoll *piano_roll) {
+    m_piano_roll = piano_roll;
+}
+
+void PianoRollScene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_piano_roll && m_piano_roll->m_create_notes_enabled
+     && m_piano_roll->m_active_track < 0) {
+        logging::warn("Cannot create note: no active track is selected.",
+                      logging::LogCategory::Ui);
+    }
+
+    if (m_piano_roll && m_piano_roll->canBeginNoteCreate(event->scenePos())) {
+        m_piano_roll->beginNoteCreate(event->scenePos());
+        event->accept();
+        return;
+    }
+
+    QGraphicsScene::mousePressEvent(event);
+}
+
+void PianoRollScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_piano_roll && m_piano_roll->m_note_create.pressed) {
+        m_piano_roll->updateNoteCreate(event->scenePos());
+        event->accept();
+        return;
+    }
+
+    QGraphicsScene::mouseMoveEvent(event);
+}
+
+void PianoRollScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_piano_roll && m_piano_roll->m_note_create.pressed) {
+        m_piano_roll->updateNoteCreate(event->scenePos());
+        m_piano_roll->commitNoteCreate();
+        event->accept();
+        return;
+    }
+
+    QGraphicsScene::mouseReleaseEvent(event);
+}
+
+
+
 PianoRoll::PianoRoll(QObject *parent) : QObject(parent) {
     m_scene_piano.setParent(this);
+    m_scene_roll.setPianoRoll(this);
     connect(&m_scene_roll, &QGraphicsScene::selectionChanged,
             this, &PianoRoll::updateSelectedEvents);
     this->drawPiano();
@@ -43,6 +105,7 @@ QList<QGraphicsRectItem *> PianoRoll::lines() {
  */
 void PianoRoll::setSong(std::shared_ptr<Song> song) {
     this->clearNoteDrag();
+    this->clearNoteCreate();
     m_ignore_selection_updates = true;
     m_score_bg = nullptr;
     m_scene_roll.clear();
@@ -92,6 +155,7 @@ void PianoRoll::setEditsEnabled(bool enabled) {
     m_edits_enabled = enabled;
     if (!enabled) {
         this->cancelNoteDrag();
+        this->cancelNoteCreate();
     }
 
     for (TrackNoteGroup *group : m_track_note_groups) {
@@ -107,6 +171,17 @@ void PianoRoll::setEditsEnabled(bool enabled) {
     m_scene_roll.clearSelection();
     m_scene_roll.invalidate();
     m_scene_roll.update();
+}
+
+void PianoRoll::setCreateNotesEnabled(bool enabled) {
+    m_create_notes_enabled = enabled;
+    if (!enabled) {
+        this->cancelNoteCreate();
+    }
+}
+
+void PianoRoll::setActiveTrack(int track) {
+    m_active_track = track;
 }
 
 /**
@@ -523,13 +598,22 @@ int PianoRoll::snapTickDelta(double delta_x) const {
     return qRound(delta_x / ui_tick_x_scale);
 }
 
+/**
+ * Snap one absolute tick value to the current note creation grid.
+ * This is currently whole-tick snapping (ie, doing nothing), but keeping it here
+ * makes it easy to switch note creation to larger grid values later.
+ */
+int PianoRoll::snapTick(int tick) const {
+    return std::max(0, tick);
+}
+
 int PianoRoll::snapKeyDelta(double delta_y) const {
     const double anchor_y = scoreNotePosition(m_note_drag.anchor_start_key).y + 2;
-    const int target_key = this->keyForSceneY(anchor_y + delta_y);
+    const int target_key = this->keyFromSceneY(anchor_y + delta_y);
     return target_key - m_note_drag.anchor_start_key;
 }
 
-int PianoRoll::keyForSceneY(double scene_y) const {
+int PianoRoll::keyFromSceneY(double scene_y) const {
     int best_key = 0;
     double best_distance = std::numeric_limits<double>::max();
 
@@ -608,4 +692,166 @@ void PianoRoll::updateResizePreview() {
         state.item->setPos(QPointF(x, state.start_pos.y()));
         state.item->setPreviewDurationTicks(duration);
     }
+}
+
+/**
+ * Check whether a note can be created at this position.
+ * This blocks note creation when editing is disabled, no track is active,
+ * or the click lands on an existing note.
+ */
+bool PianoRoll::canBeginNoteCreate(const QPointF &scene_pos) const {
+    if (!m_edits_enabled || !m_create_notes_enabled || !m_active_song) {
+        return false;
+    }
+
+    if (m_active_track < 0) {
+        return false;
+    }
+
+    QGraphicsItem *hit_item = m_scene_roll.itemAt(scene_pos, QTransform());
+    if (isScoreNoteItemOrChild(hit_item)) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Begin creating a note at the clicked position.
+ * This stores the starting tick, key, and track, then creates the temporary preview note.
+ */
+void PianoRoll::beginNoteCreate(const QPointF &scene_pos) {
+    if (!this->canBeginNoteCreate(scene_pos)) {
+        return;
+    }
+
+    const int anchor_tick = this->snapTick(
+        static_cast<int>(std::round(scene_pos.x() / ui_tick_x_scale))
+    );
+    const int anchor_key = this->keyFromSceneY(scene_pos.y());
+    const int row = m_active_song->getDisplayRow(m_active_track);
+
+    m_note_create.pressed = true;
+    m_note_create.dragging = false;
+    m_note_create.track = m_active_track;
+    m_note_create.row = row;
+    m_note_create.channel = m_active_track;
+    m_note_create.velocity = 100;
+    m_note_create.press_scene_pos = scene_pos;
+    m_note_create.anchor_tick = anchor_tick;
+    m_note_create.anchor_key = anchor_key;
+    m_note_create.start_tick = anchor_tick;
+    m_note_create.duration_ticks = std::max(1, m_active_song->getTicksPerQuarterNote() / 2);
+    m_note_create.preview_item = new GraphicsPreviewNoteItem(
+        m_note_create.track,
+        row,
+        m_note_create.start_tick,
+        m_note_create.anchor_key,
+        m_note_create.duration_ticks
+    );
+    m_scene_roll.addItem(m_note_create.preview_item);
+}
+
+/**
+ * Update the preview note while the mouse is dragged.
+ * This snaps the note to ticks, supports dragging left or right,
+ * and keeps the note at least one tick long.
+ */
+void PianoRoll::updateNoteCreate(const QPointF &scene_pos) {
+    if (!m_note_create.pressed || !m_note_create.preview_item) {
+        return;
+    }
+
+    const QPointF delta = scene_pos - m_note_create.press_scene_pos;
+    if (!m_note_create.dragging && delta.manhattanLength() < QApplication::startDragDistance()) {
+        return;
+    }
+
+    const int current_tick = this->snapTick(
+        static_cast<int>(std::round(scene_pos.x() / ui_tick_x_scale))
+    );
+    m_note_create.dragging = true;
+
+    if (current_tick >= m_note_create.anchor_tick) {
+        m_note_create.start_tick = m_note_create.anchor_tick;
+        m_note_create.duration_ticks = std::max(1, current_tick - m_note_create.anchor_tick);
+    } else {
+        m_note_create.start_tick = current_tick;
+        m_note_create.duration_ticks = std::max(1, m_note_create.anchor_tick - current_tick);
+    }
+
+    this->updatePreviewNoteGeometry();
+}
+
+/**
+ * Create the previewed note in the song.
+ * A click without dragging creates a default eighth-note note.
+ */
+void PianoRoll::commitNoteCreate() {
+    if (!m_note_create.pressed) {
+        return;
+    }
+
+    if (!m_note_create.preview_item) {
+        this->clearNoteCreate();
+        return;
+    }
+
+    if (!m_note_create.dragging) {
+        m_note_create.duration_ticks = std::max(1, m_active_song->getTicksPerQuarterNote() / 2);
+        this->updatePreviewNoteGeometry();
+    }
+
+    NoteCreateSettings note;
+    note.track = m_note_create.track;
+    note.channel = m_note_create.channel;
+    note.key = m_note_create.anchor_key;
+    note.velocity = m_note_create.velocity;
+    note.tick = m_note_create.start_tick;
+    note.duration = m_note_create.duration_ticks;
+
+    this->clearNoteCreate();
+    emit onNoteCreateRequested({note});
+}
+
+void PianoRoll::cancelNoteCreate() {
+    this->clearNoteCreate();
+}
+
+/**
+ * Clear the temporary note creation state.
+ * This removes the preview note and resets the stored values.
+ */
+void PianoRoll::clearNoteCreate() {
+    m_note_create.pressed = false;
+    m_note_create.dragging = false;
+    m_note_create.track = -1;
+    m_note_create.row = 0;
+    m_note_create.channel = 0;
+    m_note_create.velocity = 100;
+    m_note_create.press_scene_pos = QPointF();
+    m_note_create.anchor_tick = 0;
+    m_note_create.anchor_key = 60;
+    m_note_create.start_tick = 0;
+    m_note_create.duration_ticks = 0;
+    if (m_note_create.preview_item) {
+        m_scene_roll.removeItem(m_note_create.preview_item);
+        delete m_note_create.preview_item;
+        m_note_create.preview_item = nullptr;
+    }
+}
+
+/**
+ * Update the preview note item from the current creation state.
+ * This keeps the preview position and length in sync while dragging.
+ */
+void PianoRoll::updatePreviewNoteGeometry() {
+    if (!m_note_create.preview_item) {
+        return;
+    }
+
+    m_note_create.preview_item->setTick(m_note_create.start_tick);
+    m_note_create.preview_item->setKey(m_note_create.anchor_key);
+    m_note_create.preview_item->setTickDuration(m_note_create.duration_ticks);
+    m_note_create.preview_item->updatePosition();
 }

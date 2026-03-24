@@ -226,6 +226,8 @@ void TrackRoll::drawTracks() {
                 this, &TrackRoll::trackSoloToggled, Qt::UniqueConnection);
         connect(track_item, &GraphicsTrackItem::trackClicked,
                 this, &TrackRoll::onTrackClicked, Qt::UniqueConnection);
+        connect(track_item, &GraphicsTrackItem::trackRightClicked,
+                this, &TrackRoll::trackRightClicked, Qt::UniqueConnection);
 
         m_roll_managers[display_row] = manager;
         m_track_items[display_row] = track_item;

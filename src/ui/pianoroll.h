@@ -17,7 +17,34 @@
 
 class Song;
 class GraphicsScoreNoteItem;
+class GraphicsPreviewNoteItem;
+class PianoRoll;
 namespace smf { class MidiEvent; }
+class QGraphicsSceneMouseEvent;
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// PianoRollScene is the graphics scene for the editable note area of the piano roll.
+/// It exists so empty-space mouse input can be handled separately from note item input
+/// (note items handle moving and resizing existing notes, while the scene handles
+/// creating new notes when the user clicks and drags on emptty space).
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+class PianoRollScene : public QGraphicsScene {
+    Q_OBJECT
+
+public:
+    explicit PianoRollScene(QObject *parent = nullptr);
+    void setPianoRoll(PianoRoll *piano_roll);
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+
+private:
+    PianoRoll *m_piano_roll = nullptr;
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -69,6 +96,7 @@ private:
 //////////////////////////////////////////////////////////////////////////////////////////
 class PianoRoll : public QObject {
     Q_OBJECT
+    friend class PianoRollScene;
 
 public:
     PianoRoll(QObject *parent = nullptr);
@@ -97,6 +125,8 @@ public:
 
     // edit state
     void setEditsEnabled(bool enabled);
+    void setCreateNotesEnabled(bool enabled);
+    void setActiveTrack(int track);
     void selectNotesForTrack(int track, bool clearOthers = true);
     void selectEvents(const QVector<smf::MidiEvent *> &events, bool clear_others = true);
     void handleNoteMousePress(
@@ -113,6 +143,7 @@ signals:
     void onSelectedEventsChanged(const QVector<smf::MidiEvent *> &events);
     void onNoteMoveRequested(const NoteMoveSettings &settings);
     void onNoteResizeRequested(const NoteResizeSettings &settings);
+    void onNoteCreateRequested(const QVector<NoteCreateSettings> &notes);
 
 private:
     enum class NoteDragMode {
@@ -143,6 +174,21 @@ private:
         QVector<DraggedNoteState> notes;
     };
 
+    struct NoteCreateState {
+        bool pressed = false;
+        bool dragging = false;
+        int track = -1;
+        int row = 0;
+        int channel = 0;
+        int velocity = 100;
+        QPointF press_scene_pos;
+        int anchor_tick = 0;
+        int anchor_key = 60;
+        int start_tick = 0;
+        int duration_ticks = 0;
+        GraphicsPreviewNoteItem *preview_item = nullptr;
+    };
+
     // drawing helpers
     void drawPiano();
     void drawScoreArea();
@@ -156,16 +202,24 @@ private:
     void updateSelectedEvents();
     QVector<GraphicsScoreNoteItem *> selectedNoteItems() const;
     int snapTickDelta(double delta_x) const;
+    int snapTick(int tick) const;
     int snapKeyDelta(double delta_y) const;
-    int keyForSceneY(double scene_y) const;
+    int keyFromSceneY(double scene_y) const;
     void clampDraggedDelta(int *delta_tick, int *delta_key) const;
     int clampResizeDelta(int delta_tick) const;
     void updateResizePreview();
+    bool canBeginNoteCreate(const QPointF &scene_pos) const;
+    void beginNoteCreate(const QPointF &scene_pos);
+    void updateNoteCreate(const QPointF &scene_pos);
+    void commitNoteCreate();
+    void cancelNoteCreate();
+    void clearNoteCreate();
+    void updatePreviewNoteGeometry();
 
 private:
     // scenes
     QGraphicsScene m_scene_piano;
-    QGraphicsScene m_scene_roll;
+    PianoRollScene m_scene_roll;
 
     // cached items
     QList<GraphicsPianoKeyItem *> m_piano_keys;
@@ -175,9 +229,12 @@ private:
     std::shared_ptr<Song> m_active_song;
     QMap<int, TrackNoteGroup *> m_track_note_groups;
     NoteDragState m_note_drag;
+    NoteCreateState m_note_create;
 
     bool m_edits_enabled = true;
+    bool m_create_notes_enabled = false;
     bool m_ignore_selection_updates = false;
+    int m_active_track = -1;
 };
 
 #endif // PIANOROLL_H
