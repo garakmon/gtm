@@ -113,6 +113,7 @@ private slots:
     void onNoteMoveRequested(const NoteMoveSettings &settings);
     void onNoteResizeRequested(const NoteResizeSettings &settings);
     void onNoteCreateRequested(const QVector<NoteCreateSettings> &notes);
+    void onNoteDeleteRequested(const QVector<smf::MidiEvent *> &events);
     void onSongNeedsRedrawing();
     void songListSongRequested(const QModelIndex &index);
     void onTrackMuteToggled(int channel, bool muted);

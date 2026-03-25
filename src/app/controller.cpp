@@ -21,6 +21,7 @@
 
 #include <QFrame>
 #include <QGraphicsView>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QMessageBox>
 #include <QMouseEvent>
@@ -589,6 +590,7 @@ void Controller::setupRolls() {
 
     // event filters for auto scrolling overrides
     m_window->view_measures->viewport()->installEventFilter(this);
+    m_window->view_pianoRoll->installEventFilter(this);
     m_window->view_pianoRoll->viewport()->installEventFilter(this);
     m_window->view_trackRoll->viewport()->installEventFilter(this);
 
@@ -770,6 +772,8 @@ void Controller::connectSignals() {
             this, &Controller::onNoteResizeRequested, Qt::UniqueConnection);
     connect(m_piano_roll, &PianoRoll::onNoteCreateRequested,
             this, &Controller::onNoteCreateRequested, Qt::UniqueConnection);
+    connect(m_piano_roll, &PianoRoll::onNoteDeleteRequested,
+            this, &Controller::onNoteDeleteRequested, Qt::UniqueConnection);
 
     // user clicks the mute button on a track widget in the track list
     connect(m_track_roll, &TrackRoll::trackMuteToggled,
@@ -803,6 +807,11 @@ void Controller::connectSignals() {
         m_piano_roll->setCreateNotesEnabled(m_window->button_note_add->isChecked());
         connect(m_window->button_note_add, &QToolButton::toggled,
                 m_piano_roll, &PianoRoll::setCreateNotesEnabled, Qt::UniqueConnection);
+    }
+    if (m_window && m_window->button_note_delete) {
+        m_piano_roll->setDeleteNotesEnabled(m_window->button_note_delete->isChecked());
+        connect(m_window->button_note_delete, &QToolButton::toggled,
+                m_piano_roll, &PianoRoll::setDeleteNotesEnabled, Qt::UniqueConnection);
     }
 }
 
@@ -843,6 +852,19 @@ void Controller::onNoteCreateRequested(const QVector<NoteCreateSettings> &notes)
 
     QString error;
     if (!m_song_editor->createNotes(notes, &error) && !error.isEmpty()) {
+        logging::warn(error, logging::LogCategory::Ui);
+    }
+}
+
+void Controller::onNoteDeleteRequested(const QVector<smf::MidiEvent *> &events) {
+    if (!m_song_editor) {
+        return;
+    }
+
+    m_song_editor->setSelectedEvents(events);
+
+    QString error;
+    if (!m_song_editor->deleteSelectedEvents(&error) && !error.isEmpty()) {
         logging::warn(error, logging::LogCategory::Ui);
     }
 }
@@ -1466,6 +1488,23 @@ bool Controller::eventFilter(QObject *watched, QEvent *event) {
             m_scroll_state.autoscroll_enabled = false;
             m_scroll_state.scroll_debounce.start();
             m_scroll_state.scroll_pos_valid = false;
+        }
+    }
+
+    if (watched == m_window->view_pianoRoll
+     && event->type() == QEvent::KeyPress) {
+        QKeyEvent *key_event = static_cast<QKeyEvent *>(event);
+        // key events for the piano roll arrive on the view itself, not its viewport
+        if (key_event->key() == Qt::Key_Delete || key_event->key() == Qt::Key_Backspace) {
+            if (!m_playback_state.edits_enabled || !m_song_editor) {
+                return true;
+            }
+
+            QString error;
+            if (!m_song_editor->deleteSelectedEvents(&error) && !error.isEmpty()) {
+                logging::warn(error, logging::LogCategory::Ui);
+            }
+            return true;
         }
     }
 

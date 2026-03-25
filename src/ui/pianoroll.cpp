@@ -29,6 +29,28 @@ static bool isScoreNoteItemOrChild(QGraphicsItem *item) {
     return false;
 }
 
+static GraphicsScoreNoteItem *scoreNoteItemAt(QGraphicsScene *scene, const QPointF &scene_pos) {
+    if (!scene) {
+        return nullptr;
+    }
+
+    // drag/sweep delete needs the actual note item under the cursor, but the topmost
+    // hit can be a parent/container item in this scene
+    // => scan all hits at the point until a score note item is found
+    const QList<QGraphicsItem *> items = scene->items(scene_pos);
+    for (QGraphicsItem *item : items) {
+        QGraphicsItem *current = item;
+        while (current) {
+            if (auto *note = dynamic_cast<GraphicsScoreNoteItem *>(current)) {
+                return note;
+            }
+            current = current->parentItem();
+        }
+    }
+
+    return nullptr;
+}
+
 
 
 PianoRollScene::PianoRollScene(QObject *parent) : QGraphicsScene(parent) {}
@@ -38,6 +60,15 @@ void PianoRollScene::setPianoRoll(PianoRoll *piano_roll) {
 }
 
 void PianoRollScene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_piano_roll && m_piano_roll->isDeleteNotesEnabled()) {
+        GraphicsScoreNoteItem *note = scoreNoteItemAt(this, event->scenePos());
+        if (note) {
+            m_piano_roll->beginNoteDelete(note);
+            event->accept();
+            return;
+        }
+    }
+
     if (m_piano_roll && m_piano_roll->m_create_notes_enabled
      && m_piano_roll->m_active_track < 0) {
         logging::warn("Cannot create note: no active track is selected.",
@@ -54,6 +85,12 @@ void PianoRollScene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 }
 
 void PianoRollScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_piano_roll && m_piano_roll->m_note_delete.pressed) {
+        m_piano_roll->updateNoteDelete(event->scenePos());
+        event->accept();
+        return;
+    }
+
     if (m_piano_roll && m_piano_roll->m_note_create.pressed) {
         m_piano_roll->updateNoteCreate(event->scenePos());
         event->accept();
@@ -64,6 +101,13 @@ void PianoRollScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
 }
 
 void PianoRollScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_piano_roll && m_piano_roll->m_note_delete.pressed) {
+        m_piano_roll->updateNoteDelete(event->scenePos());
+        m_piano_roll->commitNoteDelete();
+        event->accept();
+        return;
+    }
+
     if (m_piano_roll && m_piano_roll->m_note_create.pressed) {
         m_piano_roll->updateNoteCreate(event->scenePos());
         m_piano_roll->commitNoteCreate();
@@ -156,6 +200,7 @@ void PianoRoll::setEditsEnabled(bool enabled) {
     if (!enabled) {
         this->cancelNoteDrag();
         this->cancelNoteCreate();
+        this->cancelNoteDelete();
     }
 
     for (TrackNoteGroup *group : m_track_note_groups) {
@@ -180,8 +225,19 @@ void PianoRoll::setCreateNotesEnabled(bool enabled) {
     }
 }
 
+void PianoRoll::setDeleteNotesEnabled(bool enabled) {
+    m_delete_notes_enabled = enabled;
+    if (!enabled) {
+        this->cancelNoteDelete();
+    }
+}
+
 void PianoRoll::setActiveTrack(int track) {
     m_active_track = track;
+}
+
+bool PianoRoll::isDeleteNotesEnabled() const {
+    return m_delete_notes_enabled;
 }
 
 /**
@@ -244,6 +300,11 @@ void PianoRoll::selectEvents(const QVector<smf::MidiEvent *> &events, bool clear
 void PianoRoll::handleNoteMousePress(GraphicsScoreNoteItem *item,
                                      const QPointF &scene_pos,
                                      bool resize_start, bool resize_end) {
+    if (this->isDeleteNotesEnabled()) {
+        this->beginNoteDelete(item);
+        return;
+    }
+
     if (resize_start) {
         m_note_drag.mode = NoteDragMode::ResizeStart;
     } else if (resize_end) {
@@ -257,14 +318,27 @@ void PianoRoll::handleNoteMousePress(GraphicsScoreNoteItem *item,
 /**
  * Update the active note drag preview from the latest mouse position.
  */
-void PianoRoll::handleNoteMouseMove(GraphicsScoreNoteItem *, const QPointF &scene_pos) {
+void PianoRoll::handleNoteMouseMove(GraphicsScoreNoteItem *item, const QPointF &scene_pos) {
+    if (this->isDeleteNotesEnabled()) {
+        (void)item;
+        this->updateNoteDelete(scene_pos);
+        return;
+    }
+
     this->updateNoteDrag(scene_pos);
 }
 
 /**
  * Finalize the active note drag interaction.
  */
-void PianoRoll::handleNoteMouseRelease(GraphicsScoreNoteItem *, const QPointF &scene_pos) {
+void PianoRoll::handleNoteMouseRelease(GraphicsScoreNoteItem *item, const QPointF &scene_pos) {
+    if (this->isDeleteNotesEnabled()) {
+        (void)item;
+        this->updateNoteDelete(scene_pos);
+        this->commitNoteDelete();
+        return;
+    }
+
     if (m_note_drag.pressed) {
         this->updateNoteDrag(scene_pos);
         this->commitNoteDrag();
@@ -854,4 +928,115 @@ void PianoRoll::updatePreviewNoteGeometry() {
     m_note_create.preview_item->setKey(m_note_create.anchor_key);
     m_note_create.preview_item->setTickDuration(m_note_create.duration_ticks);
     m_note_create.preview_item->updatePosition();
+}
+
+/**
+ * Begin one delete gesture from the clicked note.
+ * If the clicked note is already selected, delete the current selection;
+ * otherwise clear selection and delete only that note.
+ */
+void PianoRoll::beginNoteDelete(GraphicsScoreNoteItem *item) {
+    if (!m_edits_enabled || !item) {
+        return;
+    }
+
+    this->clearNoteDelete(true);
+    m_note_delete.pressed = true;
+    m_note_delete.dragging = false;
+    m_note_delete.press_scene_pos = item->scenePos();
+
+    QVector<GraphicsScoreNoteItem *> notes;
+    if (item->isSelected()) {
+        notes = this->selectedNoteItems();
+    } else {
+        QGraphicsScene *item_scene = item->scene();
+        if (item_scene) {
+            item_scene->clearSelection();
+        }
+        item->setSelected(true);
+        notes.append(item);
+    }
+
+    for (GraphicsScoreNoteItem *note : notes) {
+        if (!note || !note->noteOn() || m_note_delete.pending_events.contains(note->noteOn())) {
+            continue;
+        }
+
+        m_note_delete.pending_events.insert(note->noteOn());
+        m_note_delete.hidden_items.append(note);
+        note->hide();
+    }
+}
+
+/**
+ * Extend one delete sweep across notes under the cursor.
+ * The drag threshold prevents a plain click-release on stacked notes
+ * from also deleting the next note underneath on release.
+ */
+void PianoRoll::updateNoteDelete(const QPointF &scene_pos) {
+    if (!m_note_delete.pressed) {
+        return;
+    }
+
+    const QPointF delta = scene_pos - m_note_delete.press_scene_pos;
+    if (!m_note_delete.dragging && delta.manhattanLength() < QApplication::startDragDistance()) {
+        return;
+    }
+
+    m_note_delete.dragging = true;
+
+    GraphicsScoreNoteItem *item = scoreNoteItemAt(&m_scene_roll, scene_pos);
+    if (!item || !item->noteOn()) {
+        return;
+    }
+
+    if (m_note_delete.pending_events.contains(item->noteOn())) {
+        return;
+    }
+
+    m_note_delete.pending_events.insert(item->noteOn());
+    m_note_delete.hidden_items.append(item);
+    item->hide();
+}
+
+/**
+ * Commit the current delete sweep as one delete request.
+ * Notes are hidden immediately during the drag, but the song data
+ * is only modified here so undo history stays grouped.
+ */
+void PianoRoll::commitNoteDelete() {
+    if (!m_note_delete.pressed) {
+        return;
+    }
+
+    QVector<smf::MidiEvent *> events;
+    events.reserve(m_note_delete.pending_events.size());
+    for (smf::MidiEvent *event : m_note_delete.pending_events) {
+        events.append(event);
+    }
+
+    this->clearNoteDelete(false);
+    if (!events.isEmpty()) {
+        emit onNoteDeleteRequested(events);
+    }
+}
+
+void PianoRoll::cancelNoteDelete() {
+    this->clearNoteDelete(true);
+}
+
+void PianoRoll::clearNoteDelete(bool restore_visibility) {
+    if (restore_visibility) {
+        for (GraphicsScoreNoteItem *item : m_note_delete.hidden_items) {
+            if (item) {
+                item->show();
+            }
+        }
+    }
+
+    m_note_delete.pressed = false;
+    m_note_delete.dragging = false;
+    m_note_delete.press_scene_pos = QPointF();
+    m_note_delete.pending_events.clear();
+    m_note_delete.hidden_items.clear();
 }

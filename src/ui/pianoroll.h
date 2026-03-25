@@ -126,7 +126,9 @@ public:
     // edit state
     void setEditsEnabled(bool enabled);
     void setCreateNotesEnabled(bool enabled);
+    void setDeleteNotesEnabled(bool enabled);
     void setActiveTrack(int track);
+    bool isDeleteNotesEnabled() const;
     void selectNotesForTrack(int track, bool clearOthers = true);
     void selectEvents(const QVector<smf::MidiEvent *> &events, bool clear_others = true);
     void handleNoteMousePress(
@@ -144,6 +146,7 @@ signals:
     void onNoteMoveRequested(const NoteMoveSettings &settings);
     void onNoteResizeRequested(const NoteResizeSettings &settings);
     void onNoteCreateRequested(const QVector<NoteCreateSettings> &notes);
+    void onNoteDeleteRequested(const QVector<smf::MidiEvent *> &events);
 
 private:
     enum class NoteDragMode {
@@ -189,6 +192,14 @@ private:
         GraphicsPreviewNoteItem *preview_item = nullptr;
     };
 
+    struct NoteDeleteState {
+        bool pressed = false;
+        bool dragging = false;
+        QPointF press_scene_pos;
+        QSet<smf::MidiEvent *> pending_events;
+        QVector<GraphicsScoreNoteItem *> hidden_items;
+    };
+
     // drawing helpers
     void drawPiano();
     void drawScoreArea();
@@ -215,6 +226,11 @@ private:
     void cancelNoteCreate();
     void clearNoteCreate();
     void updatePreviewNoteGeometry();
+    void beginNoteDelete(GraphicsScoreNoteItem *item);
+    void updateNoteDelete(const QPointF &scene_pos);
+    void commitNoteDelete();
+    void cancelNoteDelete();
+    void clearNoteDelete(bool restore_visibility);
 
 private:
     // scenes
@@ -230,9 +246,11 @@ private:
     QMap<int, TrackNoteGroup *> m_track_note_groups;
     NoteDragState m_note_drag;
     NoteCreateState m_note_create;
+    NoteDeleteState m_note_delete;
 
     bool m_edits_enabled = true;
     bool m_create_notes_enabled = false;
+    bool m_delete_notes_enabled = false;
     bool m_ignore_selection_updates = false;
     int m_active_track = -1;
 };
