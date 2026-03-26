@@ -124,6 +124,12 @@ QVariant GraphicsScoreNoteItem::itemChange(GraphicsItemChange change,
  * Show a resize cursor only when hovering a note edge handle.
  */
 void GraphicsScoreNoteItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
+    if (m_piano_roll->isRectSelectEnabled()) {
+        this->unsetCursor();
+        QGraphicsItem::hoverMoveEvent(event);
+        return;
+    }
+
     if (this->isStartResizeHandle(event->pos()) || this->isEndResizeHandle(event->pos())) {
         this->setCursor(Qt::SizeHorCursor);
     } else {
@@ -145,6 +151,12 @@ void GraphicsScoreNoteItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event) {
  * Start either a move drag or a resize drag for this note.
  */
 void GraphicsScoreNoteItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_piano_roll->isRectSelectEnabled()) {
+        m_piano_roll->handleRectSelectMousePress(event->scenePos());
+        event->accept();
+        return;
+    }
+
     if (!this->isSelected()) {
         QGraphicsScene *item_scene = this->scene();
         if (item_scene) {
@@ -173,6 +185,12 @@ void GraphicsScoreNoteItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
  * Forward drag updates to the piano roll interaction state.
  */
 void GraphicsScoreNoteItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_piano_roll->isRectSelectEnabled()) {
+        m_piano_roll->handleRectSelectMouseMove(event->scenePos());
+        event->accept();
+        return;
+    }
+
     m_piano_roll->handleNoteMouseMove(this, event->scenePos());
     event->accept();
 }
@@ -181,6 +199,12 @@ void GraphicsScoreNoteItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
  * Commit or cancel the current note drag interaction.
  */
 void GraphicsScoreNoteItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_piano_roll->isRectSelectEnabled()) {
+        m_piano_roll->handleRectSelectMouseRelease(event->scenePos());
+        event->accept();
+        return;
+    }
+
     m_piano_roll->handleNoteMouseRelease(this, event->scenePos());
     event->accept();
 }

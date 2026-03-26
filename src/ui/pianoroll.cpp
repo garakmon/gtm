@@ -69,6 +69,12 @@ void PianoRollScene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
         }
     }
 
+    if (m_piano_roll && m_piano_roll->isRectSelectEnabled()) {
+        m_piano_roll->beginRectSelect(event->scenePos());
+        event->accept();
+        return;
+    }
+
     if (m_piano_roll && m_piano_roll->m_create_notes_enabled
      && m_piano_roll->m_active_track < 0) {
         logging::warn("Cannot create note: no active track is selected.",
@@ -97,6 +103,12 @@ void PianoRollScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
         return;
     }
 
+    if (m_piano_roll && m_piano_roll->m_rect_select.pressed) {
+        m_piano_roll->updateRectSelect(event->scenePos());
+        event->accept();
+        return;
+    }
+
     QGraphicsScene::mouseMoveEvent(event);
 }
 
@@ -115,6 +127,13 @@ void PianoRollScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
         return;
     }
 
+    if (m_piano_roll && m_piano_roll->m_rect_select.pressed) {
+        m_piano_roll->updateRectSelect(event->scenePos());
+        m_piano_roll->finishRectSelect();
+        event->accept();
+        return;
+    }
+
     QGraphicsScene::mouseReleaseEvent(event);
 }
 
@@ -125,6 +144,7 @@ PianoRoll::PianoRoll(QObject *parent) : QObject(parent) {
     m_scene_roll.setPianoRoll(this);
     connect(&m_scene_roll, &QGraphicsScene::selectionChanged,
             this, &PianoRoll::updateSelectedEvents);
+    m_rect_select_preview.setVisible(false);
     this->drawPiano();
 }
 
@@ -201,6 +221,7 @@ void PianoRoll::setEditsEnabled(bool enabled) {
         this->cancelNoteDrag();
         this->cancelNoteCreate();
         this->cancelNoteDelete();
+        this->cancelRectSelect();
     }
 
     for (TrackNoteGroup *group : m_track_note_groups) {
@@ -232,12 +253,23 @@ void PianoRoll::setDeleteNotesEnabled(bool enabled) {
     }
 }
 
+void PianoRoll::setRectSelectEnabled(bool enabled) {
+    m_rect_select_enabled = enabled;
+    if (!enabled) {
+        this->cancelRectSelect();
+    }
+}
+
 void PianoRoll::setActiveTrack(int track) {
     m_active_track = track;
 }
 
 bool PianoRoll::isDeleteNotesEnabled() const {
     return m_delete_notes_enabled;
+}
+
+bool PianoRoll::isRectSelectEnabled() const {
+    return m_rect_select_enabled;
 }
 
 /**
@@ -300,6 +332,12 @@ void PianoRoll::selectEvents(const QVector<smf::MidiEvent *> &events, bool clear
 void PianoRoll::handleNoteMousePress(GraphicsScoreNoteItem *item,
                                      const QPointF &scene_pos,
                                      bool resize_start, bool resize_end) {
+    if (this->isRectSelectEnabled()) {
+        (void)item;
+        this->handleRectSelectMousePress(scene_pos);
+        return;
+    }
+
     if (this->isDeleteNotesEnabled()) {
         this->beginNoteDelete(item);
         return;
@@ -319,6 +357,12 @@ void PianoRoll::handleNoteMousePress(GraphicsScoreNoteItem *item,
  * Update the active note drag preview from the latest mouse position.
  */
 void PianoRoll::handleNoteMouseMove(GraphicsScoreNoteItem *item, const QPointF &scene_pos) {
+    if (this->isRectSelectEnabled()) {
+        (void)item;
+        this->handleRectSelectMouseMove(scene_pos);
+        return;
+    }
+
     if (this->isDeleteNotesEnabled()) {
         (void)item;
         this->updateNoteDelete(scene_pos);
@@ -332,6 +376,12 @@ void PianoRoll::handleNoteMouseMove(GraphicsScoreNoteItem *item, const QPointF &
  * Finalize the active note drag interaction.
  */
 void PianoRoll::handleNoteMouseRelease(GraphicsScoreNoteItem *item, const QPointF &scene_pos) {
+    if (this->isRectSelectEnabled()) {
+        (void)item;
+        this->handleRectSelectMouseRelease(scene_pos);
+        return;
+    }
+
     if (this->isDeleteNotesEnabled()) {
         (void)item;
         this->updateNoteDelete(scene_pos);
@@ -343,6 +393,19 @@ void PianoRoll::handleNoteMouseRelease(GraphicsScoreNoteItem *item, const QPoint
         this->updateNoteDrag(scene_pos);
         this->commitNoteDrag();
     }
+}
+
+void PianoRoll::handleRectSelectMousePress(const QPointF &scene_pos) {
+    this->beginRectSelect(scene_pos);
+}
+
+void PianoRoll::handleRectSelectMouseMove(const QPointF &scene_pos) {
+    this->updateRectSelect(scene_pos);
+}
+
+void PianoRoll::handleRectSelectMouseRelease(const QPointF &scene_pos) {
+    this->updateRectSelect(scene_pos);
+    this->finishRectSelect();
 }
 
 /**
@@ -527,7 +590,7 @@ void PianoRoll::updateNoteDrag(const QPointF &scene_pos) {
 
     const QPointF delta = scene_pos - m_note_drag.drag_start_scene_pos;
     if (!m_note_drag.dragging && delta.manhattanLength() < QApplication::startDragDistance()) {
-        // ignore click jitter until the drag threshold is crossed
+        // ^ignore click jitter until the drag threshold is crossed
         return;
     }
 
@@ -958,7 +1021,8 @@ void PianoRoll::beginNoteDelete(GraphicsScoreNoteItem *item) {
     }
 
     for (GraphicsScoreNoteItem *note : notes) {
-        if (!note || !note->noteOn() || m_note_delete.pending_events.contains(note->noteOn())) {
+        if (!note || !note->noteOn()
+         || m_note_delete.pending_events.contains(note->noteOn())) {
             continue;
         }
 
@@ -1039,4 +1103,127 @@ void PianoRoll::clearNoteDelete(bool restore_visibility) {
     m_note_delete.press_scene_pos = QPointF();
     m_note_delete.pending_events.clear();
     m_note_delete.hidden_items.clear();
+}
+
+/**
+ * Begin a rectangular selection drag at the current scene position.
+ * The preview box stays hidden until the drag threshold is crossed.
+ */
+void PianoRoll::beginRectSelect(const QPointF &scene_pos) {
+    this->clearRectSelect();
+
+    m_rect_select.pressed = true;
+    m_rect_select.dragging = false;
+    m_rect_select.start_scene_pos = scene_pos;
+    m_rect_select.current_scene_pos = scene_pos;
+    m_rect_select_preview.setSelectionRect(QRectF(scene_pos, scene_pos));
+    m_rect_select_preview.setVisible(false);
+    m_scene_roll.addItem(&m_rect_select_preview);
+}
+
+/**
+ * Update the rectangular selection preview while the mouse is dragged.
+ * A simple click should not create a visible selection box.
+ */
+void PianoRoll::updateRectSelect(const QPointF &scene_pos) {
+    if (!m_rect_select.pressed) {
+        return;
+    }
+
+    m_rect_select.current_scene_pos = scene_pos;
+    if (!m_rect_select.dragging) {
+        const QPointF delta = scene_pos - m_rect_select.start_scene_pos;
+        if (std::hypot(delta.x(), delta.y()) < QApplication::startDragDistance()) {
+            return;
+        }
+
+        m_rect_select.dragging = true;
+        m_rect_select_preview.setVisible(true);
+    }
+
+    m_rect_select_preview.setSelectionRect(this->currentRectSelectRect());
+}
+
+/**
+ * Finish the rectangular selection gesture.
+ * A click selects the clicked note or clears selection, while a drag
+ * replaces the selection with notes intersecting the rectangle.
+ * A click on empty space without dragging just clears the current selection.
+ */
+void PianoRoll::finishRectSelect() {
+    if (!m_rect_select.pressed) {
+        return;
+    }
+
+    if (!m_rect_select.dragging) {
+        GraphicsScoreNoteItem *note = scoreNoteItemAt(&m_scene_roll,
+                                                      m_rect_select.start_scene_pos);
+        m_scene_roll.clearSelection();
+        if (note && note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
+            note->setSelected(true);
+            this->updateSelectedEvents();
+        }
+        this->clearRectSelect();
+        return;
+    }
+
+    const QRectF rect = this->currentRectSelectRect();
+    const QVector<GraphicsScoreNoteItem *> items = this->noteItemsInRect(rect);
+    this->applyRectSelection(items);
+    this->clearRectSelect();
+}
+
+void PianoRoll::cancelRectSelect() {
+    this->clearRectSelect();
+}
+
+void PianoRoll::clearRectSelect() {
+    if (m_rect_select_preview.scene() == &m_scene_roll) {
+        m_scene_roll.removeItem(&m_rect_select_preview);
+    }
+    m_rect_select_preview.setVisible(false);
+
+    m_rect_select.pressed = false;
+    m_rect_select.dragging = false;
+    m_rect_select.start_scene_pos = QPointF();
+    m_rect_select.current_scene_pos = QPointF();
+}
+
+QRectF PianoRoll::currentRectSelectRect() const {
+    return QRectF(m_rect_select.start_scene_pos,
+                  m_rect_select.current_scene_pos).normalized();
+}
+
+QVector<GraphicsScoreNoteItem *> PianoRoll::noteItemsInRect(const QRectF &rect) const {
+    QVector<GraphicsScoreNoteItem *> notes;
+    const QList<QGraphicsItem *> items = m_scene_roll.items(
+        rect, Qt::IntersectsItemShape, Qt::DescendingOrder, QTransform()
+    );
+
+    for (QGraphicsItem *item : items) {
+        auto *note = dynamic_cast<GraphicsScoreNoteItem *>(item);
+        if (!note) {
+            continue;
+        }
+
+        if (!note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
+            continue;
+        }
+
+        notes.append(note);
+    }
+
+    return notes;
+}
+
+void PianoRoll::applyRectSelection(const QVector<GraphicsScoreNoteItem *> &items) {
+    m_ignore_selection_updates = true;
+    m_scene_roll.clearSelection();
+    for (GraphicsScoreNoteItem *note : items) {
+        if (note) {
+            note->setSelected(true);
+        }
+    }
+    m_ignore_selection_updates = false;
+    this->updateSelectedEvents();
 }

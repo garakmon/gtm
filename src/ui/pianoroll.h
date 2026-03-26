@@ -3,6 +3,7 @@
 #define PIANOROLL_H
 
 #include "ui/graphicspianokeyitem.h"
+#include "ui/graphicsselectionitems.h"
 #include "app/structs.h"
 
 #include <QGraphicsPixmapItem>
@@ -127,8 +128,10 @@ public:
     void setEditsEnabled(bool enabled);
     void setCreateNotesEnabled(bool enabled);
     void setDeleteNotesEnabled(bool enabled);
+    void setRectSelectEnabled(bool enabled);
     void setActiveTrack(int track);
     bool isDeleteNotesEnabled() const;
+    bool isRectSelectEnabled() const;
     void selectNotesForTrack(int track, bool clearOthers = true);
     void selectEvents(const QVector<smf::MidiEvent *> &events, bool clear_others = true);
     void handleNoteMousePress(
@@ -139,6 +142,9 @@ public:
     );
     void handleNoteMouseMove(GraphicsScoreNoteItem *item, const QPointF &scene_pos);
     void handleNoteMouseRelease(GraphicsScoreNoteItem *item, const QPointF &scene_pos);
+    void handleRectSelectMousePress(const QPointF &scene_pos);
+    void handleRectSelectMouseMove(const QPointF &scene_pos);
+    void handleRectSelectMouseRelease(const QPointF &scene_pos);
 
 signals:
     void eventItemSelected(smf::MidiEvent *event);
@@ -200,6 +206,13 @@ private:
         QVector<GraphicsScoreNoteItem *> hidden_items;
     };
 
+    struct RectSelectState {
+        bool pressed = false;
+        bool dragging = false;
+        QPointF start_scene_pos;
+        QPointF current_scene_pos;
+    };
+
     // drawing helpers
     void drawPiano();
     void drawScoreArea();
@@ -231,6 +244,14 @@ private:
     void commitNoteDelete();
     void cancelNoteDelete();
     void clearNoteDelete(bool restore_visibility);
+    void beginRectSelect(const QPointF &scene_pos);
+    void updateRectSelect(const QPointF &scene_pos);
+    void finishRectSelect();
+    void cancelRectSelect();
+    void clearRectSelect();
+    QRectF currentRectSelectRect() const;
+    QVector<GraphicsScoreNoteItem *> noteItemsInRect(const QRectF &rect) const;
+    void applyRectSelection(const QVector<GraphicsScoreNoteItem *> &items);
 
 private:
     // scenes
@@ -247,8 +268,11 @@ private:
     NoteDragState m_note_drag;
     NoteCreateState m_note_create;
     NoteDeleteState m_note_delete;
+    RectSelectState m_rect_select;
+    GraphicsSelectionRectItem m_rect_select_preview;
 
     bool m_edits_enabled = true;
+    bool m_rect_select_enabled = false;
     bool m_create_notes_enabled = false;
     bool m_delete_notes_enabled = false;
     bool m_ignore_selection_updates = false;

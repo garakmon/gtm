@@ -808,6 +808,11 @@ void Controller::connectSignals() {
         connect(m_window->button_note_add, &QToolButton::toggled,
                 m_piano_roll, &PianoRoll::setCreateNotesEnabled, Qt::UniqueConnection);
     }
+    if (m_window && m_window->button_select_rect) {
+        m_piano_roll->setRectSelectEnabled(m_window->button_select_rect->isChecked());
+        connect(m_window->button_select_rect, &QToolButton::toggled,
+                m_piano_roll, &PianoRoll::setRectSelectEnabled, Qt::UniqueConnection);
+    }
     if (m_window && m_window->button_note_delete) {
         m_piano_roll->setDeleteNotesEnabled(m_window->button_note_delete->isChecked());
         connect(m_window->button_note_delete, &QToolButton::toggled,
