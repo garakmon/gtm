@@ -75,6 +75,12 @@ void PianoRollScene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
         return;
     }
 
+    if (m_piano_roll && m_piano_roll->isLassoSelectEnabled()) {
+        m_piano_roll->beginLassoSelect(event->scenePos());
+        event->accept();
+        return;
+    }
+
     if (m_piano_roll && m_piano_roll->m_create_notes_enabled
      && m_piano_roll->m_active_track < 0) {
         logging::warn("Cannot create note: no active track is selected.",
@@ -109,6 +115,12 @@ void PianoRollScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
         return;
     }
 
+    if (m_piano_roll && m_piano_roll->m_lasso_select.pressed) {
+        m_piano_roll->updateLassoSelect(event->scenePos());
+        event->accept();
+        return;
+    }
+
     QGraphicsScene::mouseMoveEvent(event);
 }
 
@@ -134,6 +146,13 @@ void PianoRollScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
         return;
     }
 
+    if (m_piano_roll && m_piano_roll->m_lasso_select.pressed) {
+        m_piano_roll->updateLassoSelect(event->scenePos());
+        m_piano_roll->finishLassoSelect();
+        event->accept();
+        return;
+    }
+
     QGraphicsScene::mouseReleaseEvent(event);
 }
 
@@ -145,6 +164,7 @@ PianoRoll::PianoRoll(QObject *parent) : QObject(parent) {
     connect(&m_scene_roll, &QGraphicsScene::selectionChanged,
             this, &PianoRoll::updateSelectedEvents);
     m_rect_select_preview.setVisible(false);
+    m_lasso_select_preview.setVisible(false);
     this->drawPiano();
 }
 
@@ -222,6 +242,7 @@ void PianoRoll::setEditsEnabled(bool enabled) {
         this->cancelNoteCreate();
         this->cancelNoteDelete();
         this->cancelRectSelect();
+        this->cancelLassoSelect();
     }
 
     for (TrackNoteGroup *group : m_track_note_groups) {
@@ -260,6 +281,13 @@ void PianoRoll::setRectSelectEnabled(bool enabled) {
     }
 }
 
+void PianoRoll::setLassoSelectEnabled(bool enabled) {
+    m_lasso_select_enabled = enabled;
+    if (!enabled) {
+        this->cancelLassoSelect();
+    }
+}
+
 void PianoRoll::setActiveTrack(int track) {
     m_active_track = track;
 }
@@ -270,6 +298,10 @@ bool PianoRoll::isDeleteNotesEnabled() const {
 
 bool PianoRoll::isRectSelectEnabled() const {
     return m_rect_select_enabled;
+}
+
+bool PianoRoll::isLassoSelectEnabled() const {
+    return m_lasso_select_enabled;
 }
 
 /**
@@ -338,6 +370,12 @@ void PianoRoll::handleNoteMousePress(GraphicsScoreNoteItem *item,
         return;
     }
 
+    if (this->isLassoSelectEnabled()) {
+        (void)item;
+        this->handleLassoSelectMousePress(scene_pos);
+        return;
+    }
+
     if (this->isDeleteNotesEnabled()) {
         this->beginNoteDelete(item);
         return;
@@ -363,6 +401,12 @@ void PianoRoll::handleNoteMouseMove(GraphicsScoreNoteItem *item, const QPointF &
         return;
     }
 
+    if (this->isLassoSelectEnabled()) {
+        (void)item;
+        this->handleLassoSelectMouseMove(scene_pos);
+        return;
+    }
+
     if (this->isDeleteNotesEnabled()) {
         (void)item;
         this->updateNoteDelete(scene_pos);
@@ -379,6 +423,12 @@ void PianoRoll::handleNoteMouseRelease(GraphicsScoreNoteItem *item, const QPoint
     if (this->isRectSelectEnabled()) {
         (void)item;
         this->handleRectSelectMouseRelease(scene_pos);
+        return;
+    }
+
+    if (this->isLassoSelectEnabled()) {
+        (void)item;
+        this->handleLassoSelectMouseRelease(scene_pos);
         return;
     }
 
@@ -406,6 +456,19 @@ void PianoRoll::handleRectSelectMouseMove(const QPointF &scene_pos) {
 void PianoRoll::handleRectSelectMouseRelease(const QPointF &scene_pos) {
     this->updateRectSelect(scene_pos);
     this->finishRectSelect();
+}
+
+void PianoRoll::handleLassoSelectMousePress(const QPointF &scene_pos) {
+    this->beginLassoSelect(scene_pos);
+}
+
+void PianoRoll::handleLassoSelectMouseMove(const QPointF &scene_pos) {
+    this->updateLassoSelect(scene_pos);
+}
+
+void PianoRoll::handleLassoSelectMouseRelease(const QPointF &scene_pos) {
+    this->updateLassoSelect(scene_pos);
+    this->finishLassoSelect();
 }
 
 /**
@@ -739,6 +802,7 @@ int PianoRoll::snapTickDelta(double delta_x) const {
  * Snap one absolute tick value to the current note creation grid.
  * This is currently whole-tick snapping (ie, doing nothing), but keeping it here
  * makes it easy to switch note creation to larger grid values later.
+ * (eg, I may want to add quarter/8th note snapping, etc)
  */
 int PianoRoll::snapTick(int tick) const {
     return std::max(0, tick);
@@ -1226,4 +1290,114 @@ void PianoRoll::applyRectSelection(const QVector<GraphicsScoreNoteItem *> &items
     }
     m_ignore_selection_updates = false;
     this->updateSelectedEvents();
+}
+
+/**
+ * Begin a lasso selection drag at the current scene position.
+ * The preview path stays hidden until the drag threshold is crossed.
+ */
+void PianoRoll::beginLassoSelect(const QPointF &scene_pos) {
+    this->clearLassoSelect();
+
+    m_lasso_select.pressed = true;
+    m_lasso_select.dragging = false;
+    m_lasso_select.start_scene_pos = scene_pos;
+    m_lasso_select.path = QPainterPath(scene_pos);
+    m_lasso_select_preview.setSelectionPath(m_lasso_select.path);
+    m_lasso_select_preview.setVisible(false);
+    m_scene_roll.addItem(&m_lasso_select_preview);
+}
+
+/**
+ * Update the lasso path while the mouse is dragged.
+ * A simple click should not create a visible lasso preview.
+ */
+void PianoRoll::updateLassoSelect(const QPointF &scene_pos) {
+    if (!m_lasso_select.pressed) {
+        return;
+    }
+
+    if (!m_lasso_select.dragging) {
+        const QPointF delta = scene_pos - m_lasso_select.start_scene_pos;
+        if (std::hypot(delta.x(), delta.y()) < QApplication::startDragDistance()) {
+            return;
+        }
+
+        m_lasso_select.dragging = true;
+        m_lasso_select_preview.setVisible(true);
+    }
+
+    m_lasso_select.path.lineTo(scene_pos);
+    m_lasso_select_preview.setSelectionPath(m_lasso_select.path);
+}
+
+/**
+ * Finish the lasso selection gesture.
+ * A click selects the clicked note or clears selection, while a drag
+ * replaces the selection with notes intersecting the lasso path.
+ */
+void PianoRoll::finishLassoSelect() {
+    if (!m_lasso_select.pressed) {
+        return;
+    }
+
+    if (!m_lasso_select.dragging) {
+        GraphicsScoreNoteItem *note = scoreNoteItemAt(&m_scene_roll,
+                                                      m_lasso_select.start_scene_pos);
+        m_scene_roll.clearSelection();
+        if (note && note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
+            note->setSelected(true);
+            this->updateSelectedEvents();
+        }
+        this->clearLassoSelect();
+        return;
+    }
+
+    QPainterPath closed_path = m_lasso_select.path;
+    closed_path.closeSubpath();
+    const QVector<GraphicsScoreNoteItem *> items = this->noteItemsInPath(closed_path);
+    this->applyLassoSelection(items);
+    this->clearLassoSelect();
+}
+
+void PianoRoll::cancelLassoSelect() {
+    this->clearLassoSelect();
+}
+
+void PianoRoll::clearLassoSelect() {
+    if (m_lasso_select_preview.scene() == &m_scene_roll) {
+        m_scene_roll.removeItem(&m_lasso_select_preview);
+    }
+    m_lasso_select_preview.setVisible(false);
+
+    m_lasso_select.pressed = false;
+    m_lasso_select.dragging = false;
+    m_lasso_select.start_scene_pos = QPointF();
+    m_lasso_select.path = QPainterPath();
+}
+
+QVector<GraphicsScoreNoteItem *> PianoRoll::noteItemsInPath(const QPainterPath &path) const {
+    QVector<GraphicsScoreNoteItem *> notes;
+    const QList<QGraphicsItem *> items = m_scene_roll.items(
+        path, Qt::IntersectsItemShape, Qt::DescendingOrder, QTransform()
+    );
+
+    for (QGraphicsItem *item : items) {
+        auto *note = dynamic_cast<GraphicsScoreNoteItem *>(item);
+        if (!note) {
+            continue;
+        }
+
+        if (!note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
+            continue;
+        }
+
+        notes.append(note);
+    }
+
+    return notes;
+}
+
+void PianoRoll::applyLassoSelection(const QVector<GraphicsScoreNoteItem *> &items) {
+    this->applyRectSelection(items);
 }

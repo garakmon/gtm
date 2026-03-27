@@ -129,9 +129,11 @@ public:
     void setCreateNotesEnabled(bool enabled);
     void setDeleteNotesEnabled(bool enabled);
     void setRectSelectEnabled(bool enabled);
+    void setLassoSelectEnabled(bool enabled);
     void setActiveTrack(int track);
     bool isDeleteNotesEnabled() const;
     bool isRectSelectEnabled() const;
+    bool isLassoSelectEnabled() const;
     void selectNotesForTrack(int track, bool clearOthers = true);
     void selectEvents(const QVector<smf::MidiEvent *> &events, bool clear_others = true);
     void handleNoteMousePress(
@@ -145,6 +147,9 @@ public:
     void handleRectSelectMousePress(const QPointF &scene_pos);
     void handleRectSelectMouseMove(const QPointF &scene_pos);
     void handleRectSelectMouseRelease(const QPointF &scene_pos);
+    void handleLassoSelectMousePress(const QPointF &scene_pos);
+    void handleLassoSelectMouseMove(const QPointF &scene_pos);
+    void handleLassoSelectMouseRelease(const QPointF &scene_pos);
 
 signals:
     void eventItemSelected(smf::MidiEvent *event);
@@ -213,6 +218,13 @@ private:
         QPointF current_scene_pos;
     };
 
+    struct LassoSelectState {
+        bool pressed = false;
+        bool dragging = false;
+        QPointF start_scene_pos;
+        QPainterPath path;
+    };
+
     // drawing helpers
     void drawPiano();
     void drawScoreArea();
@@ -252,6 +264,13 @@ private:
     QRectF currentRectSelectRect() const;
     QVector<GraphicsScoreNoteItem *> noteItemsInRect(const QRectF &rect) const;
     void applyRectSelection(const QVector<GraphicsScoreNoteItem *> &items);
+    void beginLassoSelect(const QPointF &scene_pos);
+    void updateLassoSelect(const QPointF &scene_pos);
+    void finishLassoSelect();
+    void cancelLassoSelect();
+    void clearLassoSelect();
+    QVector<GraphicsScoreNoteItem *> noteItemsInPath(const QPainterPath &path) const;
+    void applyLassoSelection(const QVector<GraphicsScoreNoteItem *> &items);
 
 private:
     // scenes
@@ -269,10 +288,13 @@ private:
     NoteCreateState m_note_create;
     NoteDeleteState m_note_delete;
     RectSelectState m_rect_select;
+    LassoSelectState m_lasso_select;
     GraphicsSelectionRectItem m_rect_select_preview;
+    GraphicsSelectionPathItem m_lasso_select_preview;
 
     bool m_edits_enabled = true;
     bool m_rect_select_enabled = false;
+    bool m_lasso_select_enabled = false;
     bool m_create_notes_enabled = false;
     bool m_delete_notes_enabled = false;
     bool m_ignore_selection_updates = false;

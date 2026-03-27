@@ -813,6 +813,11 @@ void Controller::connectSignals() {
         connect(m_window->button_select_rect, &QToolButton::toggled,
                 m_piano_roll, &PianoRoll::setRectSelectEnabled, Qt::UniqueConnection);
     }
+    if (m_window && m_window->button_select_lasso) {
+        m_piano_roll->setLassoSelectEnabled(m_window->button_select_lasso->isChecked());
+        connect(m_window->button_select_lasso, &QToolButton::toggled,
+                m_piano_roll, &PianoRoll::setLassoSelectEnabled, Qt::UniqueConnection);
+    }
     if (m_window && m_window->button_note_delete) {
         m_piano_roll->setDeleteNotesEnabled(m_window->button_note_delete->isChecked());
         connect(m_window->button_note_delete, &QToolButton::toggled,
