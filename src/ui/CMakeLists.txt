@@ -83,6 +83,7 @@ qt_add_resources(gtm-ui "gtm-icons"
         icons/music-note-minus.svg
         icons/music-note-plus.svg
         icons/music-note.svg
+        icons/normal-select.svg
         icons/paste-clipboard.svg
         icons/pause.svg
         icons/play.svg
@@ -119,6 +120,7 @@ qt_add_resources(gtm-ui "gtm-icons"
         icons/switch-off.svg
         icons/switch-on.svg
         icons/timer.svg
+        icons/time-range-select.svg
         icons/track-select.svg
         icons/trash.svg
         icons/trim.svg

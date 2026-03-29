@@ -616,6 +616,20 @@
               <number>1</number>
              </property>
              <item>
+              <widget class="QToolButton" name="button_select_normal">
+               <property name="toolTip">
+                <string>Normal Select</string>
+               </property>
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/normal-select.svg</normaloff>:/icons/normal-select.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QToolButton" name="button_select_rect">
                <property name="toolTip">
                 <string>Rectangular Select</string>
@@ -654,6 +668,20 @@
                <property name="icon">
                 <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
                  <normaloff>:/icons/track-select.svg</normaloff>:/icons/track-select.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_select_time">
+               <property name="toolTip">
+                <string>Time Range Select</string>
+               </property>
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/time-range-select.svg</normaloff>:/icons/time-range-select.svg</iconset>
                </property>
               </widget>
              </item>
@@ -740,130 +768,6 @@
                </property>
               </widget>
              </item>
-             <item>
-              <widget class="QToolButton" name="button_note_quantize">
-               <property name="toolTip">
-                <string>Quantize</string>
-               </property>
-               <property name="text">
-                <string>...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
-                 <normaloff>:/icons/quantize.svg</normaloff>:/icons/quantize.svg</iconset>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="button_note_trim">
-               <property name="toolTip">
-                <string>Trim</string>
-               </property>
-               <property name="text">
-                <string>...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
-                 <normaloff>:/icons/trim.svg</normaloff>:/icons/trim.svg</iconset>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QFrame" name="pillbox_EditTools">
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_4">
-             <property name="spacing">
-              <number>2</number>
-             </property>
-             <property name="leftMargin">
-              <number>2</number>
-             </property>
-             <property name="topMargin">
-              <number>1</number>
-             </property>
-             <property name="rightMargin">
-              <number>2</number>
-             </property>
-             <property name="bottomMargin">
-              <number>1</number>
-             </property>
-             <item>
-              <widget class="QToolButton" name="button_Cut">
-               <property name="toolTip">
-                <string>Cut?</string>
-               </property>
-               <property name="text">
-                <string>...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
-                 <normaloff>:/icons/cut.svg</normaloff>:/icons/cut.svg</iconset>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QFrame" name="pillbox_TrackTools">
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_8">
-             <property name="spacing">
-              <number>2</number>
-             </property>
-             <property name="leftMargin">
-              <number>2</number>
-             </property>
-             <property name="topMargin">
-              <number>1</number>
-             </property>
-             <property name="rightMargin">
-              <number>2</number>
-             </property>
-             <property name="bottomMargin">
-              <number>1</number>
-             </property>
-             <item>
-              <widget class="QToolButton" name="button_tracks_merge">
-               <property name="toolTip">
-                <string>Merge Tracks</string>
-               </property>
-               <property name="text">
-                <string>...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
-                 <normaloff>:/icons/vertical-merge.svg</normaloff>:/icons/vertical-merge.svg</iconset>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="button_tracks_split">
-               <property name="toolTip">
-                <string>Split Track</string>
-               </property>
-               <property name="text">
-                <string>...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
-                 <normaloff>:/icons/vertical-split.svg</normaloff>:/icons/vertical-split.svg</iconset>
-               </property>
-              </widget>
-             </item>
             </layout>
            </widget>
           </item>
@@ -916,6 +820,89 @@
                <property name="icon">
                 <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
                  <normaloff>:/icons/shuffle.svg</normaloff>:/icons/shuffle.svg</iconset>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="pillbox_TrackTools">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <property name="leftMargin">
+              <number>2</number>
+             </property>
+             <property name="topMargin">
+              <number>1</number>
+             </property>
+             <property name="rightMargin">
+              <number>2</number>
+             </property>
+             <property name="bottomMargin">
+              <number>1</number>
+             </property>
+             <item>
+              <widget class="QToolButton" name="button_note_quantize">
+               <property name="toolTip">
+                <string>Quantize</string>
+               </property>
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/quantize.svg</normaloff>:/icons/quantize.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_note_trim">
+               <property name="toolTip">
+                <string>Trim</string>
+               </property>
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/trim.svg</normaloff>:/icons/trim.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_tracks_merge">
+               <property name="toolTip">
+                <string>Merge Tracks</string>
+               </property>
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/vertical-merge.svg</normaloff>:/icons/vertical-merge.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="button_tracks_split">
+               <property name="toolTip">
+                <string>Split Track by Channel</string>
+               </property>
+               <property name="text">
+                <string>...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="../../build_debug/src/ui/.qt/rcc/gtm-icons.qrc">
+                 <normaloff>:/icons/vertical-split.svg</normaloff>:/icons/vertical-split.svg</iconset>
                </property>
               </widget>
              </item>

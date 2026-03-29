@@ -272,16 +272,74 @@ void MainWindow::setupSongSearch() {
  * Sets up the editing tool button exclusivity and makes the playback buttons checkable.
  */
 void MainWindow::setupToolButtons() {
-    if (ui->ButtonBox_Tools) {
-        auto *tool_group = new QButtonGroup(this);
-        tool_group->setExclusive(true);
-        const auto tool_buttons = ui->ButtonBox_Tools->findChildren<QToolButton *>();
-        for (auto *button : tool_buttons) {
-            button->setCheckable(true);
-            tool_group->addButton(button);
+    auto update_track_tools_enabled = [this]() {
+        if (!ui->pillbox_TrackTools) {
+            return;
         }
-        if (ui->button_select_rect) {
-            ui->button_select_rect->setChecked(true);
+
+        bool selection_tool_active = false;
+        if (ui->pillbox_SelectionTools) {
+            const QList<QToolButton *> selection_buttons =
+                ui->pillbox_SelectionTools->findChildren<QToolButton *>();
+            for (QToolButton *button : selection_buttons) {
+                if (button && button->isChecked()) {
+                    selection_tool_active = true;
+                    break;
+                }
+            }
+        }
+
+        ui->pillbox_TrackTools->setEnabled(selection_tool_active);
+    };
+
+    QButtonGroup *edit_tool_group = new QButtonGroup(this);
+    edit_tool_group->setExclusive(true);
+
+    if (ui->pillbox_SelectionTools) {
+        const QList<QToolButton *> selection_buttons =
+            ui->pillbox_SelectionTools->findChildren<QToolButton *>();
+        for (QToolButton *button : selection_buttons) {
+            button->setCheckable(true);
+            edit_tool_group->addButton(button);
+        }
+    }
+
+    if (ui->pillbox_NoteTools) {
+        const QList<QToolButton *> note_buttons =
+            ui->pillbox_NoteTools->findChildren<QToolButton *>();
+        for (QToolButton *button : note_buttons) {
+            button->setCheckable(true);
+            edit_tool_group->addButton(button);
+        }
+    }
+
+    if (ui->pillbox_MetaTools) {
+        const QList<QToolButton *> meta_buttons =
+            ui->pillbox_MetaTools->findChildren<QToolButton *>();
+        for (QToolButton *button : meta_buttons) {
+            button->setCheckable(true);
+            edit_tool_group->addButton(button);
+        }
+    }
+
+    if (ui->button_select_normal) {
+        ui->button_select_normal->setChecked(true);
+    } else if (ui->button_select_rect) {
+        ui->button_select_rect->setChecked(true);
+    }
+
+    connect(edit_tool_group, &QButtonGroup::buttonToggled, this,
+        [update_track_tools_enabled](QAbstractButton *, bool) {
+            update_track_tools_enabled();
+    });
+    update_track_tools_enabled();
+
+    if (ui->pillbox_TrackTools) {
+        const QList<QToolButton *> track_buttons =
+            ui->pillbox_TrackTools->findChildren<QToolButton *>();
+        for (QToolButton *button : track_buttons) {
+            button->setCheckable(false);
+            button->setChecked(false);
         }
     }
 
