@@ -168,6 +168,49 @@ QPair<int, bool> keySignatureAtTick(const Song *song, int tick) {
 }
 
 /**
+ * Snap a measure-roll click to a measure or beat boundary for the active
+ * time-signature segment. Clicks in the top header snap down to the current
+ * measure start, while lower clicks snap to the nearest beat in that segment.
+ */
+static int snapMeasureViewTick(const Song *song, int tick, qreal scene_y) {
+    if (!song) {
+        return tick;
+    }
+
+    const int tpqn = song->getTicksPerQuarterNote();
+    if (tpqn <= 0) {
+        return tick;
+    }
+
+    const QMap<int, smf::MidiEvent *> &time_sigs = song->getTimeSignatures();
+    int current_num = 4;
+    int current_den = 4;
+
+    auto it_sig = time_sigs.upperBound(tick);
+    if (it_sig != time_sigs.begin()) {
+        it_sig--;
+        smf::MidiEvent *sig_event = it_sig.value();
+        if (sig_event && sig_event->size() >= 5) {
+            current_num = (*sig_event)[3];
+            current_den = static_cast<int>(std::pow(2, (*sig_event)[4]));
+        }
+    }
+
+    const int ticks_per_beat = tpqn * 4 / current_den;
+    const int ticks_per_measure = current_num * ticks_per_beat;
+    const int segment_start_tick = (it_sig != time_sigs.end()) ? it_sig.key() : 0;
+
+    if (scene_y < 10.0) {
+        const int measure_index = (tick - segment_start_tick) / ticks_per_measure;
+        return segment_start_tick + (measure_index * ticks_per_measure);
+    }
+
+    const int beat_index =
+        qRound(static_cast<double>(tick - segment_start_tick) / ticks_per_beat);
+    return segment_start_tick + (beat_index * ticks_per_beat);
+}
+
+/**
  * Based on the Krumhansl-Schmuckler algorithm for key-finding, which compares the distribution of
  * pitch classes to key profiles in s_ks_minor_profile and s_ks_minor_profile. Finds a best matching
  * profile, prefering the one with fewer sharps/flats in the case of a tie.
@@ -1498,7 +1541,8 @@ void Controller::updateSongPositionDisplay(int tick) {
  * 
  * A filter for scrolling and clicking events in the measure views and event rolls.
  * - For a user's horizontal scroll: allow overriding the auto scroll, set debounce timer.
- * - When a user clicks on the measure view, set playhead to nearest quarter note.
+ * - When a user clicks on the measure view, set playhead to the nearest measure
+ *   or beat boundary for the active time signature.
  */
 bool Controller::eventFilter(QObject *watched, QEvent *event) {
     if (event->type() == QEvent::Wheel) {
@@ -1541,8 +1585,7 @@ bool Controller::eventFilter(QObject *watched, QEvent *event) {
             QPointF scene_pos = m_window->view_measures->mapToScene(mouse_event->pos());
 
             int tick = static_cast<int>(scene_pos.x() / ui_tick_x_scale);
-            int tpqn = m_song->getTicksPerQuarterNote();
-            int snapped_tick = qRound(static_cast<double>(tick) / tpqn) * tpqn;
+            int snapped_tick = snapMeasureViewTick(m_song.get(), tick, scene_pos.y());
             int end_tick = m_playback_state.song_duration_ticks;
             if (end_tick <= 0 && m_song) end_tick = m_song->durationInTicks();
             snapped_tick = qBound(0, snapped_tick, end_tick);
