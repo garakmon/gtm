@@ -326,6 +326,46 @@ void PianoRoll::selectNotesForTrack(int track, bool clearOthers) {
     m_scene_roll.update();
 }
 
+/**
+ * Select notes whose time ranges intersect the given tick span.
+ * This is used by the measure-roll time-range tool, so note pitch is ignored.
+ */
+void PianoRoll::selectNotesInTickRange(int start_tick, int end_tick, bool clear_others) {
+    const int range_start = std::min(start_tick, end_tick);
+    const int range_end = std::max(start_tick, end_tick);
+
+    m_ignore_selection_updates = true;
+
+    if (clear_others) {
+        m_scene_roll.clearSelection();
+    }
+
+    for (TrackNoteGroup *group : m_track_note_groups) {
+        if (!group) {
+            continue;
+        }
+
+        for (GraphicsScoreNoteItem *note : group->notes()) {
+            if (!note || !note->noteOn() || !note->noteOff()) {
+                continue;
+            }
+
+            if (!note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
+                continue;
+            }
+
+            const int note_start = note->noteOn()->tick;
+            const int note_end = note->noteOff()->tick;
+            const bool intersects = note_start < range_end && note_end > range_start;
+            note->setSelected(intersects);
+        }
+    }
+
+    m_ignore_selection_updates = false;
+    this->updateSelectedEvents();
+    m_scene_roll.update();
+}
+
 void PianoRoll::selectEvents(const QVector<smf::MidiEvent *> &events, bool clear_others) {
     QSet<smf::MidiEvent *> selected_events(events.begin(), events.end());
 

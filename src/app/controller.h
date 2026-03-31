@@ -120,6 +120,8 @@ private slots:
     void onTrackSoloToggled(int channel, bool soloed);
     void onTrackSelected(int track);
     void onTrackRightClicked(int track);
+    void onTimeRangeSelected(int start_tick, int end_tick);
+    void onTimeSelectionCleared();
     void onTrackLayoutChanged();
 
 private:

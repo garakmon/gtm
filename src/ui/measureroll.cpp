@@ -5,15 +5,61 @@
 #include "ui/graphicsmetaeventitem.h"
 #include "util/constants.h"
 
+#include <QApplication>
 #include <QGraphicsLineItem>
+#include <QGraphicsSceneMouseEvent>
 #include <QGraphicsPolygonItem>
 #include <QGraphicsSimpleTextItem>
 #include <QPainter>
 #include <QPainterPath>
 
+#include <algorithm>
+#include <cmath>
+
+
+
+MeasureRollScene::MeasureRollScene(QObject *parent) : QGraphicsScene(parent) {}
+
+void MeasureRollScene::setMeasureRoll(MeasureRoll *measure_roll) {
+    m_measure_roll = measure_roll;
+}
+
+void MeasureRollScene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_measure_roll && m_measure_roll->isTimeSelectEnabled()) {
+        m_measure_roll->beginTimeSelect(event->scenePos());
+        event->accept();
+        return;
+    }
+
+    QGraphicsScene::mousePressEvent(event);
+}
+
+void MeasureRollScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_measure_roll && m_measure_roll->m_time_select.pressed) {
+        m_measure_roll->updateTimeSelect(event->scenePos());
+        event->accept();
+        return;
+    }
+
+    QGraphicsScene::mouseMoveEvent(event);
+}
+
+void MeasureRollScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_measure_roll && m_measure_roll->m_time_select.pressed) {
+        m_measure_roll->updateTimeSelect(event->scenePos());
+        m_measure_roll->finishTimeSelect();
+        event->accept();
+        return;
+    }
+
+    QGraphicsScene::mouseReleaseEvent(event);
+}
+
 
 
 MeasureRoll::MeasureRoll(QObject *parent) : QObject(parent) {
+    m_scene_measures.setMeasureRoll(this);
+    m_time_select_preview.setVisible(false);
     this->createPlaybackGuide();
 }
 
@@ -41,12 +87,24 @@ void MeasureRoll::setTick(int tick) {
     m_current_tick = tick;
 }
 
+void MeasureRoll::setTimeSelectEnabled(bool enabled) {
+    m_time_select_enabled = enabled;
+    if (!enabled) {
+        this->cancelTimeSelect();
+    }
+}
+
+bool MeasureRoll::isTimeSelectEnabled() const {
+    return m_time_select_enabled;
+}
+
 void MeasureRoll::resetScene() {
     this->m_scene_measures.clear();
     m_meta_event_items.clear();
     m_playhead_line = nullptr;
     m_playhead_arrow = nullptr;
     m_last_playhead_x = -1;
+    this->clearTimeSelect();
 }
 
 void MeasureRoll::drawMeasures() {
@@ -263,4 +321,95 @@ void MeasureRoll::drawMetaEvents() {
         m_scene_measures.addItem(item);
         m_meta_event_items.append(item);
     }
+}
+
+/**
+ * Begin a time-range selection drag in the measure roll.
+ * The preview stays hidden until the drag threshold is crossed.
+ */
+void MeasureRoll::beginTimeSelect(const QPointF &scene_pos) {
+    this->clearTimeSelect();
+
+    m_time_select.pressed = true;
+    m_time_select.dragging = false;
+    m_time_select.start_scene_x = scene_pos.x();
+    m_time_select.current_scene_x = scene_pos.x();
+    m_time_select_preview.setRange(scene_pos.x(), scene_pos.x(), ui_measure_info_height);
+    m_time_select_preview.setVisible(false);
+    m_scene_measures.addItem(&m_time_select_preview);
+}
+
+/**
+ * Update the time-range preview from the current mouse x position.
+ * Only the horizontal span matters, and the preview always uses the header height.
+ */
+void MeasureRoll::updateTimeSelect(const QPointF &scene_pos) {
+    if (!m_time_select.pressed) {
+        return;
+    }
+
+    m_time_select.current_scene_x = scene_pos.x();
+    if (!m_time_select.dragging) {
+        const qreal delta = std::abs(scene_pos.x() - m_time_select.start_scene_x);
+        if (delta < QApplication::startDragDistance()) {
+            return;
+        }
+
+        m_time_select.dragging = true;
+        m_time_select_preview.setVisible(true);
+    }
+
+    m_time_select_preview.setRange(
+        m_time_select.start_scene_x, m_time_select.current_scene_x, ui_measure_info_height
+    );
+}
+
+/**
+ * Finish the time-range selection gesture.
+ * A click clears selection, while a drag selects notes intersecting the chosen tick span.
+ */
+void MeasureRoll::finishTimeSelect() {
+    if (!m_time_select.pressed) {
+        return;
+    }
+
+    if (!m_time_select.dragging) {
+        emit onTimeSelectionCleared();
+        this->clearTimeSelect();
+        return;
+    }
+
+    const QPair<int, int> tick_range = this->currentTimeSelectTickRange();
+    this->clearTimeSelect();
+    emit onTimeRangeSelected(tick_range.first, tick_range.second);
+}
+
+void MeasureRoll::cancelTimeSelect() {
+    this->clearTimeSelect();
+}
+
+/**
+ * Clear the temporary time-range selection state and remove its preview item.
+ */
+void MeasureRoll::clearTimeSelect() {
+    if (m_time_select_preview.scene() == &m_scene_measures) {
+        m_scene_measures.removeItem(&m_time_select_preview);
+    }
+    m_time_select_preview.setVisible(false);
+
+    m_time_select.pressed = false;
+    m_time_select.dragging = false;
+    m_time_select.start_scene_x = 0.0;
+    m_time_select.current_scene_x = 0.0;
+}
+
+/**
+ * Convert the current dragged x span into a normalized tick range.
+ */
+QPair<int, int> MeasureRoll::currentTimeSelectTickRange() const {
+    const qreal left = std::min(m_time_select.start_scene_x, m_time_select.current_scene_x);
+    const qreal right = std::max(m_time_select.start_scene_x, m_time_select.current_scene_x);
+    const int start_tick = static_cast<int>(left / ui_tick_x_scale);
+    const int end_tick = static_cast<int>(right / ui_tick_x_scale);
+    return QPair<int, int>(start_tick, end_tick);
 }

@@ -2,6 +2,8 @@
 
 #include <QPainter>
 
+#include <algorithm>
+
 
 
 static void drawSelectionOutline(QPainter *painter, const QPainterPath &path) {
@@ -33,11 +35,7 @@ QRectF GraphicsSelectionRectItem::boundingRect() const {
 }
 
 void GraphicsSelectionRectItem::paint(QPainter *painter,
-                                      const QStyleOptionGraphicsItem *option,
-                                      QWidget *widget) {
-    Q_UNUSED(option);
-    Q_UNUSED(widget);
-
+                                      const QStyleOptionGraphicsItem *, QWidget *) {
     QPainterPath path;
     path.addRect(m_rect.normalized());
     drawSelectionOutline(painter, path);
@@ -64,10 +62,7 @@ QRectF GraphicsSelectionPathItem::boundingRect() const {
 }
 
 void GraphicsSelectionPathItem::paint(QPainter *painter,
-                                      const QStyleOptionGraphicsItem *option,
-                                      QWidget *widget) {
-    Q_UNUSED(option);
-    Q_UNUSED(widget);
+                                      const QStyleOptionGraphicsItem *, QWidget *) {
     drawSelectionOutline(painter, m_path);
 }
 
@@ -78,5 +73,50 @@ void GraphicsSelectionPathItem::setSelectionPath(const QPainterPath &path) {
 
     this->prepareGeometryChange();
     m_path = path;
+    this->update();
+}
+
+
+
+GraphicsTimeRangeSelectItem::GraphicsTimeRangeSelectItem() {
+    this->setZValue(1000.0);
+}
+
+QRectF GraphicsTimeRangeSelectItem::boundingRect() const {
+    const qreal left = std::min(m_start_x, m_end_x);
+    const qreal right = std::max(m_start_x, m_end_x);
+    return QRectF(left, 0.0, right - left, m_height).adjusted(-1.0, -1.0, 1.0, 1.0);
+}
+
+void GraphicsTimeRangeSelectItem::paint(QPainter *painter,
+                                        const QStyleOptionGraphicsItem *, QWidget *) {
+    const qreal left = std::min(m_start_x, m_end_x);
+    const qreal right = std::max(m_start_x, m_end_x);
+    const QRectF fill_rect(left, 0.0, right - left, m_height);
+
+    painter->setBrush(QColor(0, 0, 0, 64));
+    painter->setPen(Qt::NoPen);
+    painter->drawRect(fill_rect);
+
+    QPainterPath left_path;
+    left_path.moveTo(left, 0.0);
+    left_path.lineTo(left, m_height);
+    drawSelectionOutline(painter, left_path);
+
+    QPainterPath right_path;
+    right_path.moveTo(right, 0.0);
+    right_path.lineTo(right, m_height);
+    drawSelectionOutline(painter, right_path);
+}
+
+void GraphicsTimeRangeSelectItem::setRange(qreal start_x, qreal end_x, qreal height) {
+    if (m_start_x == start_x && m_end_x == end_x && m_height == height) {
+        return;
+    }
+
+    this->prepareGeometryChange();
+    m_start_x = start_x;
+    m_end_x = end_x;
+    m_height = height;
     this->update();
 }

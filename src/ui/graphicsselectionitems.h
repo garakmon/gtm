@@ -53,4 +53,29 @@ private:
     QPainterPath m_path;
 };
 
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// GraphicsTimeRangeSelectItem draws the temporary time-range selection preview in the
+/// measure roll. It uses two vertical boundary lines with a translucent fill between.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+class GraphicsTimeRangeSelectItem : public QGraphicsItem {
+public:
+    GraphicsTimeRangeSelectItem();
+    ~GraphicsTimeRangeSelectItem() override = default;
+
+    QRectF boundingRect() const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
+               QWidget *widget) override;
+
+    void setRange(qreal start_x, qreal end_x, qreal height);
+
+private:
+    qreal m_start_x = 0.0;
+    qreal m_end_x = 0.0;
+    qreal m_height = 0.0;
+};
+
 #endif // GRAPHICSSELECTIONITEMS_H

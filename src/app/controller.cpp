@@ -788,6 +788,10 @@ void Controller::connectSignals() {
             this, &Controller::onTrackSelected, Qt::UniqueConnection);
     connect(m_track_roll, &TrackRoll::trackRightClicked,
             this, &Controller::onTrackRightClicked, Qt::UniqueConnection);
+    connect(m_measure_roll, &MeasureRoll::onTimeRangeSelected,
+            this, &Controller::onTimeRangeSelected, Qt::UniqueConnection);
+    connect(m_measure_roll, &MeasureRoll::onTimeSelectionCleared,
+            this, &Controller::onTimeSelectionCleared, Qt::UniqueConnection);
 
     // signal comes from expanding/collapsing track widgets, or when tracks are redrawn
     connect(m_track_roll, &TrackRoll::layoutChanged,
@@ -817,6 +821,11 @@ void Controller::connectSignals() {
         m_piano_roll->setLassoSelectEnabled(m_window->button_select_lasso->isChecked());
         connect(m_window->button_select_lasso, &QToolButton::toggled,
                 m_piano_roll, &PianoRoll::setLassoSelectEnabled, Qt::UniqueConnection);
+    }
+    if (m_window && m_window->button_select_time) {
+        m_measure_roll->setTimeSelectEnabled(m_window->button_select_time->isChecked());
+        connect(m_window->button_select_time, &QToolButton::toggled,
+                m_measure_roll, &MeasureRoll::setTimeSelectEnabled, Qt::UniqueConnection);
     }
     if (m_window && m_window->button_note_delete) {
         m_piano_roll->setDeleteNotesEnabled(m_window->button_note_delete->isChecked());
@@ -1522,6 +1531,12 @@ bool Controller::eventFilter(QObject *watched, QEvent *event) {
      && event->type() == QEvent::MouseButtonPress) {
         QMouseEvent *mouse_event = static_cast<QMouseEvent *>(event);
 
+        // the time-range tool needs the measure scene to receive the click itself,
+        // so do not consume it here for playhead seeking
+        if (m_window->button_select_time && m_window->button_select_time->isChecked()) {
+            return QObject::eventFilter(watched, event);
+        }
+
         if (mouse_event->button() == Qt::LeftButton && m_song) {
             QPointF scene_pos = m_window->view_measures->mapToScene(mouse_event->pos());
 
@@ -1782,6 +1797,18 @@ void Controller::onTrackRightClicked(int track) {
     }
     if (m_piano_roll) {
         m_piano_roll->selectNotesForTrack(track, true);
+    }
+}
+
+void Controller::onTimeRangeSelected(int start_tick, int end_tick) {
+    if (m_piano_roll) {
+        m_piano_roll->selectNotesInTickRange(start_tick, end_tick);
+    }
+}
+
+void Controller::onTimeSelectionCleared() {
+    if (m_piano_roll) {
+        m_piano_roll->selectEvents({});
     }
 }
 
