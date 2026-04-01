@@ -65,6 +65,7 @@ public:
     bool canRedoHistory() const;
     void undoHistory();
     void redoHistory();
+    bool deleteSelectedEvents(QString *error = nullptr);
 
     // ui coordination
     void setupRolls();     // one time actions

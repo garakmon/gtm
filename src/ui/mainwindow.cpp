@@ -14,6 +14,7 @@
 #include "ui/voicegroupeditor.h"
 #include "ui_mainwindow.h"
 #include "util/constants.h"
+#include "util/logging.h"
 #include "util/theme.h"
 
 #include <QButtonGroup>
@@ -509,6 +510,30 @@ void MainWindow::setupEditMenuActions() {
         m_action_redo = history_group->createRedoAction(this, "Redo");
         m_action_redo->setShortcut(QKeySequence::Redo);
         ui->menuEdit->addAction(m_action_redo);
+    }
+    if (!m_action_delete_selected) {
+        m_action_delete_selected = new QAction("Delete Selected Notes", this);
+        m_action_delete_selected->setShortcuts(
+            QList<QKeySequence>{QKeySequence(Qt::Key_Delete),
+                                QKeySequence(Qt::Key_Backspace)}
+        );
+        // keep delete scoped to the roll areas so other widgets (eg. text inputs) still work
+        m_action_delete_selected->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+        connect(m_action_delete_selected, &QAction::triggered, this, [this]() {
+            if (!m_controller) {
+                return;
+            }
+
+            QString error;
+            if (!m_controller->deleteSelectedEvents(&error) && !error.isEmpty()) {
+                logging::warn("Failed to delete selected events: " + error,
+                              logging::LogCategory::Ui);
+            }
+        });
+        ui->menuEdit->addAction(m_action_delete_selected);
+        if (ui->splitter) {
+            ui->splitter->addAction(m_action_delete_selected);
+        }
     }
 }
 

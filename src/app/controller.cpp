@@ -502,6 +502,14 @@ void Controller::redoHistory() {
     m_song_editor->redo();
 }
 
+bool Controller::deleteSelectedEvents(QString *error) {
+    if (!m_playback_state.edits_enabled || !m_song_editor) {
+        return false;
+    }
+
+    return m_song_editor->deleteSelectedEvents(error);
+}
+
 /**
  * Auto load the project's active song.
  */
@@ -1551,23 +1559,6 @@ bool Controller::eventFilter(QObject *watched, QEvent *event) {
             m_scroll_state.autoscroll_enabled = false;
             m_scroll_state.scroll_debounce.start();
             m_scroll_state.scroll_pos_valid = false;
-        }
-    }
-
-    if (watched == m_window->view_pianoRoll
-     && event->type() == QEvent::KeyPress) {
-        QKeyEvent *key_event = static_cast<QKeyEvent *>(event);
-        // key events for the piano roll arrive on the view itself, not its viewport
-        if (key_event->key() == Qt::Key_Delete || key_event->key() == Qt::Key_Backspace) {
-            if (!m_playback_state.edits_enabled || !m_song_editor) {
-                return true;
-            }
-
-            QString error;
-            if (!m_song_editor->deleteSelectedEvents(&error) && !error.isEmpty()) {
-                logging::warn(error, logging::LogCategory::Ui);
-            }
-            return true;
         }
     }
 

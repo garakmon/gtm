@@ -12,3 +12,4 @@
 - ESC key cancels active edit (drag-move eg)
 - plain pointer button
 - time range selection from measure roll (needs button design too)
+- de-obfuscate some (all) of the midi event data getters (eg `var = (*midi_event)[3]`)

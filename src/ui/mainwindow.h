@@ -110,6 +110,7 @@ private: // members
     QPointer<QSortFilterProxyModel> m_song_filter;
     QPointer<QAction> m_action_undo;
     QPointer<QAction> m_action_redo;
+    QPointer<QAction> m_action_delete_selected;
     QVector<QPointer<QToolButton>> m_track_event_filter_buttons;
     QPointer<QComboBox> m_track_event_preset_combo;
 
