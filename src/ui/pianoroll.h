@@ -136,6 +136,7 @@ public:
     bool isLassoSelectEnabled() const;
     void selectNotesForTrack(int track, bool clearOthers = true);
     void selectNotesInTickRange(int start_tick, int end_tick, bool clear_others = true);
+    void invertSelection();
     void selectEvents(const QVector<smf::MidiEvent *> &events, bool clear_others = true);
     void handleNoteMousePress(
         GraphicsScoreNoteItem *item,

@@ -300,6 +300,11 @@ void MainWindow::setupToolButtons() {
         const QList<QToolButton *> selection_buttons =
             ui->pillbox_SelectionTools->findChildren<QToolButton *>();
         for (QToolButton *button : selection_buttons) {
+            if (button == ui->button_select_invert) {
+                button->setCheckable(false);
+                button->setChecked(false);
+                continue;
+            }
             button->setCheckable(true);
             edit_tool_group->addButton(button);
         }

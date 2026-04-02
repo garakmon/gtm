@@ -366,6 +366,32 @@ void PianoRoll::selectNotesInTickRange(int start_tick, int end_tick, bool clear_
     m_scene_roll.update();
 }
 
+void PianoRoll::invertSelection() {
+    m_ignore_selection_updates = true;
+
+    for (TrackNoteGroup *group : m_track_note_groups) {
+        if (!group) {
+            continue;
+        }
+
+        for (GraphicsScoreNoteItem *note : group->notes()) {
+            if (!note) {
+                continue;
+            }
+
+            if (!note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
+                continue;
+            }
+
+            note->setSelected(!note->isSelected());
+        }
+    }
+
+    m_ignore_selection_updates = false;
+    this->updateSelectedEvents();
+    m_scene_roll.update();
+}
+
 void PianoRoll::selectEvents(const QVector<smf::MidiEvent *> &events, bool clear_others) {
     QSet<smf::MidiEvent *> selected_events(events.begin(), events.end());
 

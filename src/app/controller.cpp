@@ -873,6 +873,10 @@ void Controller::connectSignals() {
         connect(m_window->button_select_lasso, &QToolButton::toggled,
                 m_piano_roll, &PianoRoll::setLassoSelectEnabled, Qt::UniqueConnection);
     }
+    if (m_window && m_window->button_select_invert) {
+        connect(m_window->button_select_invert, &QToolButton::clicked, m_piano_roll,
+                &PianoRoll::invertSelection, Qt::UniqueConnection);
+    }
     if (m_window && m_window->button_select_time) {
         m_measure_roll->setTimeSelectEnabled(m_window->button_select_time->isChecked());
         connect(m_window->button_select_time, &QToolButton::toggled,
