@@ -5,6 +5,7 @@
 #include "ui/graphicsselectionitems.h"
 
 #include <QGraphicsScene>
+#include <QPainterPath>
 #include <QObject>
 #include <QVector>
 
@@ -80,15 +81,21 @@ public:
     bool isTimeSelectEnabled() const;
 
 signals:
-    void onTimeRangeSelected(int start_tick, int end_tick);
+    void onTimeRangeSelected(int start_tick, int end_tick, bool modify);
     void onTimeSelectionCleared();
 
 private:
+    enum class SelectionBehavior {
+        Replace,
+        Modify,
+    };
+
     struct TimeSelectState {
         bool pressed = false;
         bool dragging = false;
         qreal start_scene_x = 0.0;
         qreal current_scene_x = 0.0;
+        SelectionBehavior behavior = SelectionBehavior::Replace;
     };
 
     // drawing helpers
@@ -103,6 +110,7 @@ private:
     void cancelTimeSelect();
     void clearTimeSelect();
     QPair<int, int> currentTimeSelectTickRange() const;
+    SelectionBehavior selectionBehaviorForModifiers(Qt::KeyboardModifiers modifiers) const;
 
 private:
     std::shared_ptr<Song> m_active_song;

@@ -1838,9 +1838,9 @@ void Controller::onTrackRightClicked(int track) {
     }
 }
 
-void Controller::onTimeRangeSelected(int start_tick, int end_tick) {
+void Controller::onTimeRangeSelected(int start_tick, int end_tick, bool modify) {
     if (m_piano_roll) {
-        m_piano_roll->selectNotesInTickRange(start_tick, end_tick);
+        m_piano_roll->selectNotesInTickRange(start_tick, end_tick, modify);
     }
 }
 

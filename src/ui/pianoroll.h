@@ -76,14 +76,14 @@ public:
 
     // note ownership
     void addNote(GraphicsScoreNoteItem *note) { m_notes.append(note); }
-    const QVector<GraphicsScoreNoteItem *> &notes() const { return m_notes; }
+    const QList<GraphicsScoreNoteItem *> &notes() const { return m_notes; }
 
 private:
     // track state
     int m_track = 0;
 
     // child items
-    QVector<GraphicsScoreNoteItem *> m_notes;
+    QList<GraphicsScoreNoteItem *> m_notes;
 };
 
 
@@ -135,9 +135,9 @@ public:
     bool isRectSelectEnabled() const;
     bool isLassoSelectEnabled() const;
     void selectNotesForTrack(int track, bool clearOthers = true);
-    void selectNotesInTickRange(int start_tick, int end_tick, bool clear_others = true);
+    void selectNotesInTickRange(int start_tick, int end_tick, bool modify = false);
     void invertSelection();
-    void selectEvents(const QVector<smf::MidiEvent *> &events, bool clear_others = true);
+    void selectEvents(const QList<smf::MidiEvent *> &events, bool clear_others = true);
     void handleNoteMousePress(
         GraphicsScoreNoteItem *item,
         const QPointF &scene_pos,
@@ -155,13 +155,18 @@ public:
 
 signals:
     void eventItemSelected(smf::MidiEvent *event);
-    void onSelectedEventsChanged(const QVector<smf::MidiEvent *> &events);
+    void onSelectedEventsChanged(const QList<smf::MidiEvent *> &events);
     void onNoteMoveRequested(const NoteMoveSettings &settings);
     void onNoteResizeRequested(const NoteResizeSettings &settings);
-    void onNoteCreateRequested(const QVector<NoteCreateSettings> &notes);
-    void onNoteDeleteRequested(const QVector<smf::MidiEvent *> &events);
+    void onNoteCreateRequested(const QList<NoteCreateSettings> &notes);
+    void onNoteDeleteRequested(const QList<smf::MidiEvent *> &events);
 
 private:
+    enum class SelectionBehavior {
+        Replace,
+        Modify,
+    };
+
     enum class NoteDragMode {
         Move,
         ResizeStart,
@@ -187,7 +192,7 @@ private:
         int anchor_start_key = 0;
         int delta_tick = 0;
         int delta_key = 0;
-        QVector<DraggedNoteState> notes;
+        QList<DraggedNoteState> notes;
     };
 
     struct NoteCreateState {
@@ -210,7 +215,7 @@ private:
         bool dragging = false;
         QPointF press_scene_pos;
         QSet<smf::MidiEvent *> pending_events;
-        QVector<GraphicsScoreNoteItem *> hidden_items;
+        QList<GraphicsScoreNoteItem *> hidden_items;
     };
 
     struct RectSelectState {
@@ -218,6 +223,7 @@ private:
         bool dragging = false;
         QPointF start_scene_pos;
         QPointF current_scene_pos;
+        SelectionBehavior behavior = SelectionBehavior::Replace;
     };
 
     struct LassoSelectState {
@@ -225,6 +231,7 @@ private:
         bool dragging = false;
         QPointF start_scene_pos;
         QPainterPath path;
+        SelectionBehavior behavior = SelectionBehavior::Replace;
     };
 
     // drawing helpers
@@ -238,7 +245,7 @@ private:
     void clearNoteDrag();
     void restoreDraggedNotesToStart();
     void updateSelectedEvents();
-    QVector<GraphicsScoreNoteItem *> selectedNoteItems() const;
+    QList<GraphicsScoreNoteItem *> selectedNoteItems() const;
     int snapTickDelta(double delta_x) const;
     int snapTick(int tick) const;
     int snapKeyDelta(double delta_y) const;
@@ -264,15 +271,16 @@ private:
     void cancelRectSelect();
     void clearRectSelect();
     QRectF currentRectSelectRect() const;
-    QVector<GraphicsScoreNoteItem *> noteItemsInRect(const QRectF &rect) const;
-    void applyRectSelection(const QVector<GraphicsScoreNoteItem *> &items);
+    QList<GraphicsScoreNoteItem *> noteItemsInRect(const QRectF &rect) const;
+    void applyNoteSelection(const QList<GraphicsScoreNoteItem *> &items,
+                            SelectionBehavior behavior);
     void beginLassoSelect(const QPointF &scene_pos);
     void updateLassoSelect(const QPointF &scene_pos);
     void finishLassoSelect();
     void cancelLassoSelect();
     void clearLassoSelect();
-    QVector<GraphicsScoreNoteItem *> noteItemsInPath(const QPainterPath &path) const;
-    void applyLassoSelection(const QVector<GraphicsScoreNoteItem *> &items);
+    QList<GraphicsScoreNoteItem *> noteItemsInPath(const QPainterPath &path) const;
+    SelectionBehavior selectionBehaviorForModifiers(Qt::KeyboardModifiers modifiers) const;
 
 private:
     // scenes

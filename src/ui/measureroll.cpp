@@ -334,6 +334,7 @@ void MeasureRoll::beginTimeSelect(const QPointF &scene_pos) {
     m_time_select.dragging = false;
     m_time_select.start_scene_x = scene_pos.x();
     m_time_select.current_scene_x = scene_pos.x();
+    m_time_select.behavior = this->selectionBehaviorForModifiers(QApplication::keyboardModifiers());
     m_time_select_preview.setRange(scene_pos.x(), scene_pos.x(), ui_measure_info_height);
     m_time_select_preview.setVisible(false);
     m_scene_measures.addItem(&m_time_select_preview);
@@ -374,14 +375,17 @@ void MeasureRoll::finishTimeSelect() {
     }
 
     if (!m_time_select.dragging) {
-        emit onTimeSelectionCleared();
+        if (m_time_select.behavior == SelectionBehavior::Replace) {
+            emit onTimeSelectionCleared();
+        }
         this->clearTimeSelect();
         return;
     }
 
-    const QPair<int, int> tick_range = this->currentTimeSelectTickRange();
+    QPair<int, int> tick_range = this->currentTimeSelectTickRange();
+    bool modify = (m_time_select.behavior == SelectionBehavior::Modify);
     this->clearTimeSelect();
-    emit onTimeRangeSelected(tick_range.first, tick_range.second);
+    emit onTimeRangeSelected(tick_range.first, tick_range.second, modify);
 }
 
 void MeasureRoll::cancelTimeSelect() {
@@ -412,4 +416,18 @@ QPair<int, int> MeasureRoll::currentTimeSelectTickRange() const {
     const int start_tick = static_cast<int>(left / ui_tick_x_scale);
     const int end_tick = static_cast<int>(right / ui_tick_x_scale);
     return QPair<int, int>(start_tick, end_tick);
+}
+
+/**
+ * Determine the time-range selection behavior based on the keyboardmodifiers
+ * at the start of a gesture. (this mirrors the PianoRoll selection)
+ */
+MeasureRoll::SelectionBehavior MeasureRoll::selectionBehaviorForModifiers(
+    Qt::KeyboardModifiers modifiers
+) const {
+    if (modifiers.testFlag(Qt::ControlModifier) || modifiers.testFlag(Qt::MetaModifier)) {
+        return SelectionBehavior::Modify;
+    }
+
+    return SelectionBehavior::Replace;
 }

@@ -163,7 +163,18 @@ void GraphicsScoreNoteItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
         return;
     }
 
-    if (!this->isSelected()) {
+    // mac COMMAND key is MetaModifier
+    const bool modify_selection = event->modifiers().testFlag(Qt::ControlModifier)
+                                  || event->modifiers().testFlag(Qt::MetaModifier);
+
+    if (modify_selection) {
+        this->setSelected(!this->isSelected());
+        if (!this->isSelected()) {
+            event->accept();
+            return;
+        }
+    }
+    else if (!this->isSelected()) {
         QGraphicsScene *item_scene = this->scene();
         if (item_scene) {
             item_scene->clearSelection();
