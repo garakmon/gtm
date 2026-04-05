@@ -349,6 +349,26 @@ void MainWindow::setupToolButtons() {
         }
     }
 
+    if (ui->toolButton) {
+        ui->toolButton->setEnabled(false);
+    }
+
+    if (ui->button_note_quantize) {
+        ui->button_note_quantize->setEnabled(false);
+    }
+
+    if (ui->button_note_trim) {
+        ui->button_note_trim->setEnabled(false);
+    }
+
+    if (ui->button_tracks_merge) {
+        ui->button_tracks_merge->setEnabled(false);
+    }
+
+    if (ui->button_tracks_split) {
+        ui->button_tracks_split->setEnabled(false);
+    }
+
     if (ui->Button_Play) ui->Button_Play->setCheckable(true);
     if (ui->Button_Pause) ui->Button_Pause->setCheckable(true);
     if (ui->Button_Stop) ui->Button_Stop->setCheckable(true);
