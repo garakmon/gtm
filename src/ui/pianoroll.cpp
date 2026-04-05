@@ -449,7 +449,7 @@ void PianoRoll::handleTrackSelectMousePress(GraphicsScoreNoteItem *item,
     }
 
     const QList<GraphicsScoreNoteItem *> items = this->noteItemsForTrack(item->track());
-    const SelectionBehavior behavior = this->selectionBehaviorForModifiers(modifiers);
+    SelectionBehavior behavior = selectionBehaviorFromModifiers(modifiers);
     this->applyNoteSelection(items, behavior);
 }
 
@@ -1305,7 +1305,7 @@ void PianoRoll::beginRectSelect(const QPointF &scene_pos) {
     m_rect_select.dragging = false;
     m_rect_select.start_scene_pos = scene_pos;
     m_rect_select.current_scene_pos = scene_pos;
-    m_rect_select.behavior = this->selectionBehaviorForModifiers(QApplication::keyboardModifiers());
+    m_rect_select.behavior = selectionBehaviorFromModifiers(QApplication::keyboardModifiers());
     m_rect_select_preview.setSelectionRect(QRectF(scene_pos, scene_pos));
     m_rect_select_preview.setVisible(false);
     m_scene_roll.addItem(&m_rect_select_preview);
@@ -1346,25 +1346,7 @@ void PianoRoll::finishRectSelect() {
     }
 
     if (!m_rect_select.dragging) {
-        GraphicsScoreNoteItem *note = scoreNoteItemAt(&m_scene_roll,
-                                                      m_rect_select.start_scene_pos);
-        if (m_rect_select.behavior == SelectionBehavior::Replace) {
-            m_scene_roll.clearSelection();
-            if (note && note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
-                note->setSelected(true);
-                this->updateSelectedEvents();
-            }
-        }
-        else {
-            if (!note) {
-                m_scene_roll.clearSelection();
-                this->updateSelectedEvents();
-            }
-            else if (note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
-                note->setSelected(!note->isSelected());
-                this->updateSelectedEvents();
-            }
-        }
+        this->finishPointSelectionAt(m_rect_select.start_scene_pos, m_rect_select.behavior);
         this->clearRectSelect();
         return;
     }
@@ -1458,6 +1440,27 @@ void PianoRoll::applyNoteSelection(const QList<GraphicsScoreNoteItem *> &items,
     this->updateSelectedEvents();
 }
 
+void PianoRoll::finishPointSelectionAt(const QPointF &scene_pos, SelectionBehavior behavior) {
+    GraphicsScoreNoteItem *note = scoreNoteItemAt(&m_scene_roll, scene_pos);
+    if (behavior == SelectionBehavior::Replace) {
+        m_scene_roll.clearSelection();
+        if (note && note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
+            note->setSelected(true);
+            this->updateSelectedEvents();
+        }
+    }
+    else {
+        if (!note) {
+            m_scene_roll.clearSelection();
+            this->updateSelectedEvents();
+        }
+        else if (note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
+            note->setSelected(!note->isSelected());
+            this->updateSelectedEvents();
+        }
+    }
+}
+
 /**
  * Begin a lasso selection drag at the current scene position.
  * The preview path stays hidden until the drag threshold is crossed.
@@ -1468,7 +1471,7 @@ void PianoRoll::beginLassoSelect(const QPointF &scene_pos) {
     m_lasso_select.pressed = true;
     m_lasso_select.dragging = false;
     m_lasso_select.start_scene_pos = scene_pos;
-    m_lasso_select.behavior = this->selectionBehaviorForModifiers(QApplication::keyboardModifiers());
+    m_lasso_select.behavior = selectionBehaviorFromModifiers(QApplication::keyboardModifiers());
     m_lasso_select.path = QPainterPath(scene_pos);
     m_lasso_select_preview.setSelectionPath(m_lasso_select.path);
     m_lasso_select_preview.setVisible(false);
@@ -1509,25 +1512,7 @@ void PianoRoll::finishLassoSelect() {
     }
 
     if (!m_lasso_select.dragging) {
-        GraphicsScoreNoteItem *note = scoreNoteItemAt(&m_scene_roll,
-                                                      m_lasso_select.start_scene_pos);
-        if (m_lasso_select.behavior == SelectionBehavior::Replace) {
-            m_scene_roll.clearSelection();
-            if (note && note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
-                note->setSelected(true);
-                this->updateSelectedEvents();
-            }
-        }
-        else {
-            if (!note) {
-                m_scene_roll.clearSelection();
-                this->updateSelectedEvents();
-            }
-            else if (note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
-                note->setSelected(!note->isSelected());
-                this->updateSelectedEvents();
-            }
-        }
+        this->finishPointSelectionAt(m_lasso_select.start_scene_pos, m_lasso_select.behavior);
         this->clearLassoSelect();
         return;
     }
@@ -1575,18 +1560,4 @@ QList<GraphicsScoreNoteItem *> PianoRoll::noteItemsInPath(const QPainterPath &pa
     }
 
     return notes;
-}
-
-/**
- * Determine the selection behavior from keyboard modifiers at gesture start.
- * Holding Ctrl/Cmd enters modify mode, while no modifier = replace the current selection.
- */
-PianoRoll::SelectionBehavior PianoRoll::selectionBehaviorForModifiers(
-    Qt::KeyboardModifiers modifiers
-) const {
-    if (modifiers.testFlag(Qt::ControlModifier) || modifiers.testFlag(Qt::MetaModifier)) {
-        return SelectionBehavior::Modify;
-    }
-
-    return SelectionBehavior::Replace;
 }

@@ -4,6 +4,7 @@
 
 #include "ui/graphicspianokeyitem.h"
 #include "ui/graphicsselectionitems.h"
+#include "ui/selectionstate.h"
 #include "app/structs.h"
 
 #include <QGraphicsPixmapItem>
@@ -166,11 +167,6 @@ signals:
     void onNoteDeleteRequested(const QList<smf::MidiEvent *> &events);
 
 private:
-    enum class SelectionBehavior {
-        Replace,
-        Modify,
-    };
-
     enum class NoteDragMode {
         Move,
         ResizeStart,
@@ -222,20 +218,12 @@ private:
         QList<GraphicsScoreNoteItem *> hidden_items;
     };
 
-    struct RectSelectState {
-        bool pressed = false;
-        bool dragging = false;
-        QPointF start_scene_pos;
+    struct RectSelectState : PointSelectionGestureState {
         QPointF current_scene_pos;
-        SelectionBehavior behavior = SelectionBehavior::Replace;
     };
 
-    struct LassoSelectState {
-        bool pressed = false;
-        bool dragging = false;
-        QPointF start_scene_pos;
+    struct LassoSelectState : PointSelectionGestureState {
         QPainterPath path;
-        SelectionBehavior behavior = SelectionBehavior::Replace;
     };
 
     // drawing helpers
@@ -278,6 +266,7 @@ private:
     QList<GraphicsScoreNoteItem *> noteItemsInRect(const QRectF &rect) const;
     void applyNoteSelection(const QList<GraphicsScoreNoteItem *> &items,
                             SelectionBehavior behavior);
+    void finishPointSelectionAt(const QPointF &scene_pos, SelectionBehavior behavior);
     void beginLassoSelect(const QPointF &scene_pos);
     void updateLassoSelect(const QPointF &scene_pos);
     void finishLassoSelect();
@@ -285,7 +274,6 @@ private:
     void clearLassoSelect();
     QList<GraphicsScoreNoteItem *> noteItemsInPath(const QPainterPath &path) const;
     QList<GraphicsScoreNoteItem *> noteItemsForTrack(int track) const;
-    SelectionBehavior selectionBehaviorForModifiers(Qt::KeyboardModifiers modifiers) const;
 
 private:
     // scenes

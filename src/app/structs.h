@@ -4,8 +4,6 @@
 
 #include <QString>
 
-
-
 struct NewSongSettings {
     QString title;
     QString constant;
