@@ -70,6 +70,15 @@ void PianoRollScene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
         }
     }
 
+    if (m_piano_roll && m_piano_roll->isTrackSelectEnabled()) {
+        GraphicsScoreNoteItem *note = scoreNoteItemAt(this, event->scenePos());
+        if (!note) {
+            m_piano_roll->sceneRoll()->clearSelection();
+            event->accept();
+            return;
+        }
+    }
+
     if (m_piano_roll && m_piano_roll->isRectSelectEnabled()) {
         m_piano_roll->beginRectSelect(event->scenePos());
         event->accept();
@@ -289,6 +298,10 @@ void PianoRoll::setLassoSelectEnabled(bool enabled) {
     }
 }
 
+void PianoRoll::setTrackSelectEnabled(bool enabled) {
+    m_track_select_enabled = enabled;
+}
+
 void PianoRoll::setActiveTrack(int track) {
     m_active_track = track;
 }
@@ -303,6 +316,10 @@ bool PianoRoll::isRectSelectEnabled() const {
 
 bool PianoRoll::isLassoSelectEnabled() const {
     return m_lasso_select_enabled;
+}
+
+bool PianoRoll::isTrackSelectEnabled() const {
+    return m_track_select_enabled;
 }
 
 /**
@@ -422,20 +439,63 @@ void PianoRoll::selectEvents(const QList<smf::MidiEvent *> &events, bool clear_o
 }
 
 /**
+ * Select every selectable note on the clicked note's MIDI track.
+ */
+void PianoRoll::handleTrackSelectMousePress(GraphicsScoreNoteItem *item,
+                                            Qt::KeyboardModifiers modifiers) {
+    if (!item) {
+        m_scene_roll.clearSelection();
+        return;
+    }
+
+    const QList<GraphicsScoreNoteItem *> items = this->noteItemsForTrack(item->track());
+    const SelectionBehavior behavior = this->selectionBehaviorForModifiers(modifiers);
+    this->applyNoteSelection(items, behavior);
+}
+
+/**
+ * Get all selectable (so, not deleted/hidden) notes that belong to one MIDI track.
+ */
+QList<GraphicsScoreNoteItem *> PianoRoll::noteItemsForTrack(int track) const {
+    QList<GraphicsScoreNoteItem *> notes;
+    auto it = m_track_note_groups.find(track);
+    if (it == m_track_note_groups.end() || !it.value()) {
+        return notes;
+    }
+
+    const QList<GraphicsScoreNoteItem *> &track_notes = it.value()->notes();
+    for (GraphicsScoreNoteItem *note : track_notes) {
+        if (!note) {
+            continue;
+        }
+
+        if (!note->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
+            continue;
+        }
+
+        notes.append(note);
+    }
+
+    return notes;
+}
+
+/**
  * Resolve the drag mode for a note press and begin the interaction.
  */
 void PianoRoll::handleNoteMousePress(GraphicsScoreNoteItem *item,
                                      const QPointF &scene_pos,
                                      bool resize_start, bool resize_end) {
     if (this->isRectSelectEnabled()) {
-        (void)item;
         this->handleRectSelectMousePress(scene_pos);
         return;
     }
 
     if (this->isLassoSelectEnabled()) {
-        (void)item;
         this->handleLassoSelectMousePress(scene_pos);
+        return;
+    }
+
+    if (this->isTrackSelectEnabled()) {
         return;
     }
 
@@ -459,19 +519,20 @@ void PianoRoll::handleNoteMousePress(GraphicsScoreNoteItem *item,
  */
 void PianoRoll::handleNoteMouseMove(GraphicsScoreNoteItem *item, const QPointF &scene_pos) {
     if (this->isRectSelectEnabled()) {
-        (void)item;
         this->handleRectSelectMouseMove(scene_pos);
         return;
     }
 
     if (this->isLassoSelectEnabled()) {
-        (void)item;
         this->handleLassoSelectMouseMove(scene_pos);
         return;
     }
 
+    if (this->isTrackSelectEnabled()) {
+        return;
+    }
+
     if (this->isDeleteNotesEnabled()) {
-        (void)item;
         this->updateNoteDelete(scene_pos);
         return;
     }
@@ -482,21 +543,22 @@ void PianoRoll::handleNoteMouseMove(GraphicsScoreNoteItem *item, const QPointF &
 /**
  * Finalize the active note drag interaction.
  */
-void PianoRoll::handleNoteMouseRelease(GraphicsScoreNoteItem *item, const QPointF &scene_pos) {
+void PianoRoll::handleNoteMouseRelease(GraphicsScoreNoteItem *, const QPointF &scene_pos) {
     if (this->isRectSelectEnabled()) {
-        (void)item;
         this->handleRectSelectMouseRelease(scene_pos);
         return;
     }
 
     if (this->isLassoSelectEnabled()) {
-        (void)item;
         this->handleLassoSelectMouseRelease(scene_pos);
         return;
     }
 
+    if (this->isTrackSelectEnabled()) {
+        return;
+    }
+
     if (this->isDeleteNotesEnabled()) {
-        (void)item;
         this->updateNoteDelete(scene_pos);
         this->commitNoteDelete();
         return;

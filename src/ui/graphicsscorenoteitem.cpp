@@ -124,7 +124,9 @@ QVariant GraphicsScoreNoteItem::itemChange(GraphicsItemChange change,
  * Show a resize cursor only when hovering a note edge handle.
  */
 void GraphicsScoreNoteItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event) {
-    if (m_piano_roll->isRectSelectEnabled() || m_piano_roll->isLassoSelectEnabled()) {
+    if (m_piano_roll->isRectSelectEnabled()
+     || m_piano_roll->isLassoSelectEnabled()
+     || m_piano_roll->isTrackSelectEnabled()) {
         this->unsetCursor();
         QGraphicsItem::hoverMoveEvent(event);
         return;
@@ -151,6 +153,12 @@ void GraphicsScoreNoteItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event) {
  * Start either a move drag or a resize drag for this note.
  */
 void GraphicsScoreNoteItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+    if (m_piano_roll->isTrackSelectEnabled()) {
+        m_piano_roll->handleTrackSelectMousePress(this, event->modifiers());
+        event->accept();
+        return;
+    }
+
     if (m_piano_roll->isRectSelectEnabled()) {
         m_piano_roll->handleRectSelectMousePress(event->scenePos());
         event->accept();

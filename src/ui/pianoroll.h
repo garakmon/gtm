@@ -130,10 +130,12 @@ public:
     void setDeleteNotesEnabled(bool enabled);
     void setRectSelectEnabled(bool enabled);
     void setLassoSelectEnabled(bool enabled);
+    void setTrackSelectEnabled(bool enabled);
     void setActiveTrack(int track);
     bool isDeleteNotesEnabled() const;
     bool isRectSelectEnabled() const;
     bool isLassoSelectEnabled() const;
+    bool isTrackSelectEnabled() const;
     void selectNotesForTrack(int track, bool clearOthers = true);
     void selectNotesInTickRange(int start_tick, int end_tick, bool modify = false);
     void invertSelection();
@@ -145,13 +147,15 @@ public:
         bool resize_end
     );
     void handleNoteMouseMove(GraphicsScoreNoteItem *item, const QPointF &scene_pos);
-    void handleNoteMouseRelease(GraphicsScoreNoteItem *item, const QPointF &scene_pos);
+    void handleNoteMouseRelease(GraphicsScoreNoteItem *, const QPointF &scene_pos);
     void handleRectSelectMousePress(const QPointF &scene_pos);
     void handleRectSelectMouseMove(const QPointF &scene_pos);
     void handleRectSelectMouseRelease(const QPointF &scene_pos);
     void handleLassoSelectMousePress(const QPointF &scene_pos);
     void handleLassoSelectMouseMove(const QPointF &scene_pos);
     void handleLassoSelectMouseRelease(const QPointF &scene_pos);
+    void handleTrackSelectMousePress(GraphicsScoreNoteItem *item,
+                                     Qt::KeyboardModifiers modifiers);
 
 signals:
     void eventItemSelected(smf::MidiEvent *event);
@@ -280,6 +284,7 @@ private:
     void cancelLassoSelect();
     void clearLassoSelect();
     QList<GraphicsScoreNoteItem *> noteItemsInPath(const QPainterPath &path) const;
+    QList<GraphicsScoreNoteItem *> noteItemsForTrack(int track) const;
     SelectionBehavior selectionBehaviorForModifiers(Qt::KeyboardModifiers modifiers) const;
 
 private:
@@ -305,6 +310,7 @@ private:
     bool m_edits_enabled = true;
     bool m_rect_select_enabled = false;
     bool m_lasso_select_enabled = false;
+    bool m_track_select_enabled = false;
     bool m_create_notes_enabled = false;
     bool m_delete_notes_enabled = false;
     bool m_ignore_selection_updates = false;
