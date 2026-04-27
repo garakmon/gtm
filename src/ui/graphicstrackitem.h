@@ -284,6 +284,7 @@ private:
     // graph construction
     void buildStepGraphData(int initial_vol, int initial_pan,
                             int initial_expr, int initial_bend);
+    void loadCurveEvents();
 
     // paint helpers
     void paintMiniStepGraphs(QPainter *painter, const QStyleOptionGraphicsItem *option);
@@ -320,6 +321,12 @@ private:
     QVector<CCPoint> m_cc_expression;
     QVector<CCPoint> m_cc_pan;
     QVector<CCPoint> m_cc_pitch;
+
+    // cached source events for future curve editing
+    QList<smf::MidiEvent *> m_volume_events;
+    QList<smf::MidiEvent *> m_expression_events;
+    QList<smf::MidiEvent *> m_pan_events;
+    QList<smf::MidiEvent *> m_pitch_events;
 };
 
 #endif // GRAPHICSTRACKITEM_H

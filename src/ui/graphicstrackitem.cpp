@@ -669,6 +669,7 @@ GraphicsTrackRollManager::GraphicsTrackRollManager(
     // create child items for control events (program, CC, pitch bend)
     QMap<qint64, QList<GraphicsTrackMetaEventItem *>> buckets;
     constexpr qreal k_bucket_px = 4.0;
+    this->loadCurveEvents();
 
     for (int i = 0; i < event_list->size(); i++) {
         smf::MidiEvent *event = &(*event_list)[i];
@@ -678,6 +679,15 @@ GraphicsTrackRollManager::GraphicsTrackRollManager(
         }
 
         if (event->isPatchChange() || event->isController() || event->isPitchbend()) {
+            GraphicsTrackMetaEventItem::EventType type =
+                GraphicsTrackMetaEventItem::detectType(event);
+            if (type == GraphicsTrackMetaEventItem::EventType::Volume
+             || type == GraphicsTrackMetaEventItem::EventType::Expression
+             || type == GraphicsTrackMetaEventItem::EventType::Pan
+             || type == GraphicsTrackMetaEventItem::EventType::Pitch) {
+                continue;
+            }
+
             auto *item = new GraphicsTrackMetaEventItem(event, parent_track,
                                                         m_song_voicegroup,
                                                         m_all_voicegroups,
@@ -783,6 +793,32 @@ void GraphicsTrackRollManager::buildStepGraphData(int initial_vol, int initial_p
         } else if (ev.isPitchbend()) {
             int bend = (ev.getP2() << 7) | ev.getP1();
             m_cc_pitch.append({ev.tick, bend});
+        }
+    }
+}
+
+void GraphicsTrackRollManager::loadCurveEvents() {
+    m_volume_events.clear();
+    m_expression_events.clear();
+    m_pan_events.clear();
+    m_pitch_events.clear();
+
+    for (int i = 0; i < m_event_list->size(); i++) {
+        smf::MidiEvent *event = &(*m_event_list)[i];
+        if (event->isPitchbend()) {
+            m_pitch_events.append(event);
+        }
+        else if (event->isController()) {
+            int cc = event->getP1();
+            if (cc == 7) {
+                m_volume_events.append(event);
+            }
+            else if (cc == 10) {
+                m_pan_events.append(event);
+            }
+            else if (cc == 11) {
+                m_expression_events.append(event);
+            }
         }
     }
 }
