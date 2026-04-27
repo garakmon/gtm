@@ -2,16 +2,15 @@
 
 #include "sound/song.h"
 
-#include <QtGlobal>
-
 #include <algorithm>
 
 
 
 EditNote::EditNote(Song *song, const QString &text, QUndoCommand *parent)
-    : QUndoCommand(text, parent), m_song(song) {
-    Q_ASSERT(m_song != nullptr);
-}
+    : QUndoCommand(text, parent), m_song(song) {}
+
+EditTrack::EditTrack(Song *song, const QString &text, QUndoCommand *parent)
+    : QUndoCommand(text, parent), m_song(song) {}
 
 
 
@@ -26,7 +25,9 @@ MoveNotes::MoveNotes(Song *song, const QVector<smf::MidiEvent *> &notes,
     m_states.reserve(notes.size());
     for (smf::MidiEvent *note_on : notes) {
         smf::MidiEvent *note_off = note_on->getLinkedEvent();
-        Q_ASSERT(note_off != nullptr);
+        if (!note_off) {
+            continue;
+        }
 
         NoteState state;
         state.note_on = note_on;
@@ -118,7 +119,9 @@ ResizeNotes::ResizeNotes(Song *song, const QVector<smf::MidiEvent *> &notes,
     m_states.reserve(notes.size());
     for (smf::MidiEvent *note_on : notes) {
         smf::MidiEvent *note_off = note_on->getLinkedEvent();
-        Q_ASSERT(note_off != nullptr);
+        if (!note_off) {
+            continue;
+        }
 
         NoteState state;
         state.note_on = note_on;
@@ -210,7 +213,9 @@ DeleteNotes::DeleteNotes(Song *song, const QVector<smf::MidiEvent *> &notes)
     m_notes.reserve(notes.size());
     for (smf::MidiEvent *note_on : notes) {
         smf::MidiEvent *note_off = note_on->getLinkedEvent();
-        Q_ASSERT(note_off != nullptr);
+        if (!note_off) {
+            continue;
+        }
 
         DeletedNote dn;
         dn.note_on = note_on;
@@ -376,7 +381,9 @@ DuplicateNotes::DuplicateNotes(Song *song, const QVector<smf::MidiEvent *> &sour
     m_sources.reserve(source_notes.size());
     for (smf::MidiEvent *note_on : source_notes) {
         smf::MidiEvent *note_off = note_on->getLinkedEvent();
-        Q_ASSERT(note_off != nullptr);
+        if (!note_off) {
+            continue;
+        }
 
         SourceNote sn;
         sn.track = note_on->track;
@@ -460,4 +467,44 @@ void DuplicateNotes::undo() {
 
 QVector<smf::MidiEvent *> DuplicateNotes::affectedNoteEvents() const {
     return m_created_on;
+}
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+AddTrack::AddTrack(Song *song)
+    : EditTrack(song, QStringLiteral("Add Track")) { }
+
+void AddTrack::redo() {
+    m_song->appendEmptyTrack();
+    if (m_track_index < 0) {
+        m_track_index = m_song->getTrackCount() - 1;
+    }
+}
+
+void AddTrack::undo() {
+    if (m_track_index >= 0) {
+        m_song->deleteTrackAt(m_track_index);
+    }
+}
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+DeleteTrack::DeleteTrack(Song *song, int track_index)
+    : EditTrack(song, QStringLiteral("Delete Track")),
+      m_track_index(track_index) { }
+
+void DeleteTrack::redo() {
+    m_song->deleteTrackAndStore(m_track_index, m_deleted_track);
+}
+
+void DeleteTrack::undo() {
+    m_song->restoreTrack(m_track_index, m_deleted_track);
 }

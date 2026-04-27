@@ -81,7 +81,7 @@ bool Song::load() {
             }
         }
 
-        if (!has_notes) {
+        if (track_num == 0 && !has_notes) {
             m_meta_tracks.insert(track_num);
         }
 
@@ -142,6 +142,77 @@ void Song::rebuildAfterTickEdit() {
 void Song::rebuildAfterDelete() {
     this->rebuildNotesIndex();
     this->mergeEvents();
+}
+
+bool Song::isTrackEmpty(int track) const {
+    if (track < 0 || track >= this->getTrackCount()) {
+        return true;
+    }
+
+    smf::MidiEventList *event_list = m_events[track];
+    if (!event_list) {
+        return true;
+    }
+
+    int event_count = event_list->size();
+    for (int i = 0; i < event_count; i++) {
+        const smf::MidiEvent &event = (*event_list)[i];
+        if (event.size() == 0 || event.isEndOfTrack()) {
+            continue;
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
+void Song::appendEmptyTrack() {
+    int end_tick = this->durationInTicks();
+    int track = this->addTrack();
+    this->addMetaEvent(track, end_tick, 0x2F, std::string());
+    this->reindexTrackEvents();
+    this->load();
+}
+
+bool Song::deleteTrackAt(int track) {
+    if (track < 0 || track >= this->getTrackCount()) {
+        return false;
+    }
+
+    this->deleteTrack(track);
+    this->reindexTrackEvents();
+    this->load();
+    return true;
+}
+
+bool Song::deleteTrackAndStore(int track, smf::MidiEventList &track_data) {
+    if (track < 0 || track >= this->getTrackCount()) {
+        return false;
+    }
+
+    track_data = *m_events[track];
+    this->deleteTrack(track);
+    this->reindexTrackEvents();
+    this->load();
+    return true;
+}
+
+bool Song::restoreTrack(int track, smf::MidiEventList &track_data) {
+    int track_count = this->getTrackCount();
+    if (track < 0 || track > track_count) {
+        return false;
+    }
+
+    m_events.resize(track_count + 1);
+    for (int i = track_count; i > track; i--) {
+        m_events[i] = m_events[i - 1];
+    }
+
+    m_events[track] = new smf::MidiEventList(track_data);
+    this->reindexTrackEvents();
+    this->load();
+    return true;
 }
 
 double Song::durationInSeconds() {
@@ -294,6 +365,22 @@ void Song::rebuildNotesIndex() {
         }
     }
 
+}
+
+void Song::reindexTrackEvents() {
+    int track_count = this->getTrackCount();
+    for (int track_index = 0; track_index < track_count; track_index++) {
+        smf::MidiEventList *track = m_events[track_index];
+        if (!track) {
+            continue;
+        }
+
+        int event_count = track->size();
+        for (int i = 0; i < event_count; i++) {
+            smf::MidiEvent &event = (*track)[i];
+            event.track = track_index;
+        }
+    }
 }
 
 int Song::defaultProgramFromVoicegroup(const VoiceGroup *voicegroup) {

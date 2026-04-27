@@ -78,7 +78,12 @@ public:
     std::vector<smf::MidiEventList *> &tracks() { return m_events; }
     const std::vector<smf::MidiEventList *> &tracks() const { return m_events; }
     bool isMetaTrack(int track) const { return m_meta_tracks.contains(track); }
+    bool isTrackEmpty(int track) const;
     int getDisplayRow(int track) const { return m_meta_tracks.contains(0) ? track - 1 : track; }
+    void appendEmptyTrack();
+    bool deleteTrackAt(int track);
+    bool deleteTrackAndStore(int track, smf::MidiEventList &track_data);
+    bool restoreTrack(int track, smf::MidiEventList &track_data);
 
     // song metadata
     void setMetaInfo(const SongEntry &entry) { m_meta_info = entry; }
@@ -105,6 +110,7 @@ private:
     static int defaultProgramFromVoicegroup(const VoiceGroup *voicegroup);
     void extractInitialState();
     void rebuildNotesIndex();
+    void reindexTrackEvents();
 
 private:
     // event data

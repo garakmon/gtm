@@ -101,9 +101,14 @@ bool TrackRoll::hasSoloed() const {
 }
 
 void TrackRoll::setTracksInteractive(bool enabled) {
+    m_tracks_interactive = enabled;
+
     for (auto item : m_track_items) {
         if (item) item->setControlsEnabled(enabled);
     }
+
+    this->updateAddTrackItemState();
+    this->relayout();
 }
 
 /**
@@ -188,6 +193,7 @@ void TrackRoll::reset() {
     m_scene_roll.clear();
     m_track_items.clear();
     m_roll_managers.clear();
+    m_add_track_item = nullptr;
     m_expanded_row = -1;
 }
 
@@ -228,6 +234,10 @@ void TrackRoll::drawTracks() {
                 this, &TrackRoll::onTrackClicked, Qt::UniqueConnection);
         connect(track_item, &GraphicsTrackItem::trackRightClicked,
                 this, &TrackRoll::trackRightClicked, Qt::UniqueConnection);
+        connect(track_item, &GraphicsTrackItem::deleteClicked,
+                this, &TrackRoll::deleteTrackClicked, Qt::UniqueConnection);
+
+        track_item->setControlsEnabled(m_tracks_interactive);
 
         m_roll_managers[display_row] = manager;
         m_track_items[display_row] = track_item;
@@ -235,6 +245,12 @@ void TrackRoll::drawTracks() {
         track_num++;
         display_row++;
     }
+
+    m_add_track_item = new GraphicsAddTrackItem();
+    m_scene_track_list.addItem(m_add_track_item);
+    connect(m_add_track_item, &GraphicsAddTrackItem::clicked,
+            this, &TrackRoll::addTrackClicked, Qt::UniqueConnection);
+    this->updateAddTrackItemState();
 
     this->relayout();
 }
@@ -268,7 +284,28 @@ void TrackRoll::relayout() {
         }
     }
 
-    m_scene_track_list.setSceneRect(m_scene_track_list.itemsBoundingRect());
-    m_scene_roll.setSceneRect(m_scene_roll.itemsBoundingRect());
+    if (m_add_track_item) {
+        m_add_track_item->setPos((ui_track_item_width - 28) / 2, y + 6);
+    }
+
+    int footer_height = 0;
+    if (m_add_track_item && m_add_track_item->isVisible()) {
+        footer_height = 34;
+    }
+
+    QRectF roll_bounds = m_scene_roll.itemsBoundingRect();
+    m_scene_track_list.setSceneRect(0, 0, ui_track_item_width, y + footer_height);
+    m_scene_roll.setSceneRect(0, 0, roll_bounds.width(), y + footer_height);
     emit layoutChanged();
+}
+
+void TrackRoll::updateAddTrackItemState() {
+    if (!m_add_track_item) {
+        return;
+    }
+
+    bool enabled = m_tracks_interactive && m_track_items.size() < g_max_num_tracks;
+    m_add_track_item->setVisible(enabled);
+    m_add_track_item->setEnabled(enabled);
+    m_add_track_item->setAcceptedMouseButtons(enabled ? Qt::LeftButton : Qt::NoButton);
 }

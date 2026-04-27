@@ -678,16 +678,14 @@ void Controller::displayRolls() {
 
     // view_trackRoll: needs to clip to number of tracks
     m_window->view_trackRoll->setScene(m_track_roll->sceneRoll());
-    QRectF track_roll_bounds = m_track_roll->sceneRoll()->itemsBoundingRect();
-    m_window->view_trackRoll->setSceneRect(0.0, 0.0, track_roll_bounds.width(),
-                                           track_roll_bounds.height());
+    QRectF track_roll_bounds = m_track_roll->sceneRoll()->sceneRect();
+    m_window->view_trackRoll->setSceneRect(track_roll_bounds);
     m_window->view_trackRoll->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 
     // view_trackList
     m_window->view_trackList->setScene(m_track_roll->sceneTracks());
-    QRectF track_list_bounds = m_track_roll->sceneTracks()->itemsBoundingRect();
-    m_window->view_trackList->setSceneRect(0.0, 0.0, track_list_bounds.width(),
-                                           track_list_bounds.height());
+    QRectF track_list_bounds = m_track_roll->sceneTracks()->sceneRect();
+    m_window->view_trackList->setSceneRect(track_list_bounds);
     m_window->view_trackList->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 
     // view_measures_tracks & view_measures look the same,
@@ -839,6 +837,10 @@ void Controller::connectSignals() {
             this, &Controller::onTrackSelected, Qt::UniqueConnection);
     connect(m_track_roll, &TrackRoll::trackRightClicked,
             this, &Controller::onTrackRightClicked, Qt::UniqueConnection);
+    connect(m_track_roll, &TrackRoll::addTrackClicked,
+            this, &Controller::onAddTrackClicked, Qt::UniqueConnection);
+    connect(m_track_roll, &TrackRoll::deleteTrackClicked,
+            this, &Controller::onDeleteTrackClicked, Qt::UniqueConnection);
     connect(m_measure_roll, &MeasureRoll::onTimeRangeSelected,
             this, &Controller::onTimeRangeSelected, Qt::UniqueConnection);
     connect(m_measure_roll, &MeasureRoll::onTimeSelectionCleared,
@@ -948,8 +950,8 @@ void Controller::onNoteDeleteRequested(const QVector<smf::MidiEvent *> &events) 
     }
 }
 
-void Controller::onSongNeedsRedrawing() {
-    this->redrawCurrentSong(false);
+void Controller::onSongNeedsRedrawing(bool rebuild_rolls) {
+    this->redrawCurrentSong(rebuild_rolls);
 }
 
 /**
@@ -1209,6 +1211,7 @@ void Controller::play() {
     // disable edits while a song is playing, since that adds a huge complexity
     if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(false);
     if (m_piano_roll) m_piano_roll->setEditsEnabled(false);
+    if (m_track_roll) m_track_roll->setTracksInteractive(false);
 }
 
 /**
@@ -1238,6 +1241,7 @@ void Controller::pause() {
     // re-enable edits
     if (m_window->ButtonBox_Tools) m_window->ButtonBox_Tools->setEnabled(true);
     if (m_piano_roll) m_piano_roll->setEditsEnabled(true);
+    if (m_track_roll) m_track_roll->setTracksInteractive(true);
 }
 
 int Controller::currentTick() const {
@@ -1840,6 +1844,41 @@ void Controller::onTrackRightClicked(int track) {
     }
     if (m_piano_roll) {
         m_piano_roll->selectNotesForTrack(track, true);
+    }
+}
+
+void Controller::onAddTrackClicked() {
+    if (!m_song_editor) {
+        return;
+    }
+
+    QString error;
+    if (!m_song_editor->addTrack(&error) && !error.isEmpty()) {
+        logging::warn(error, logging::LogCategory::Ui);
+    }
+}
+
+void Controller::onDeleteTrackClicked(int track) {
+    if (!m_song_editor || !m_song) {
+        return;
+    }
+
+    if (!m_song->isTrackEmpty(track) && m_window) {
+        QMessageBox::StandardButton answer = QMessageBox::question(
+            static_cast<MainWindow *>(this->parent()),
+            QStringLiteral("Delete Track"),
+            QStringLiteral("Delete this track and all of its events?"),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No
+        );
+        if (answer != QMessageBox::Yes) {
+            return;
+        }
+    }
+
+    QString error;
+    if (!m_song_editor->deleteTrack(track, &error) && !error.isEmpty()) {
+        logging::warn(error, logging::LogCategory::Ui);
     }
 }
 

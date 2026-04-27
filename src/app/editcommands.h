@@ -4,6 +4,7 @@
 
 #include "app/structs.h"
 #include "deps/midifile/MidiEvent.h"
+#include "deps/midifile/MidiEventList.h"
 
 #include <QUndoCommand>
 #include <QVector>
@@ -18,6 +19,8 @@ enum CommandId {
     ID_DeleteNotes,
     ID_CreateNotes,
     ID_DuplicateNotes,
+    ID_AddTrack,
+    ID_DeleteTrack,
 };
 
 class Song;
@@ -46,8 +49,27 @@ protected:
 
 //////////////////////////////////////////////////////////////////////////////////////////
 ///
+/// Base undo command for track structure edits that require rebuilding the track roll.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+class EditTrack : public QUndoCommand {
+public:
+    explicit EditTrack(Song *song, const QString &text,
+                       QUndoCommand *parent = nullptr);
+    ~EditTrack() override = default;
+
+    EditTrack(const EditTrack &) = delete;
+    EditTrack &operator=(const EditTrack &) = delete;
+    EditTrack(EditTrack &&) = delete;
+    EditTrack &operator=(EditTrack &&) = delete;
+
+protected:
+    Song *m_song = nullptr;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
 /// Move selected notes by a tick and/or key delta.
-/// Supports mergeWith() for smooth drag → single undo step.
 ///
 //////////////////////////////////////////////////////////////////////////////////////////
 class MoveNotes : public EditNote {
@@ -58,7 +80,7 @@ public:
     void redo() override;
     void undo() override;
     int id() const override { return ID_MoveNotes; }
-    bool mergeWith(const QUndoCommand *other) override;
+    bool mergeWith(const QUndoCommand *other) override; // smooth drag + single undo
     QVector<smf::MidiEvent *> affectedNoteEvents() const override;
 
 private:
@@ -182,6 +204,41 @@ private:
     int m_delta_tick;
     int m_delta_key;
     bool m_first_redo = true;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// Append one empty track to the end of the song.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+class AddTrack : public EditTrack {
+public:
+    explicit AddTrack(Song *song);
+
+    void redo() override;
+    void undo() override;
+    int id() const override { return ID_AddTrack; }
+
+private:
+    int m_track_index = -1;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// Delete one track and all of its events.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+class DeleteTrack : public EditTrack {
+public:
+    DeleteTrack(Song *song, int track_index);
+
+    void redo() override;
+    void undo() override;
+    int id() const override { return ID_DeleteTrack; }
+
+private:
+    int m_track_index = -1;
+    smf::MidiEventList m_deleted_track;
 };
 
 #endif // EDITCOMMANDS_H

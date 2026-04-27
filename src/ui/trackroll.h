@@ -15,6 +15,7 @@
 class Song;
 class GraphicsTrackItem;
 class GraphicsTrackRollManager;
+class GraphicsAddTrackItem;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -76,6 +77,8 @@ public:
                               const QMap<QString, KeysplitTable> *keysplit_tables);
 
 signals:
+    void addTrackClicked();
+    void deleteTrackClicked(int track);
     void trackMuteToggled(int channel, bool muted);
     void trackSoloToggled(int channel, bool soloed);
     void trackSelected(int track);
@@ -90,6 +93,7 @@ private:
     void reset();
     void drawTracks();
     void relayout();
+    void updateAddTrackItemState();
 
 private:
     std::shared_ptr<Song> m_active_song;
@@ -101,10 +105,12 @@ private:
     // managed items
     QMap<int, GraphicsTrackItem *> m_track_items;
     QMap<int, GraphicsTrackRollManager *> m_roll_managers;
+    GraphicsAddTrackItem *m_add_track_item = nullptr;
 
     // layout and event state
     int m_expanded_row = -1;
     TrackEventViewMask m_event_view_mask = TrackEventView_All;
+    bool m_tracks_interactive = true;
 
     // instrument info
     const VoiceGroup *m_song_voicegroup = nullptr;

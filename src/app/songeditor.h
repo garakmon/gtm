@@ -61,6 +61,8 @@ public:
     bool deleteSelectedEvents(QString *error = nullptr);
     bool createNotes(const QVector<NoteCreateSettings> &notes, QString *error = nullptr);
     bool duplicateSelectedNotes(const NoteMoveSettings &settings, QString *error = nullptr);
+    bool addTrack(QString *error = nullptr);
+    bool deleteTrack(int track, QString *error = nullptr);
 
     // event edits
     bool addMetaTempo(const TempoEventSettings &settings, QString *error = nullptr);
@@ -78,7 +80,7 @@ public:
 
 signals:
     void songEdited(const QString &title);
-    void songNeedsRedrawing();
+    void songNeedsRedrawing(bool rebuild_rolls);
     void selectionChanged();
 
 private:

@@ -25,6 +25,8 @@ constexpr TrackEventViewMask TrackEventView_All =
 
 class GraphicsTrackMeterItem;
 class GraphicsTrackButtonItem;
+class GraphicsTrackDeleteButtonItem;
+class GraphicsAddTrackItem;
 struct VoiceGroup;
 struct KeysplitTable;
 struct Instrument;
@@ -91,6 +93,7 @@ signals:
     void soloToggled(int channel, bool soloed);
     void trackClicked(int track);
     void trackRightClicked(int track);
+    void deleteClicked(int track);
 
 private:
     // track identity and layout
@@ -111,7 +114,57 @@ private:
     // child graphics items
     GraphicsTrackButtonItem *m_mute_button = nullptr;
     GraphicsTrackButtonItem *m_solo_button = nullptr;
+    GraphicsTrackDeleteButtonItem *m_delete_button = nullptr;
     GraphicsTrackMeterItem *m_meter_item = nullptr;
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// GraphicsTrackDeleteButtonItem is the small per-track delete button shown in the
+/// top-right corner of a track row *only while edits are enabled*.
+/// It stays separate from GraphicsTrackButtonItem because mute/solo are checked
+/// toggle controls, while delete is an action which is also inactive during playback.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+class GraphicsTrackDeleteButtonItem : public QGraphicsItem {
+public:
+    explicit GraphicsTrackDeleteButtonItem(GraphicsTrackItem *owner);
+
+    QRectF boundingRect() const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+
+private:
+    GraphicsTrackItem *m_owner = nullptr;
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+///
+/// GraphicsAddTrackItem is the footer button shown under the last track row while edits
+/// are enabled. It is a visual placeholder for future add-track functionality.
+///
+//////////////////////////////////////////////////////////////////////////////////////////
+class GraphicsAddTrackItem : public QGraphicsObject {
+    Q_OBJECT
+
+public:
+    explicit GraphicsAddTrackItem(QGraphicsItem *parent = nullptr);
+
+    QRectF boundingRect() const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
+               QWidget *widget) override;
+
+signals:
+    void clicked();
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 };
 
 

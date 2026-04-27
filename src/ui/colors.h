@@ -11,6 +11,7 @@
 
 // Track Colors
 extern QColor ui_track_color_array[g_max_num_tracks];
+extern QColor ui_color_track_action_button_bg;
 // TODO: selected color array, deselected / inactive color array
 
 

@@ -5,7 +5,6 @@
 #include "sound/song.h"
 
 
-
 SongEditor::SongEditor(Project *project, QObject *parent)
   : QObject(parent), m_project(project) {}
 
@@ -123,10 +122,10 @@ bool SongEditor::moveSelectedNotes(const NoteMoveSettings &settings, QString *er
         return true;
     }
 
-    auto *cmd = new MoveNotes(m_song, m_selected_events,
-                              settings.delta_tick, settings.delta_key);
+    MoveNotes *cmd = new MoveNotes(m_song, m_selected_events,
+                                   settings.delta_tick, settings.delta_key);
     editHistory()->push(cmd);
-    emit songEdited(activeSongTitle());
+    emit songEdited(this->activeSongTitle());
     return true;
 }
 
@@ -142,10 +141,10 @@ bool SongEditor::resizeSelectedNotes(const NoteResizeSettings &settings, QString
         return true;
     }
 
-    auto *cmd = new ResizeNotes(m_song, m_selected_events,
-                                settings.delta_tick, settings.resize_end);
+    ResizeNotes *cmd = new ResizeNotes(m_song, m_selected_events,
+                                       settings.delta_tick, settings.resize_end);
     editHistory()->push(cmd);
-    emit songEdited(activeSongTitle());
+    emit songEdited(this->activeSongTitle());
     return true;
 }
 
@@ -157,11 +156,11 @@ bool SongEditor::deleteSelectedEvents(QString *error) {
         return false;
     }
 
-    auto *cmd = new DeleteNotes(m_song, m_selected_events);
+    DeleteNotes *cmd = new DeleteNotes(m_song, m_selected_events);
     editHistory()->push(cmd);
     m_selected_events.clear();
     emit selectionChanged();
-    emit songEdited(activeSongTitle());
+    emit songEdited(this->activeSongTitle());
     return true;
 }
 
@@ -173,9 +172,9 @@ bool SongEditor::createNotes(const QVector<NoteCreateSettings> &notes, QString *
         return false;
     }
 
-    auto *cmd = new CreateNotes(m_song, notes);
+    CreateNotes *cmd = new CreateNotes(m_song, notes);
     editHistory()->push(cmd);
-    emit songEdited(activeSongTitle());
+    emit songEdited(this->activeSongTitle());
     return true;
 }
 
@@ -187,10 +186,51 @@ bool SongEditor::duplicateSelectedNotes(const NoteMoveSettings &settings, QStrin
         return false;
     }
 
-    auto *cmd = new DuplicateNotes(m_song, m_selected_events,
-                                   settings.delta_tick, settings.delta_key);
+    DuplicateNotes *cmd = new DuplicateNotes(m_song, m_selected_events,
+                                             settings.delta_tick, settings.delta_key);
     editHistory()->push(cmd);
-    emit songEdited(activeSongTitle());
+    emit songEdited(this->activeSongTitle());
+    return true;
+}
+
+bool SongEditor::addTrack(QString *error) {
+    if (!validateSong(error)) return false;
+
+    int non_meta_tracks = 0;
+    int track_count = m_song->getTrackCount();
+    for (int track = 0; track < track_count; track++) {
+        if (!m_song->isMetaTrack(track)) {
+            non_meta_tracks++;
+        }
+    }
+
+    if (non_meta_tracks >= g_max_num_tracks) {
+        if (error) {
+            *error = QString("Cannot add more than %1 tracks.").arg(g_max_num_tracks);
+        }
+        return false;
+    }
+
+    AddTrack *cmd = new AddTrack(m_song);
+    editHistory()->push(cmd);
+    emit songEdited(this->activeSongTitle());
+    return true;
+}
+
+bool SongEditor::deleteTrack(int track, QString *error) {
+    if (!validateSong(error)) return false;
+
+    if (track < 0 || track >= m_song->getTrackCount()) {
+        if (error) *error = QString("Invalid track index: %1").arg(track);
+        return false;
+    }
+
+    m_selected_events.clear();
+    emit selectionChanged();
+
+    DeleteTrack *cmd = new DeleteTrack(m_song, track);
+    editHistory()->push(cmd);
+    emit songEdited(this->activeSongTitle());
     return true;
 }
 
@@ -287,29 +327,32 @@ void SongEditor::rebuildCachesAfterEdit() {
 void SongEditor::onHistoryCleanChanged(bool clean) {
     if (!m_song) return;
     m_song->setClean(clean);
-    emit songEdited(activeSongTitle());
+    emit songEdited(this->activeSongTitle());
 }
 
 void SongEditor::onHistoryIndexChanged(int) {
     QUndoStack *history = editHistory();
+    bool rebuild_rolls = false;
     if (!history) {
-        emit songNeedsRedrawing();
+        emit songNeedsRedrawing(false);
         return;
     }
 
     const int current_index = history->index();
-    const EditNote *command = nullptr;
+    const QUndoCommand *base_command = nullptr;
     if (current_index > m_last_history_index && current_index > 0) {
-        command = dynamic_cast<const EditNote *>(history->command(current_index - 1));
+        base_command = history->command(current_index - 1);
     } else if (current_index < m_last_history_index && current_index < history->count()) {
-        command = dynamic_cast<const EditNote *>(history->command(current_index));
+        base_command = history->command(current_index);
     }
 
+    const EditNote *command = dynamic_cast<const EditNote *>(base_command);
     if (command) {
         m_selected_events = command->affectedNoteEvents();
         emit selectionChanged();
     }
 
+    rebuild_rolls = dynamic_cast<const EditTrack *>(base_command) != nullptr;
     m_last_history_index = current_index;
-    emit songNeedsRedrawing();
+    emit songNeedsRedrawing(rebuild_rolls);
 }

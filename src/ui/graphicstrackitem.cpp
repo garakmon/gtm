@@ -12,6 +12,7 @@
 #include <QFontMetrics>
 #include <QGraphicsSceneHoverEvent>
 #include <QGraphicsSceneMouseEvent>
+#include <QIcon>
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyleOptionGraphicsItem>
@@ -52,6 +53,10 @@ GraphicsTrackItem::GraphicsTrackItem(int track, int row, QGraphicsItem *parent)
     m_solo_button->setPos(ui_track_buttons_x,
                           buttons_y + ui_track_button_h + ui_track_button_gap);
     m_solo_button->setZValue(2);
+
+    m_delete_button = new GraphicsTrackDeleteButtonItem(this);
+    m_delete_button->setPos(ui_track_item_width - 20, row_y + 4);
+    m_delete_button->setZValue(2);
 
     // central stereo meter
     constexpr bool k_enable_track_meters = true;
@@ -236,6 +241,11 @@ void GraphicsTrackItem::setControlsEnabled(bool enabled) {
         m_solo_button->setEnabled(enabled);
         m_solo_button->setAcceptedMouseButtons(enabled ? Qt::LeftButton : Qt::NoButton);
     }
+    if (m_delete_button) {
+        m_delete_button->setVisible(enabled);
+        m_delete_button->setEnabled(enabled);
+        m_delete_button->setAcceptedMouseButtons(enabled ? Qt::LeftButton : Qt::NoButton);
+    }
 }
 
 /**
@@ -249,6 +259,7 @@ void GraphicsTrackItem::setYPosition(int y) {
     // reposition child items by the delta
     if (m_mute_button) m_mute_button->moveBy(0, dy);
     if (m_solo_button) m_solo_button->moveBy(0, dy);
+    if (m_delete_button) m_delete_button->moveBy(0, dy);
     if (m_meter_item) m_meter_item->moveBy(0, dy);
     update();
 }
@@ -270,6 +281,69 @@ void GraphicsTrackItem::updateMuteButton() {
 
 void GraphicsTrackItem::updateSoloButton() {
     if (m_solo_button) m_solo_button->update();
+}
+
+GraphicsTrackDeleteButtonItem::GraphicsTrackDeleteButtonItem(GraphicsTrackItem *owner)
+    : QGraphicsItem(owner), m_owner(owner) {
+    this->setAcceptedMouseButtons(Qt::LeftButton);
+}
+
+QRectF GraphicsTrackDeleteButtonItem::boundingRect() const {
+    return QRectF(0, 0, 16, 12);
+}
+
+void GraphicsTrackDeleteButtonItem::paint(QPainter *painter,
+                                          const QStyleOptionGraphicsItem *,
+                                          QWidget *) {
+    painter->setRenderHint(QPainter::Antialiasing, false);
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(ui_color_track_action_button_bg);
+    painter->drawRoundedRect(this->boundingRect(), 3, 3);
+
+    QIcon icon(":/icons/trash.svg");
+    QPixmap pixmap = icon.pixmap(8, 8);
+    painter->drawPixmap(4, 2, pixmap);
+}
+
+void GraphicsTrackDeleteButtonItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+    if (!event || event->button() != Qt::LeftButton) {
+        return;
+    }
+
+    if (m_owner) {
+        emit m_owner->deleteClicked(m_owner->track());
+    }
+    event->accept();
+}
+
+GraphicsAddTrackItem::GraphicsAddTrackItem(QGraphicsItem *parent) : QGraphicsObject(parent) {
+    this->setAcceptedMouseButtons(Qt::LeftButton);
+}
+
+QRectF GraphicsAddTrackItem::boundingRect() const {
+    return QRectF(0, 0, 28, 28);
+}
+
+void GraphicsAddTrackItem::paint(QPainter *painter,
+                                 const QStyleOptionGraphicsItem *,
+                                 QWidget *) {
+    painter->setRenderHint(QPainter::Antialiasing, false);
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(ui_color_track_action_button_bg);
+    painter->drawRoundedRect(this->boundingRect(), 4, 4);
+
+    QIcon icon(":/icons/playlist-plus.svg");
+    QPixmap pixmap = icon.pixmap(16, 16);
+    painter->drawPixmap(6, 6, pixmap);
+}
+
+void GraphicsAddTrackItem::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+    if (!event || event->button() != Qt::LeftButton) {
+        return;
+    }
+
+    emit clicked();
+    event->accept();
 }
 
 

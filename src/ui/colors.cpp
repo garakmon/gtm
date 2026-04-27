@@ -23,6 +23,8 @@ QColor ui_track_color_array[g_max_num_tracks] = {
     QColor(0x6a8e7f)  // Slate Green
 };
 
+QColor ui_color_track_action_button_bg = QColor(255, 255, 255, 180);
+
 
 // Piano Keys
 
